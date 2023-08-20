@@ -1,10 +1,26 @@
-// Reports API status and keeps track of user-selected Amenities filters
-
 /*
-  ====================================================
-       Anagram Master's Header and Footer Styles
-  ====================================================
+  ============================================================================
+         Anagram Master's Script for Interactions and Dynamic Content
+  ============================================================================
 */
+
+// Homepage Buttons Actions
+$(".logo").click(()=>{
+    window.location.href = "";
+});
+$("#start").click(()=>{
+    window.location.href = "game.htm";
+});
+$("#scores").click(()=>{
+    window.location.href = "scores.htm";
+});
+
+console.log(window.location.href);
+
+//if (window.location.href == "index.htm"){;
+if ($("logo_main")){;
+    $("#status").addClass("green")
+}
 
 // Set headers and data type for all HTTP requests
 $.ajaxSetup({
@@ -27,11 +43,12 @@ theme_js.id = "theme";
 
 // reWord()
 let time = 15;
-let ticks = 61;
+//let ticks = 61;
+let ticks = 1;
 
-$("body").toggleClass("main");
-$("header").toggleClass("main");
-$("footer").toggleClass("main");
+//$("body").toggleClass("main");
+//$("header").toggleClass("main");
+//$("footer").toggleClass("main");
 
 console.log(ticks);
 //const myTimer = setInterval(timer, 1000);
@@ -49,7 +66,7 @@ myTimer = setInterval(() => {
     }
     if (ticks == 0) {
         clearInterval(myTimer);
-        $(status).removeClass("green red orange");
+//        $(status).removeClass("green red orange");
         status.innerHTML = "<p></p>";
     }
 }, 1000);

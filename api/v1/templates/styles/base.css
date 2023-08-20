@@ -35,7 +35,7 @@ header a, footer a {
 }
 
 header a:hover, footer a:hover {
-	color: rgb(100, 25, 100);
+	color: blue;
 	font-weight: normal;
 	text-shadow: 1px 1px 1px black;
 }
@@ -113,7 +113,7 @@ footer p {
 }
 
 .menu a:hover {
-	background: white;
+	color: rgb(255, 50, 120);
 }
 
 #status {
