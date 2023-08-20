@@ -1,0 +1,56 @@
+Anagram Master
+A multiplayer word game that would involve rearranging letters from a root word to form new words.
+
+1. Team
+Donald Ajaps.
+This project would be done solo by Donald Ajaps.
+
+
+2. Technologies
+Flask (a Python web framework)
+HTML
+CSS
+SCOWL (and Friends) [http://wordlist.aspell.net]
+Wikipedia [https://en.wikipedia.org/wiki/Anagrams_(game)]
+
+
+3. Justification for Chosen Technologies
+FLASK
+Flask is a Python web framework which would be used as the backend engine or webserver. Flask is a microframework for developers, designed to enable them to create and scale web apps quickly and simply. More popular and powerful alternatives such as PHP and node.js exist, but Flask was chosen over those because it very lightweight and offers the greatest ease of use for a young software engineer.
+FLASK:
+Flask is lightweight with few dependencies, but has the potential to be scaled up when the need arises. A Flask app could grow from a tiny app with a single route that serves a static page, to a full-fledged website with subdomains, dynamic content, authentication, etc. to eventually include even features and capabilities that might not have been planned for when the project commenced. Since it's based on Python, it is simple to use, flexible, and well documented.
+PHP:
+Being a scripting language, PHP is said to be three times as fast as Python (and therefore Flask), and being more mainstream, production code written in PHP is easier to collaborate on than code written in Flask. However, its core behaviour cannot be modified by a user, which makes its usage more restrictive. It is also less secure as it is open source (which means that the general public has access to its code and underlying bugs), and its code is not as easy to understand as Flask's which is based on Python that is written like English and has simplicity as a core principle of its design (see "Zen of Python" https://en.wikipedia.org/wiki/Zen_of_Python).
+
+*****
+SCOWL (and Friends)
+Being a word game, Anagram Master would require an extensive dictionary (list of words/definitions) in the chosen language (English in this case) to pick the base word for each round from, as well as to validate players' entries. Popular dictionaries such as Merriam-Webster and Oxford have API's, but these only allow access to one word at a time. Anagram Master is a time-based game, and API calls can take anywhere from milliseconds to minutes, depending on several factors including the user's internet connection. This meant that those popular APIs coundn't be used, even though they would provide the best and most up-to-date dictionary. SCOWL (and Friends) is an offline wordlist, which allows for instant access to words and an added advantage of making Anagram Master an offline game.
+*****
+
+
+4. Challenges
+Anagram Master is built as a digital reimagining of a classic game. A game I played a lot with friends over the years, but we did it with pen and paper. This is for those who love that classic game and would like to play it again digitally, with the added advantages that game digitisation offers. It is not designed to serve as an alternative to Scrabble, or as some kind of word solver for any word game. English would be the only supported language, but future versions could be multilingual.
+
+
+5. Risks
+Below are a few known technical and non-technical risks and the safeguards or alternatives that would be implemented to address them:
+Performance Issues: As the game involves real-time validation of manipulated words, there might be performance challenges, especially when handling a large number of users simultaneously. This would be mitigated by making the game turn-based, so that only one word would need to be validated each turn, leading to lower traffic (i.e. fewer commands being sent to the server per second). Also, the frontend would consist of a lightweight webpage with as few lines of code as necessary to run smoothly while looking good. The backend (web server) would be lightweight too since it would be built with Flask/Python.
+Cross-Browser, Device, and Platform Compatibility: Different web browsers may interpret JavaScript, HTML, and CSS code differently, leading to inconsistencies in the app's behavior across various platforms. Browser choice is up to the user, but Anagram Master would come with a notice of the recommended browser(s). It would also check the browser's support for JavaScript before runnning, as well as its User Agent String to ensure that it meets the stated "minimum requirements".
+Data Integrity: Since the game involves a scoring system, ensuring that the scores are accurately recorded, updated, and stored without/any discrepancies is crucial to maintaining the game's credibility. Being a web app, all of this would happen entirely on the backend (the server app) so that the frontend (user/web browser) would be unable to manipulate it. This data would simply be presented in read-only mode for the user to keep track.
+Third-Party Dependencies: If the app relies on third-party APIs or services, there's a risk of those services experiencing downtime or changes that could affect the functionality of the app. That is why an offline dictionary (SCOWL (and Friends)) would be used for the core functions of the app, while the third-party API from Merriam-Webster Dictionary would only be used for a secondary function, which is word definitions. The app would also have the option do work without definitions through a user setting or when there are issues with the API.
+Testing Challenges and Limited Resources: Inadequate testing could lead to undiscovered bugs affecting the game's performance, so comprehensive testing for various edge cases, browser versions, user interactions, etc. is necessary, but can be time-consuming and challenging. Testing would be as extensive as time and resources would permit, but it would most likely fall short of that which is required since this is a solo project being undertaken with a strict deadline, as well as limited resources and  technical expertise, compared to professional development teams that should normally undertake such a project.
+Competition and Market Saturation: Depending on the market being reviewed, there might be other anagram or similar word games available (as stated in the next section). However, Anagram Master's uniqueness gives it the ability to stand out among competitors. It is the only cross-platform solution I found in my research, setting it in a league of its own. Fair competition is therefore guaranteed, so its success would be determined based on its actual merits (its build and performance quality).
+Copyright and Intellectual Property Issues: There is a risk of unintentionally infringing on someone else's copyrighted content or game mechanics. The game's design and gameplay would be unique, which should make it impossible to violate any intellectual property rights. Credit would also be given duly for third party resources used, such as the game's two dictionaries.
+Project Scope Creep: As the development progresses, there might be a temptation to add more features or make significant changes to the initial plan. Scope creep can lead to delays, increased development costs, and potential issues with project completion. Care would be taken to avoid scope creep by properly defining the scope from the start, and only entertaining major deviations where the original plan offers more disadvantages is paralysed by known/unknown constraints. ALX also requires that an MVP (minimum viable product) be defined from the start, and focussing on the MVP would help a great deal here. It is only after the MVP has been "shipped" that major changes and additional features would be entertained.
+
+
+6. Infrastructure
+As stated earlier in the Team section, this would be a solo project. Branching and merging on Git would be done at the discretion of the developer, Donald Ajaps. Each successful stage in the development of the app would lead to a corresponding commit to the project's repository, all the way down to the final version.
+The app would load data from a text document containing a list of 400K+ words in the English language. This would be used to supply the root word at the beginning of each round, as well as to validate user's inputs. The Merriam-Webster Dictionary's API would also be used to fetch definitions for used words if an internet connection is present.
+
+7. Existing Solutions
+I found no existing solutions during my research, but below are a few that are similar:
+Scrabble:
+
+Anagrams Game by LittleBigPlay: An Android game that lets users form words "from another word by rearranging its letters and using all the original letters exactly once". Seems to be the same as mine, but is restricted to the base OS. Anagram Master is a web app and can therefore be played on any device with networking capabilities and a modern web browser. However the server app needs to be run/hosted on either Windows or Ubuntu.
+Anagrams Word Game by Rolling Panda: An iOS game that lets users "find any possible anagram for the given word. Just tap or swipe through letters to see all possible combinations". Seems to be the same as mine, except that the focus is on letters and not the whole word, so the root word is not always displayed with the letters in the right order. Being an iOS app, there are also platform differences as stated for the preceeding Android app.
