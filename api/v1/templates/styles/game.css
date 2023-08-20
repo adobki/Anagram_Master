@@ -1,0 +1,135 @@
+/*
+  ============================================================================
+                       Anagram Master's Gameplay Styles
+  ============================================================================
+*/
+
+body {
+	background: black;
+	color: white;
+	font-family: Lato, Montserrat, Verdana,
+				 Helvetica, Arial, sans-serif;
+	/* font-size: 1em;
+	line-height: 1.5em; */
+}
+
+h1, h3 {
+	font-size: 2em;
+	font-weight: bold;
+	padding-top: 1em;
+	padding-bottom: .25em;
+}
+
+h3 {
+	font-size: 1em;
+}
+
+h6, cite, em {
+	font-style: italic;
+	text-align: center;
+}
+
+strong {
+	font-weight: bold;
+}
+
+/*
+a {
+	color: black;
+	font: bold inherit;
+	font-weight: 300;
+	text-decoration: inherit;
+}
+
+a:hover {
+	color: rgb(100, 25, 100);
+	font-weight: normal;
+	text-shadow: 1px 1px 1px black;
+}
+*/
+
+.container {
+	/* background: black; */
+	display: inline-block;
+	width: 100%;
+	padding: 2%;
+}
+
+.canvas {
+	/* background: black; */
+	position: fixed;
+	width: 100%;
+	margin: 5em 1em;
+}
+
+.hero {
+	background: rgba(255, 0, 255, .1);
+	border: 1px solid rgba(255, 0, 255, .05);
+	padding: 2% 10%;
+	width: 80%;
+	height: 30em;
+}
+
+button {
+	display: inline-block;
+	border-radius: 50px;
+	border: 1px solid white;
+	width: 33%;
+	height: 4em;
+	font-size: 1.2em;
+	margin: 2em;
+	/* vertical-align: top;
+	background: -webkit-linear-gradient(#648880, #293f50); */
+	/* background:    -moz-linear-gradient(#648880, #293f50);
+	background: linear-gradient(to right bottom, rgba(0, 0, 0, 0), rgba(50, 60, 100, .75)); */
+	background: linear-gradient(to right bottom, rgba(0, 0, 0, 0), rgba(50, 60, 100, .75));
+}
+
+button:hover{
+	background: rgba(255, 0, 255, .75);
+	color: black;
+	font-weight: bold;
+	box-shadow: 4px 3px 1px rgba(0, 0, 0, .5);
+}
+
+.btn a {
+	color: white;
+	font-weight: bold;
+	margin: 15% 1%;
+	vertical-align: bottom;
+}
+
+.btn:hover a {
+	font-size: 1.5em;
+}
+
+tr:last-of-type {
+	height: 4em;
+	/* background: blue; */
+	/* vertical-align: top; */
+}
+
+tr:first-of-type {
+	height: 6em;
+	/* background: brown; */
+	/* vertical-align: top; */
+}
+
+.tr-link {
+	vertical-align: bottom;
+	/* background: blue; */
+}
+
+/* .btn:last-of-type {
+	margin-right: 0 !important;
+} */
+
+.btn-1 {
+	background: rgba(0, 0, 155, .75);
+	background: linear-gradient(to right bottom, rgba(0, 0, 0, 0), rgba(0, 0, 155, .5));
+}
+
+.btn-2 {
+	background: rgba(0, 200, 0, .75);
+	background: linear-gradient(to right bottom, rgba(0, 0, 0, 0), rgba(0, 200, 0, .5));
+}
