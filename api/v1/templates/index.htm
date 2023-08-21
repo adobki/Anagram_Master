@@ -1,20 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/html">
+<html lang="en">
   <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="styles/reset.css?{{ cache_id }}">
-    <link rel="stylesheet" type="text/css" href="styles/base.css?{{ cache_id }}">
-    <link rel="stylesheet" type="text/css" href="styles/main.css?{{ cache_id }}">
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script defer src="scripts/main.js?{{ cache_id }}"></script>
     <title>Welcome to Anagram Master</title>
+    <link rel="shortcut icon" type=”image/x-icon” href="../static/media/logo_icon.png">
+    <link rel="stylesheet" type="text/css" href="../static/styles/reset.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/base.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/main.css?{{ cache_id }}">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script defer src="../static/scripts/main.js?{{ cache_id }}"></script>
   </head>
   <body>
     <header class="container strip alt">
-      <a href=""><div class="logo">
-        <!--<img src="media/logo.png" >-->
-        <img><img>
-      </div></a>
+      <a href=""><div class="logo"><img ></div></a>
       <nav class="menu">
         <ul>
           <li><a href="">Home</a></li>
@@ -25,16 +23,16 @@
       </nav>
       <div id="status"></div>
     </header>
-    <div class="canvas">
-      <section class="main">
+    <section class="canvas">
+      <div class="main">
         <div class="logo_main"></div>
         <p> Welcome to Anagram Master! An engaging multiplayer word game where you could get lost for hours rearranging letters from a root word to form new words in a fun and engaging way.</p>
         <div class="controls">
           <button type="button" id="start">Start New Game</button>
           <button type="button" id="scores">View Highscores</button>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
     <footer class="container">
       <p class="credits">Anagram Master. Copyright © 2023, Donald Ajaps.</p>
     </footer>

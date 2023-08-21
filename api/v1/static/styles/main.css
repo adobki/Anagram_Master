@@ -1,0 +1,85 @@
+/*
+  ============================================================================
+                       Anagram Master's Main Body Styles
+  ============================================================================
+*/
+
+*, *:before, *:after {
+	webkit-box-sizing: border-box;
+		-moz-box-sizing: border-box;
+			box-sizing: border-box;
+}
+
+body {
+	background: rgba(245, 245, 245, 1);
+	color: black;
+	font-size: 1em;
+	font-family: Lato, Montserrat, Verdana,
+				 Helvetica, Arial, sans-serif;
+}
+
+.container {
+	display: inline-block;
+	width: 100%;
+	padding: 2%;
+}
+
+.canvas {
+	position: fixed;
+	width: 90%;
+	left: 5%;
+	margin: 5em;
+}
+
+.logo_main {
+	width: 80%;
+	height: 3em;
+	margin-top: 6em;
+	margin-bottom: 2em;
+	margin-left: 3%;
+	background: url("../media/logo_text.png") 50% 75%/10em no-repeat;
+	clip-path: inset(1%);
+	transform: scale(4.8);
+}
+
+.main p {
+	position: fixed;
+	width: 80%;
+	left: 10%;
+	font-size: 2em;
+	line-height: 2em;
+	text-align: center;
+	margin-top: 1em;
+}
+
+.main .controls {
+	position: fixed;
+	width: 80%;
+	left: 10%;
+	bottom: 15%;
+}
+
+button {
+	transform: translate(150%, 0);
+	border-radius: 50px;
+	border: 1px solid white;
+	width: 35%;
+	height: 3em;
+	font-size: 2em;
+	margin-left: 2em;
+	color: white;
+	background: rgb(220, 0, 100);
+	background: linear-gradient(to right bottom, rgba(247, 63, 82, 1), rgba(200, 50, 50, 1));
+}
+
+button#start {
+	position: fixed;
+	width: 40%;
+	transform: translate(0, 0);
+	background: rgb(0, 50, 220);
+	background: linear-gradient(to right bottom, rgba(0, 50, 220, 1), rgba(0, 50, 150, 1));
+}
+
+button:hover{
+	box-shadow: 4px 3px 1px rgba(0, 0, 0, .5);
+}
