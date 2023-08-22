@@ -14,6 +14,8 @@ body {
 	background: rgba(245, 245, 245, 1);
 	color: black;
 	font-size: 1em;
+	text-align: justify;
+	/*		For responsive design, change all em to vw/vh then tweak		*/
 	font-family: Lato, Montserrat, Verdana,
 				 Helvetica, Arial, sans-serif;
 }
@@ -38,7 +40,7 @@ body {
 	margin-bottom: 2em;
 	margin-left: 3%;
 	background: url("../media/logo_text.png") 50% 75%/10em no-repeat;
-	clip-path: inset(1%);
+	clip-path: inset(8%);
 	transform: scale(4.8);
 }
 

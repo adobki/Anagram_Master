@@ -36,6 +36,7 @@ header a:hover, footer a:hover {
 	left: .5em;
 	height: 5em;
 	width: 19em;
+	cursor: pointer;
 }
 
 .logo img {
