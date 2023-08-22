@@ -16,6 +16,12 @@ $("#scores").click(()=>{
 });
 
 
+// Highscores Buttons Actions
+$("#back").click(()=>{
+    history.back();
+});
+
+
 // Set Status Indicator State
 //if (window.location.href == "index.htm"){;
 if ($("logo_main")){;
