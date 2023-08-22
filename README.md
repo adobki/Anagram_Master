@@ -1,5 +1,5 @@
 # ___Anagram Master___
-![Anagram Master's Homepage Mockup](ref/Design Diagrams/Anagram Master's Drawings-Mockups-Homepage.drawio.png)
+![Anagram Master's Homepage Mockup](ref/Design%20Diagrams/Anagram%20Master's%20Drawings-Mockups-Homepage.drawio.png)
 Created as the Research/Portfolio Project at the end of the _Software Engineering Foundations_ stage of the [ALX Software Engineering Course](https://www.alxafrica.com/software-engineering), Anagram Master is a multiplayer word game that involves rearranging letters from a root word to form new words. 
 
 
