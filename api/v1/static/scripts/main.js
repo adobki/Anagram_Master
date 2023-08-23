@@ -4,16 +4,42 @@
   ============================================================================
 */
 
+// Set headers and data type for all HTTP requests
+$.ajaxSetup({
+    headers: {"Content-Type": "application/json"},
+    dataType: "json"
+});
+
 // Homepage Buttons Actions
 $(".logo").click(()=>{
     window.location.href = "index.htm";
 });
 $("#start").click(()=>{
-    window.location.href = "game.htm";
+    $.post("../onboarding", function(JSON){
+        // Add onboarding window stylesheet
+        const style=document.createElement('link');
+        style.setAttribute("rel", "stylesheet");
+        style.setAttribute("href", "../static/styles/onboarding.css?="+ new Date().getTime());
+        document.head.appendChild(style);
+        // Display onboarding screen in canvas
+        $(".canvas").html(JSON.code);
+        $("#user_name").focus();
+        // Add onboarding window script
+        const script=document.createElement('script');
+        script.src="../static/scripts/onboarding.js?="+ new Date().getTime();
+        document.head.appendChild(script);
+    });
 });
 $("#scores").click(()=>{
     window.location.href = "scores.htm";
 });
+
+
+// Add onboarding window stylesheet (Moved out here to prevent flashing on load)
+const style=document.createElement('link');
+style.setAttribute("rel", "stylesheet");
+style.setAttribute("href", "../static/styles/onboarding.css?="+ new Date().getTime());
+document.head.appendChild(style);
 
 
 // Highscores Buttons Actions
@@ -27,12 +53,6 @@ $("#back").click(()=>{
 if ($("logo_main")){;
     $("#status").addClass("green")
 }
-
-// Set headers and data type for all HTTP requests
-$.ajaxSetup({
-    headers: {'Content-Type': 'application/json'},
-    dataType: 'json'
-});
 
 //// Check for existing script element and delete it if it exists
 //var theme_js = document.getElementById("theme");
