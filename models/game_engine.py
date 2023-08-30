@@ -13,37 +13,25 @@ class Game:
     words = {}
     # err_lvl = None
     last_err = None
-
     host_id = None
-    change_round = 0
+    round_limit = 20
 
-    def __init__(self, words: list = [], scores=['<score>, <name>']):
+    def __init__(self, words: dict = {}, scores: list = ['<score>, <name>']):
         """Initialises Engine."""
-        Game.err_lvl = None
-        # Game.players.append({'somthing': 'self.create_player()'})
-        # self.create_player()
+        self.words = words
+        self.scores = scores
+        # Load round word at start of game
+        Game.words['used'].append(Game.words['words'].pop())
 
     def __setattr__(self, name, value):
         """Performs data validation before setting class attributes"""
-        # self.__dict__[name] = value
-        # if name == 'players':
-        #     if isinstance(value, int) and 1 <= value <= 4:
-        #         Game.players = value
-        #         Game.err_lvl = None
-        #     else:
-        #         Game.err_lvl = -1
-        #         Game.last_err = 'Invalid players! Valid format: 1, 2, 3, 4'
-        #         print(Game.last_err)
-        # elif name == 'words':
         if name == 'words':
-            # if isinstance(value, list) and len(value) > 1 and \
-            #         all(isinstance(word, str) for word in value):
-            if isinstance(value, dict): # and len(value) > 1:
+            if isinstance(value, dict) and len(value) > 1:
                 Game.words = value
                 Game.err_lvl = None
             else:
                 Game.err_lvl = -1
-                Game.last_err = 'Invalid words! Valid format: [{<k>:<val>},...]'
+                Game.last_err = 'Invalid words! Valid format:[{<k>:<val>},...]'
                 print(Game.last_err)
         elif name == 'scores':
             if isinstance(value, list):
@@ -63,7 +51,7 @@ class Game:
 
     def create_player(self, name):
         """Creates a new player object."""
-        session_id = uuid4()
+        session_id = uuid4().__str__()
         if not Game.host_id:
             Game.host_id = session_id
         host_id = Game.host_id
@@ -73,6 +61,8 @@ class Game:
                 'Priority': len(Game.players),
                 'User Name': name,
                 'Score': 0,
+                'round_limit': Game.round_limit,
+                'word': Game.words['used'][-1],
                 'words': {}}
         Game.players.append(data)
         Game.err_lvl = None
@@ -98,27 +88,68 @@ class Game:
         return scores
 
     # def status(self, verbose=False, leaderboard=False):
-    def status(self, verbose: bool = False, turn: int = None, word: str = None):
+    def status(self, turn: int, skip: bool = False, word: str = None,
+               verbose: bool = False):
         """Returns dictionary of Game statistics."""
-        if not Game.change_round and len(Game.words['words']) > 1:
-            Game.words['used'].append(Game.words['words'].pop())
-            Game.change_round = 4 # Should be 2 to match original definition
-        Game.change_round -= 1 # Fix this later to trigger on new game round event
+        # Data validation
+        if not isinstance(turn, int) or turn >= len(Game.players):
+            print({'error': 'Invalid turn!'})
+            return {'error': 'Invalid turn!'}
 
-        # if leaderboard:
-        #     return Game.scores
-        #
+        # Clear previous error state
+        if Game.players[turn].get('error'):
+            Game.players[turn].pop('error')
 
-        if turn and int(turn) < len(Game.words['words']):
-            turn -= 1 # Convert int to list index
-            if word and len(Game.words['used']):
-                round_word = Game.words['used'][-1][0]
-                word = (word.lower(), isAnagram(word, round_word))
-                if round_word in Game.players[turn]['words'].keys():
-                    if word not in Game.players[turn]['words'][round_word]:
-                        Game.players[turn]['words'][round_word].append(word)
+        # Check if words limit reached
+        root_word = Game.words['used'][-1][0]
+        user_words = Game.players[turn]['words'].get(root_word)
+        if user_words:
+            valid = [word for word in user_words if word[1]]
+            if len(valid) >= Game.round_limit:
+                err_msg = 'ERROR: That\'s the last word for this round!'
+                data = Game.players[turn]
+                data['error'] = err_msg
+                print({'error': err_msg})
+                return data
+
+        # Process skip button request
+        if skip:
+            if len(Game.words['words']):
+                Game.words['used'].append(Game.words['words'].pop())
+            else:
+                print({'error': 'ERROR: That\'s the last word for the game!'})
+                return {'error': 'ERROR: That\'s the last word for the game!'}
+
+        # Set current word in each user's data
+        for player in Game.players:
+            player['word'] = Game.words['used'][-1]
+        if skip:
+            return Game.players[turn]
+
+        # Process player's submitted word
+        if word:
+            # Check if given word is the root word for the current round
+            if word.lower() == root_word.lower():
+                err_msg = 'You can\'t use the given word!<br>'\
+                          'Try forming a new word from it instead.'
+                print({'error': f'ERROR: {err_msg}'})
+                return {'error': f'ERROR: {err_msg}'}
+
+            # Check if given word is valid
+            word = (word.lower(), isAnagram(word, root_word))
+            if root_word in Game.players[turn]['words'].keys():
+                if word not in Game.players[turn]['words'][root_word]:
+                    Game.players[turn]['words'][root_word].append(word)
                 else:
-                    Game.players[turn]['words'][round_word] = [word]
+                    print({'error': 'ERROR: Duplicate word! Try another.'})
+                    return {'error': 'ERROR: Duplicate word! Try another.'}
+            else:
+                Game.players[turn]['words'][root_word] = [word]
+
+            # Sort player's submitted words for current root word
+            Game.players[turn]['words'][root_word].sort()
+
+            # Return player's game statistics
             return Game.players[turn]
 
         stats = {'players': Game.players,
@@ -136,6 +167,13 @@ class Game:
             stats['leaderboard'] = Game.scores
         Game.err_lvl = None
         return stats
+
+    def reset(self, words: dict):
+        """Resets the class to start a new game session."""
+        self.words = words
+        Game.words['used'].append(Game.words['words'].pop())
+        Game.players, Game.change_round = [], 0
+        Game.err_lvl = Game.last_err = Game.host_id = None
 
     def __str__(self):
         """String representation of Game statistics for printing."""
