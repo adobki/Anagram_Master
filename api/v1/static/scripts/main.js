@@ -4,40 +4,47 @@
   ============================================================================
 */
 
-// Set headers and data type for all HTTP requests
+// Set headers and data type and URLs for all HTTP requests
+const header = {"Content-Type": "application/json"};
 $.ajaxSetup({
-    headers: {"Content-Type": "application/json"},
+    headers: header,
     dataType: "json"
 });
 
+// Site routes
+const url_home = "../";
+const url_game = "../game";
+const url_onboarding = "../onboarding";
+//const url_scores = "../scores";
+
+// API routes
+const url_init = "../api/v1/init";
+const url_status = "../api/v1/status";
+const url_close = "../api/v1/close";
+
 // Homepage Buttons Actions
 $(".logo").click(()=>{
-    window.location.href = "index.htm";
+    window.location.href = url_home;
 });
 $("#start").click(()=>{
-    $.post("../onboarding", function(JSON){
-        // Add onboarding window stylesheet
-        const style=document.createElement('link');
-        style.setAttribute("rel", "stylesheet");
-        style.setAttribute("href", "../static/styles/onboarding.css?="+ new Date().getTime());
-        document.head.appendChild(style);
+    $.post(url_onboarding, function(JSON){
         // Display onboarding screen in canvas
         $(".canvas").html(JSON.code);
-        $("#user_name").focus();
         // Add onboarding window script
-        const script=document.createElement('script');
-        script.src="../static/scripts/onboarding.js?="+ new Date().getTime();
-        document.head.appendChild(script);
+        const m_script=document.createElement('script');
+        m_script.src="../static/scripts/onboarding.js?="+ new Date().getTime();
+        document.head.appendChild(m_script);
     });
 });
 $("#scores").click(()=>{
-    window.location.href = "scores.htm";
+    window.location.href = url_scores;
 });
 
 
 // Add onboarding window stylesheet (Moved out here to prevent flashing on load)
 const style=document.createElement('link');
 style.setAttribute("rel", "stylesheet");
+style.setAttribute("type", "text/css");
 style.setAttribute("href", "../static/styles/onboarding.css?="+ new Date().getTime());
 document.head.appendChild(style);
 
@@ -50,15 +57,11 @@ $("#back").click(()=>{
 
 // Set Status Indicator State
 //if (window.location.href == "index.htm"){;
-if ($("logo_main")){;
-    $("#status").addClass("green")
-}
-
-//// Check for existing script element and delete it if it exists
-//var theme_js = document.getElementById("theme");
-//if(theme_js) {
-//    document.body.removeChild(theme_js);
-//}
+//if ($("logo_main")){;
+function setStatus (status){
+    $("#status").removeClass("green red orange");
+    $("#status").addClass(status);
+};
 
 // Create new style element and load a style into it
 theme_js = document.createElement("link");
@@ -72,17 +75,10 @@ let time = 15;
 //let ticks = 61;
 let ticks = 1;
 
-//$("body").toggleClass("main");
-//$("header").toggleClass("main");
-//$("footer").toggleClass("main");
-
 console.log(ticks);
 //const myTimer = setInterval(timer, 1000);
 myTimer = setInterval(() => {
-    // Check for existing script element and delete it if it exists
-    let status = document.getElementById("status");
-    $(status).removeClass("green red orange");
-    $(status).toggleClass("green");
+    setStatus("green");
     status.innerHTML = "<p>" + time + "</p>";
 //    console.log(status);
     console.log(" Timer: " + time + "\n Left: " + ticks);
@@ -96,7 +92,3 @@ myTimer = setInterval(() => {
         status.innerHTML = "<p></p>";
     }
 }, 1000);
-
-//    clearTimeout(myTimer);
-
-//myTimer;
