@@ -1,0 +1,115 @@
+/*
+  ============================================================================
+                   Anagram Master's Highscores Header Styles
+  ============================================================================
+*/
+
+header {
+	border-bottom: 1px solid white;
+}
+
+header a, footer a {
+	color: white;
+}
+
+header a:hover, footer a:hover {
+	color: black;
+}
+
+.logo img {
+	background-image: url("../media/logo_white.png");
+}
+
+/*
+  ============================================================================
+                    Anagram Master's Highscores Body Styles
+  ============================================================================
+*/
+
+body {
+	background: rgb(255, 50, 120);
+	color: white;
+}
+
+.main .title {
+	display: block;
+	position: relative;
+	width: 70vw;
+	margin-top: 4vh;
+}
+
+.logo_scores {
+	width: 40vw;
+	padding-right: 2vw;
+	transform: translate(0em);
+}
+
+.main h1 {
+	display: inline-block;
+	position: relative;
+	top: -.4em;
+	font-size: 3.5vw;
+}
+
+button {
+	border: 1px solid rgb(255, 50, 120);
+}
+
+button#back {
+	position: fixed;
+	transform: translate(0);
+	bottom: 8vw;
+	right: 7vw;
+	width: 20vw;
+	background: black;
+}
+
+/*
+.container {
+	/* background: black; *
+	display: inline-block;
+	width: 100%;
+	padding: 2%;
+}
+
+.canvas {
+	/* background: black; *
+	position: fixed;
+	width: 90%;
+	left: 5%;
+	margin: 5em;
+}
+*/
+
+table {
+	display: inline-block;
+	padding: 0 2vw;
+	font-size: 3vh;
+	font-family: Helvetica;
+	font-weight: 100;
+	max-height: 23vh;
+}
+
+td {
+	text-align: right;
+	vertical-align: middle;
+	padding: 1.6vh .5vw;
+}
+
+td:first-of-type {
+	text-align: left;
+	font-weight: 900;
+	padding-right: 1em;
+	max-width: 23vw;
+}
+/*
+td:last-of-type {
+	height: 4em;
+	vertical-align: top;
+}
+
+.tr-link {
+	vertical-align: middle;
+	/* background: blue; */
+}
+*/

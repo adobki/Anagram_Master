@@ -1,0 +1,98 @@
+/*
+  ============================================================================
+                   Anagram Master's Header and Footer Styles
+  ============================================================================
+*/
+
+header {
+	position: fixed;
+	top: 0;
+	height: 5em;
+	border-bottom: 1px solid black;
+}
+
+footer {
+	position: fixed;
+	bottom: -.7em;
+}
+
+footer p {
+	margin: -.75em;
+}
+
+header a, footer a {
+	text-decoration: inherit;
+	color: black;
+}
+
+header a:hover, footer a:hover {
+	color: rgb(247, 63, 82);
+}
+
+.logo {
+	display: inline-block;
+	position: absolute;
+	top: 0em;
+	left: .5em;
+	height: 5em;
+	width: 19em;
+	cursor: pointer;
+}
+
+.logo img {
+	width: 100%;
+	height: 100%;
+	background: url("../media/logo.png") -.5em/cover no-repeat;
+	clip-path: inset(2% 1%);
+}
+
+.menu {
+	display: inline-block;
+	position: absolute;
+	right: 11vh;
+	top: 3.7vh;
+	font-size: 2vw;
+	line-height: 2vh;
+}
+
+.menu li {
+	display: inline-block;
+	padding-left: 1em;
+}
+
+#status {
+	position: absolute;
+	display: inline-block;
+	border-radius: 50%;
+	top: .5em;
+	right: .5em;
+	width: 4em;
+	height: 4em;
+	background: rgba(0, 0, 0, .2);
+	border: 2px solid white;
+}
+
+#status p {
+	padding: .4em 0;
+	color: white;
+	text-align: center;
+	font-weight: bold;
+	font-size: 2.25em;
+}
+
+#status.green {
+	background: rgba(0, 155, 0, 1) !important;
+}
+
+#status.orange {
+	background: orange !important;
+}
+
+#status.red {
+	background: red !important;
+}
+
+.credits {
+	font-style: italic;
+	text-align: center;
+}

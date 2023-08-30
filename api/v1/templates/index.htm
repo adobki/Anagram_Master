@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Welcome to Anagram Master</title>
+    <link rel="shortcut icon" type=”image/x-icon” href="../static/media/logo_icon.png">
+    <link rel="stylesheet" type="text/css" href="../static/styles/reset.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/base.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/main.css?{{ cache_id }}">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script defer src="../static/scripts/main.js?{{ cache_id }}"></script>
+  </head>
+  <body>
+    <header class="container">
+      <div class="logo"><img ></div>
+      <nav class="menu">
+        <ul>
+          <li><a href="index.htm">Home</a></li>
+          <li><a href="scores.htm">Highscores</a></li>
+          <li><a href="javascript:void(0);">Help</a></li>
+          <li><a href="javascript:void(0);">About</a></li>
+        </ul>
+      </nav>
+      <div id="status"></div>
+    </header>
+    <section class="canvas">
+      <div class="main">
+        <div class="logo_main"></div>
+        <p> Welcome to Anagram Master! An engaging multiplayer word game where you could get lost for hours rearranging letters from a root word to form new words in a fun and engaging way.</p>
+        <div class="controls">
+          <button type="button" id="start">Start New Game</button>
+          <button type="button" id="scores">View Highscores</button>
+        </div>
+      </div>
+    </section>
+    <footer class="container">
+      <p class="credits">Anagram Master. Copyright © 2023, Donald Ajaps.</p>
+    </footer>
+  </body>
+</html>

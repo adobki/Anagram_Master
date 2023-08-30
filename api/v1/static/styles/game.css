@@ -1,0 +1,158 @@
+/*
+  ============================================================================
+                       Anagram Master's Game Header Styles
+  ============================================================================
+*/
+
+header {
+	border-bottom: 1px solid rgb(255, 50, 120);
+}
+
+header a, footer a {
+	color: rgb(255, 50, 120);
+}
+
+header a:hover, footer a:hover {
+	color: white;
+}
+
+.logo img {
+	background-image: url("../media/logo.png");
+}
+
+/*
+  ============================================================================
+                        Anagram Master's Game Body Styles
+  ============================================================================
+*/
+
+body {
+	background: black;
+	color: white;
+}
+
+.game {
+	position: fixed;
+	width: 100vw;
+	height: 88vh;
+	top: 5em;
+	left: 0;
+	/* background: rgba(255, 50, 120, .1); */
+	text-align: center;
+}
+
+#root {
+	position: relative;
+	width: 110%;
+	height: 110%;
+	left: -5%;
+	top: 7vw;
+	border: .6vw double white;
+	margin: -2vw 0;
+}
+
+#root_word {
+	position: relative;
+	top: -3.8vw;
+	background: white;
+	color: black;
+	border-radius: 100px;
+	width: 50%;
+	padding-top: .5vw;
+	height: 7vw;
+	font-size: 5vw;
+}
+
+#used {
+	/*position: relative;
+	top: 31vh;
+	min-height: 5vh;
+	top: -1em;*/
+	position: fixed;
+	top: 30vh;
+	left: 5vw;
+	border: 3px solid white;
+	border-radius: 40px;
+	width: 90vw;
+	height: 50vh;
+	color: white;
+	padding: 1% 4% 2% 4%;
+	display: inline-block;
+	font-size: 2vw;
+	text-align: left;
+}
+
+#used legend {
+	width: 67.5%;
+	border: 3px solid white;
+	border-radius: 100px;
+	line-height: 4vw;
+	text-align: center;
+}
+
+#controls {
+	position: fixed;
+	bottom: -3vh;
+	left: 21vw;
+}
+
+#used p {
+	position: relative;
+	display: inline-block;
+	width: 14vw;
+	margin: 1%;
+	margin-bottom: 2%;
+	text-align: center;
+}
+
+#word {
+	text-align: center;
+	font-size: 3vw;
+	font-weight: 100;
+	font-style: italic;
+	line-height: 8vh;
+	margin-top: 3vh;
+	margin-left: -53vw;
+	padding-left: 3vw;
+	background: url("../media/logo_icon.png") 0 40%/7.5vh no-repeat;
+	background-color: white;
+	border-radius: 100px;
+	border: 1px solid rgb(220, 0, 100);
+	outline: none;
+}
+
+#word:focus {
+	background-image: url("../media/logo_icon_white.png");
+	background-color: rgb(247, 63, 82);
+	color: white;
+}
+
+button {
+	position: relative;
+	font-size: 3vw;
+	top: -8.4vh;
+	left: -17.5vw;
+	width: 23vw;
+	height: 8vh;
+	min-width: 3em;
+	background: rgb(0, 50, 220);
+	background: linear-gradient(to right bottom, rgb(0, 50, 220), rgb(0, 50, 150));
+}
+
+#skip {
+	top: -9vh;
+	font-size: 2vw;
+	left: -5vw;
+	width: 13vw;
+	background: rgb(0, 155, 0);
+	background: linear-gradient(to right bottom, rgb(0, 155, 0), rgb(25, 100, 25));
+}
+
+#quit {
+	top: -9vh;
+	font-size: 2vw;
+	left: 5.8vw;
+	width: 7vw;
+	background: rgb(220, 0, 0);
+	background: linear-gradient(to right bottom, rgb(220, 0, 0), rgb(150, 0, 0));
+}

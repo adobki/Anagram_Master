@@ -1,0 +1,92 @@
+/*
+  ============================================================================
+                    Anagram Master's Onboarding Body Styles
+  ============================================================================
+*/
+
+#onboarding {
+	position: fixed;
+	width: 80vw;
+	left: 10vw;
+	top: 40vh;
+}
+
+.prompt p {
+	width: 80vw;
+	font-size: 3vw;
+	line-height: 6vh;
+	text-align: center;
+}
+
+.prompt p:last-of-type {
+	font-weight: 100;
+	font-size: 1.25vw;
+	font-style: italic;
+	line-height: 3vh;
+}
+
+#user_name {
+	text-align: center;
+	font-weight: 100;
+	margin-top: 3vh;
+	margin-bottom: 1.5vh;
+	font-size: 3vw;
+	font-style: italic;
+	line-height: 8vh;
+	padding-left: 1vw;
+	background: url("../media/logo_icon.png") 0 40%/7.5vh no-repeat;
+	border-radius: 50px;
+	border: 1px solid rgb(220, 0, 100);
+	outline: none;
+}
+
+#user_name:focus {
+	background-image: url("../media/logo_icon_white.png");
+	background-color: rgb(247, 63, 82);
+	color: white;
+}
+
+#submit {
+	position: fixed;
+	bottom: 15vh;
+	left: 30vw;
+	width: 30vw;
+	min-width: 9em;
+	transform: translate(0);
+	background: rgb(0, 50, 220);
+	background: linear-gradient(to right bottom, rgba(0, 50, 220, 1), rgba(0, 50, 150, 1));
+}
+
+#error {
+	box-sizing: border-box;
+	width: 60vw;
+	border-radius: 50px;
+	border: 0;
+	background: linear-gradient(to right bottom, rgb(247, 63, 82), rgb(200, 50, 50));
+}
+
+#error::backdrop {
+	background-color: rgba(24,0,0, .9);
+}
+
+#error button, #error p {
+	display: inline-block;
+	transform: translate(3%, 0);
+	text-align: center;
+	font-size: 2vw;
+	color: white;
+	line-height: 4vw;
+	top: 0;
+	margin: 0;
+	margin-top: 3vh;
+	padding: 0;
+	width: 95%;
+}
+
+#error button {
+	transform: scale(75%) translate(25vw, 0);
+	width: 30%;
+	margin-bottom: 3vh;
+	background: white;
+	color: black;
+}
