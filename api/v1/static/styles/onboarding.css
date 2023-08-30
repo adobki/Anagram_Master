@@ -33,6 +33,7 @@
 	font-size: 3vw;
 	font-style: italic;
 	line-height: 8vh;
+	padding-left: 1vw;
 	background: url("../media/logo_icon.png") 0 40%/7.5vh no-repeat;
 	border-radius: 50px;
 	border: 1px solid rgb(220, 0, 100);

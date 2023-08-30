@@ -11,7 +11,7 @@
 }
 
 body {
-	background: rgba(245, 245, 245, 1);
+	background: white;
 	color: black;
 	font-size: 1em;
 	text-align: justify;
@@ -63,7 +63,7 @@ body {
 
 button {
 	transform: translate(150%, 0);
-	border-radius: 50px;
+	border-radius: 100px;
 	border: 1px solid white;
 	width: 35%;
 	height: 3em;
@@ -72,6 +72,7 @@ button {
 	color: white;
 	background: rgb(220, 0, 100);
 	background: linear-gradient(to right bottom, rgba(247, 63, 82, 1), rgba(200, 50, 50, 1));
+	cursor: pointer;
 }
 
 button#start {

@@ -43,15 +43,16 @@ header a:hover, footer a:hover {
 	width: 100%;
 	height: 100%;
 	background: url("../media/logo.png") -.5em/cover no-repeat;
-	clip-path: inset(1%);
+	clip-path: inset(2% 1%);
 }
 
 .menu {
 	display: inline-block;
 	position: absolute;
-	right: 4.5em;
-	top: 1.1em;
-	font-size: 1.5em;
+	right: 11vh;
+	top: 3.7vh;
+	font-size: 2vw;
+	line-height: 2vh;
 }
 
 .menu li {
@@ -68,6 +69,7 @@ header a:hover, footer a:hover {
 	width: 4em;
 	height: 4em;
 	background: rgba(0, 0, 0, .2);
+	border: 2px solid white;
 }
 
 #status p {
