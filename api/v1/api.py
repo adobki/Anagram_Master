@@ -137,7 +137,7 @@ def gameplay():
 @app.route('/scores', strict_slashes=False)
 def scores():
     """ Anagram Master Highscores page """
-    return render_template('scores.htm', cache_id=uuid.uuid4().__str__())
+    return render_template('scores.htm', cache_id=uuid4().__str__())
 
 
 @app.route('/<page>.htm')
