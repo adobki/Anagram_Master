@@ -100,18 +100,6 @@ class Game:
         if Game.players[turn].get('error'):
             Game.players[turn].pop('error')
 
-        # Check if words limit reached
-        root_word = Game.words['used'][-1][0]
-        user_words = Game.players[turn]['words'].get(root_word)
-        if user_words:
-            valid = [word for word in user_words if word[1]]
-            if len(valid) >= Game.round_limit:
-                err_msg = 'ERROR: That\'s the last word for this round!'
-                data = Game.players[turn]
-                data['error'] = err_msg
-                print({'error': err_msg})
-                return data
-
         # Process skip button request
         if skip:
             if len(Game.words['words']):
@@ -136,10 +124,31 @@ class Game:
                 return {'error': f'ERROR: {err_msg}'}
 
             # Check if given word is valid
-            word = (word.lower(), isAnagram(word, root_word))
+            words = Game.words['words']
+            valid = False
+            print('WORD CHECKER: ', isAnagram(word, root_word), word in words,
+                  f'[{word}]')
+            if isAnagram(word, root_word) and word in words:
+                valid = True
+                # Update player's score
+                bonus = 10 if len(word) == len(root_word) else 0
+                score = 10 * len(word) / len(root_word) + bonus
+                Game.players[turn]['Score'] += round(round(score, 1))
+            else:
+                # Penalise player for invalid input
+                Game.players[turn]['Score'] -= 2
+            word = (word, valid)
             if root_word in Game.players[turn]['words'].keys():
                 if word not in Game.players[turn]['words'][root_word]:
                     Game.players[turn]['words'][root_word].append(word)
+                    # Check if words limit reached
+                    user_words = Game.players[turn]['words'].get(root_word)
+                    if user_words:
+                        valid = [word for word in user_words if word[1]]
+                        if len(valid) >= Game.round_limit:
+                            # Give bonus for reaching words limit, then skip
+                            Game.players[turn]['Score'] += 50
+                            self.status(turn, skip=True)
                 else:
                     print({'error': 'ERROR: Duplicate word! Try another.'})
                     return {'error': 'ERROR: Duplicate word! Try another.'}
@@ -168,10 +177,11 @@ class Game:
         Game.err_lvl = None
         return stats
 
-    def reset(self, words: dict):
+    def reset(self, words: dict, scores: list):
         """Resets the class to start a new game session."""
         self.words = words
         Game.words['used'].append(Game.words['words'].pop())
+        self.scores = scores
         Game.players, Game.change_round = [], 0
         Game.err_lvl = Game.last_err = Game.host_id = None
 
@@ -207,8 +217,8 @@ class Game:
 
 
 def isAnagram(word: str, root: str) -> bool:
-    """Function checks if a user's word can be formed
-    using only the letters from the given root word.
+    """Function checks if a user's word can be formed using only
+    the letters from the given root word, provided word != root.
 
     :param word: Letters to be checked in root.
     :param root: Should contain all letters in word.
@@ -217,6 +227,8 @@ def isAnagram(word: str, root: str) -> bool:
     """
 
     if not isinstance(word, str) or not isinstance(root, str):
+        return False
+    if word.lower() == root.lower():
         return False
 
     word_idx = root_idx = 0

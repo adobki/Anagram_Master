@@ -15,7 +15,7 @@ $.ajaxSetup({
 const url_home = "../";
 const url_game = "../game";
 const url_onboarding = "../onboarding";
-//const url_scores = "../scores";
+const url_scores = "../scores";
 
 // API routes
 const url_init = "../api/v1/init";
@@ -49,12 +49,6 @@ style.setAttribute("href", "../static/styles/onboarding.css?="+ new Date().getTi
 document.head.appendChild(style);
 
 
-// Highscores Buttons Actions
-$("#back").click(()=>{
-    history.back();
-});
-
-
 // Set Status Indicator State
 //if (window.location.href == "index.htm"){;
 //if ($("logo_main")){;
@@ -78,7 +72,7 @@ let ticks = 1;
 console.log(ticks);
 //const myTimer = setInterval(timer, 1000);
 myTimer = setInterval(() => {
-    setStatus("green");
+//    setStatus("green");
     status.innerHTML = "<p>" + time + "</p>";
 //    console.log(status);
     console.log(" Timer: " + time + "\n Left: " + ticks);
@@ -88,7 +82,7 @@ myTimer = setInterval(() => {
     }
     if (ticks == 0) {
         clearInterval(myTimer);
-//        $(status).removeClass("green red orange");
+//        setStatus("");
         status.innerHTML = "<p></p>";
     }
 }, 1000);

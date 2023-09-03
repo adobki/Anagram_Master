@@ -40,7 +40,7 @@ function displayWords(){
                 used.html(used.html() + `<p>${current}</p>`);
                 round_words++;
                 // Clear input box if inputted word is valid
-                if (current == $("#word").val()){
+                if (current == $("#word").val().toLowerCase()){
                     $("#word").val("");
                 }
             } else {
@@ -104,6 +104,13 @@ function updateWords(JSON){
     } else {
         used_words = [];
     }
+
+    // Clear input box if skip was triggered on round words_limit reached
+    if (JSON.skipped){
+        $("#word").val("");
+    }
+
+    // Display loaded words
     displayWords();
 }
 
@@ -143,7 +150,7 @@ $("#root").on("submit", function(event){
     header["quit"] = false;
     // Submit new word from user
     $.post(url_status, JSON.stringify(header), function(JSON){
-        if (!JSON.error){
+        if (JSON.status){
             // Update words
             updateWords(JSON);
             // Set status based
@@ -168,6 +175,8 @@ $("#skip").click(()=>{
     $.post(url_status, JSON.stringify(header), function(JSON){
         if (!JSON.error){
             updateWords(JSON);
+            // Clear input box
+            $("#word").val("");
         } else {
             displayError(JSON.error);
             console.log("ERROR! ", JSON);
@@ -179,15 +188,12 @@ $("#skip").click(()=>{
 $("#quit").click(()=>{
     header["quit"] = true;
     console.log("Quit button clicked!");
+    displayError("Game Over! Refresh page or go back to homepage");
     $.post(url_close, JSON.stringify(header), function(JSON){
-        console.log(JSON);
         // Begin off-boarding if quit action was successful
-//        if (JSON.status){
-//            window.location.href = "index.htm";
-//            return;
-//        } else {
-        {
-            displayError("Game Over! Refresh page or go back to homepage");
+        if (!JSON.error){
+            // Load highscores page
+            window.location.href = url_scores;
         }
     });
 });

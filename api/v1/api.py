@@ -20,14 +20,8 @@ def not_found(e):
 
 
 @app.route('/api/v1/init', methods=['GET'], strict_slashes=False)
-def init(name='Brendan Cardigan', leaderboard=False):
+def init(name):
     """ Anagram Master API init route. Triggers on-boarding events """
-    if leaderboard:
-        if leaderboard.lower() == 'scores':
-            return jsonify(game.scores)
-        else:
-            return not_found(None)
-
     # Truncate player if it's too long (>15 characters)
     name = name[:15] if len(name) > 15 else name
 
@@ -82,9 +76,15 @@ def close():
     if session_id and session_id in session_ids_all:
         print(f'{session_id} is valid!')
         if is_quit:
-            game.reset(models.getWords())
+            # Update highscores if user has a high score
+            turn = session_ids_all.index(session_id)
+            score = game.players[turn].get('Score')
+            name = game.players[turn].get('User Name')
+            models.addScore(name, score)
+            # Reset game state/data
+            game.reset(models.getWords(), models.getScores())
             print('{0} Game Engine Reset!{0}'.format('\n' + '-\t' * 5 + '\n'))
-            return jsonify({'status': True})
+            return jsonify({'score': (score, name)})
         print('{0}  Reset Failed! [#403]{0}'.format('\n' + '-\t' * 6 + '\n'))
         return jsonify({'error': 'Invalid quit command'}), 403
     print('{0}  Reset Failed! [#403]{0}'.format('\n' + '-\t' * 6 + '\n'))
@@ -134,9 +134,12 @@ def gameplay():
     # return not_found(None)
 
 
-@app.route('/scores', strict_slashes=False)
+@app.route('/scores', methods=['GET', 'POST'], strict_slashes=False)
 def scores():
     """ Anagram Master Highscores page """
+    # Return scores data if POST request method is used, else scores page
+    if request.method == 'POST':
+        return jsonify({'scores': game.scores})
     return render_template('scores.htm', cache_id=uuid4().__str__())
 
 
