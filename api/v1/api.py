@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 """ Contains Anagram Master's API Flask app """
-
-from flask import Flask, jsonify, make_response, redirect, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request
 from uuid import uuid4
 import models
 
@@ -38,17 +37,13 @@ def status():
     """ Anagram Master API status route. This is the main/gameplay route """
     if request.method == 'GET':
         data = game.status(turn=0)
-        print(f'data = {data}')
         return jsonify(data)
     else:
-        print(request.get_json())
         is_skip = request.get_json().get('new_word')
         word = request.get_json().get('word')
         session_id = request.get_json().get('Session ID')
         session_ids_all = [player.get('Session ID') for player in game.players]
-        print(f'All IDs: [{len(game.players)}]:{session_ids_all}')
         if session_id and session_id in session_ids_all:
-            print(f'{session_id} is valid!')
             turn = session_ids_all.index(session_id)
             if is_skip:
                 data = game.status(turn=turn, skip=True)
@@ -72,9 +67,7 @@ def close():
     is_quit = request.get_json().get('quit')
     session_id = request.get_json().get('Session ID')
     session_ids_all = [player.get('Session ID') for player in game.players]
-    print(f'All IDs: [{len(game.players)}]:{session_ids_all}')
     if session_id and session_id in session_ids_all:
-        print(f'{session_id} is valid!')
         if is_quit:
             # Update highscores if user has a high score
             turn = session_ids_all.index(session_id)
@@ -88,7 +81,6 @@ def close():
         print('{0}  Reset Failed! [#403]{0}'.format('\n' + '-\t' * 6 + '\n'))
         return jsonify({'error': 'Invalid quit command'}), 403
     print('{0}  Reset Failed! [#403]{0}'.format('\n' + '-\t' * 6 + '\n'))
-    # print(f'{session_id} is invalid!')
     return jsonify({'error': 'Invalid Session ID'}), 403
 
 
@@ -121,17 +113,12 @@ def gameplay():
     # Print custom error if wrong request method is used
     if request.method == 'GET':
         return not_found(None)
-    print(request.get_json())
     session_id = request.get_json().get('Session ID')
     session_ids_all = [player.get('Session ID') for player in game.players]
-    print(f'All IDs: [{len(game.players)}]:{session_ids_all}')
     if session_id and session_id in session_ids_all:
-        print(f'{session_id} is valid!')
-        # return status()
         return jsonify({"code": render_template('game.htm')})
     print(f'{session_id} is invalid!')
     return jsonify({'error': '401: Unauthorised!'})
-    # return not_found(None)
 
 
 @app.route('/scores', methods=['GET', 'POST'], strict_slashes=False)

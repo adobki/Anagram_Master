@@ -4,9 +4,6 @@
   ============================================================================
 */
 
-console.log("header: ", header);
-console.log("round_limit: ", round_limit, "\n", "words_limit: ", words_limit);
-
 // Prevent user from leaving game screen accidentally
 window.onbeforeunload = function() {
    // Return any value to trigger alert message
@@ -50,7 +47,9 @@ function displayWords(){
                     $("#word").val("");
                 }
             } else {
-                console.log(`${current} is invalid!`);
+                if (current == $("#word").val().toLowerCase()){
+                    console.log(`${current} is invalid!`);
+                }
             }
         });
     }
@@ -98,11 +97,6 @@ function loadUserWord(){
 
 // Update words then displays them on game screen
 function updateWords(JSON){
-
-    console.log(JSON);
-    console.log(" round_limit: ", round_limit, "\n", "words_limit: ", words_limit,
-                "\n", "round_words: ", round_words);
-
     root_word = JSON["word"];
     used = JSON["words"][root_word];
     if (used){
@@ -204,22 +198,3 @@ $("#quit").click(()=>{
         }
     });
 });
-
-/*
-// Resize words box based on word length
-// Max root word length = 16?
-// Max used words per round = 20?
-// Move everything up as #used height increases?
-// Alignment of used=center while words <= 5 else left?
-// Change word.attr("pattern", `[a-z]{2,$(word.length)}`
-// Try vmin and vmax as an alternative to vw/vh
-// Try rem too in place of em for places with resized fonts
-// isAnagram tweak: if word == root: False
-let max_length = 0
-
-onWordLoad
-if (word.length > max_length) {
-    max_length = word.length;
-    $("#used p").css("width": `$(max_length + 4)vw` ;
-}
-*/

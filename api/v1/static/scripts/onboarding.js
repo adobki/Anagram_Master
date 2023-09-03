@@ -59,7 +59,6 @@ $("#onboarding").on("submit", function(event){
         dialog.showModal();
     } else {
         header["User Name"] = user_name;
-        console.log(header);
         $.post(url_home, JSON.stringify(header), function(JSON){
             // Check if new player was created successfully and start game
             if (JSON.status){

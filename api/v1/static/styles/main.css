@@ -15,7 +15,6 @@ body {
 	color: black;
 	font-size: 1em;
 	text-align: justify;
-	/*		For responsive design, change all em to vw/vh then tweak		*/
 	font-family: Lato, Montserrat, Verdana,
 				 Helvetica, Arial, sans-serif;
 }

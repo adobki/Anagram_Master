@@ -40,10 +40,6 @@ def getWords():
     words = {'words': [word.lower().strip() for word in words],
              'used': []}
     return words
-    # live_definition = 'Happening currently as opposed to previously'
-    # i for live = 220040
-    # words['words'][i].append(live_definition)
-    # print(words['words'][220040])
 
 
 def newGame():

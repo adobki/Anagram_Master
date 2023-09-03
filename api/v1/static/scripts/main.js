@@ -50,39 +50,7 @@ document.head.appendChild(style);
 
 
 // Set Status Indicator State
-//if (window.location.href == "index.htm"){;
-//if ($("logo_main")){;
 function setStatus (status){
     $("#status").removeClass("green red orange");
     $("#status").addClass(status);
 };
-
-// Create new style element and load a style into it
-theme_js = document.createElement("link");
-theme_js.rel = 'stylesheet';
-theme_js.href = 'styles/game.css';
-theme_js.id = "theme";
-//document.head.appendChild(theme_js);
-
-// reWord()
-let time = 15;
-//let ticks = 61;
-let ticks = 1;
-
-console.log(ticks);
-//const myTimer = setInterval(timer, 1000);
-myTimer = setInterval(() => {
-//    setStatus("green");
-    status.innerHTML = "<p>" + time + "</p>";
-//    console.log(status);
-    console.log(" Timer: " + time + "\n Left: " + ticks);
-    time--, ticks--;
-    if (time == 0) {
-        time = 15;
-    }
-    if (ticks == 0) {
-        clearInterval(myTimer);
-//        setStatus("");
-        status.innerHTML = "<p></p>";
-    }
-}, 1000);

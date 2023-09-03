@@ -64,23 +64,6 @@ button#back {
 	background: black;
 }
 
-/*
-.container {
-	/* background: black; *
-	display: inline-block;
-	width: 100%;
-	padding: 2%;
-}
-
-.canvas {
-	/* background: black; *
-	position: fixed;
-	width: 90%;
-	left: 5%;
-	margin: 5em;
-}
-*/
-
 table {
 	display: inline-block;
 	padding: 0 2vw;
@@ -102,14 +85,3 @@ td:first-of-type {
 	padding-right: 1em;
 	max-width: 23vw;
 }
-/*
-td:last-of-type {
-	height: 4em;
-	vertical-align: top;
-}
-
-.tr-link {
-	vertical-align: middle;
-	/* background: blue; */
-}
-*/

@@ -23,7 +23,6 @@ $("#back").click(()=>{
 $(window).ready(function(){
     $.post(url_scores, function(JSON){
         if (JSON.scores){
-            console.log("scores: ", JSON.scores);
             const list_a = $("#scores_a");
             const list_b = $("#scores_b");
             list_a.text(""), list_b.text("");

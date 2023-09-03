@@ -1,19 +1,15 @@
 #!/usr/bin/python3
 """ Contains Game engine class and word checker isAnagram function """
-# NOTE: Highscores name length must be <= 15 when entered by user
-
 from random import shuffle
 from uuid import uuid4
 
 
-# class Engine(Game):
 class Game:
     """Class used to manage game engine data."""
     players = []
     scores = None
     words = {}
     word_index = 0
-    # err_lvl = None
     last_err = None
     host_id = None
     round_limit = 20
@@ -73,26 +69,6 @@ class Game:
         Game.err_lvl = None
         return data
 
-    def print_scores(self):
-        """Prints the stored player highscores."""
-        if not Game.scores:
-            return
-        scores = ['\n' + ('- ' * 15)]
-        scores += [('- ' * 3) + ' Anagram  Master  ' + ('- ' * 3)]
-        scores += [('- ' * 3) + '    Highscores    ' + ('- ' * 3)]
-        scores += ['|     PLAYER      |  SCORE  |']
-        scores += [('  -   ' * 5)]
-        for score in Game.scores:
-            score = (score[0], score[1][:15]) if len(score[1]) > 15 else score
-            scores += [f'| {score[1]:16s}|   {int(score[0]):5d} |']
-        scores += [('- ' * 15)]
-        scores = '\n'.join(str(item) for item in scores)
-        # scores = '\n'.join(map(str, scores))
-        print(scores.__str__())
-        Game.err_lvl = None
-        return scores
-
-    # def status(self, verbose=False, leaderboard=False):
     def status(self, turn: int, skip: bool = False, word: str = None,
                verbose: bool = False):
         """Returns dictionary of Game statistics."""
@@ -140,8 +116,6 @@ class Game:
             # Check if given word is valid
             words = Game.words['words']
             valid = False
-            print('WORD CHECKER: ', isAnagram(word, root_word), word in words,
-                  f'[{word}]')
             if isAnagram(word, root_word) and word in words:
                 valid = True
                 # Update player's score
@@ -172,24 +146,8 @@ class Game:
             # Sort player's submitted words for current root word
             Game.players[turn]['words'][root_word].sort()
 
-            # Return player's game statistics
-            return Game.players[turn]
-
-        stats = {'players': Game.players,
-                 'players_count': len(Game.players),
-                 'word': Game.words['words'][-1],
-                 'words_count': len(Game.words['words']),
-                 'used': Game.words['used'],
-                 'used_count': len(Game.words['used']),
-                 'leaderboard_count': len(Game.scores)}
-        if Game.last_err:
-            stats['LAST ACTION'] = "Failed!" if Game.err_lvl else "Passed!",
-            stats['LAST ERROR'] = Game.last_err
-        if verbose:
-            stats['words'] = Game.words['words']
-            stats['leaderboard'] = Game.scores
-        Game.err_lvl = None
-        return stats
+        # Return player's game statistics
+        return Game.players[turn]
 
     def reset(self, words: dict, scores: list):
         """Resets the class to start a new game session."""
@@ -279,15 +237,6 @@ def isAnagram(word: str, root: str) -> bool:
             word_idx += 1
         root_idx += 1
     return True if word_idx == len(word) else False
-    # i, idx = len(word) - 1, len(root) - 1
-    # while i >= 0 and idx >= 0:
-    #     if word[i] == root[idx]:
-    #         print(i, word[i], root[idx], idx, True)
-    #         i -= 1
-    #     else:
-    #         print(i, word[i], root[idx], idx, False)
-    #     idx -= 1
-    # print('1 Success!') if i == -1 else print('1 Error!')
 
 
 if __name__ == '__main__':
@@ -299,27 +248,3 @@ if __name__ == '__main__':
 
     print(f'{worded}\n{rooted}\n')
     print('Success!') if isAnagram(worded, rooted) else print('Error!')
-
-    # g = Game()
-    # # s = Engine()
-    # z = Game()
-    # g.bro = 2
-    # print(g.bro)
-    # g.create_player()
-    # print('g.players = ', g.players)
-    # g.players = 4
-    # print('\t\t\t\tg.players = ', g.players)
-    # print('g.scores = ', g.scores)
-    # g.words = 234
-    # print('\t\t\t\tg.words = ', g.words)
-    # g.words = [234]
-    # print('\t\t\t\tg.words = ', g.words)
-    # g.words = ['Beans', 'Dodo', 'Platinum']
-    # print('\t\t\t\tg.words = ', g.words)
-    # print(f'z.players = {z.players} | z.words = {z.words}')
-    # g.scores = [(17, 'Bolter'), (1998, 'Fred'), (333, '1234567890123456789')]
-    # g.scores = 12
-    # print(g)
-    # g.players = 22
-    # g.print_scores()
-    # print(g)
