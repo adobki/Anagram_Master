@@ -2,6 +2,7 @@
 """ Contains Game engine class and word checker isAnagram function """
 # NOTE: Highscores name length must be <= 15 when entered by user
 
+from random import shuffle
 from uuid import uuid4
 
 
@@ -11,6 +12,7 @@ class Game:
     players = []
     scores = None
     words = {}
+    word_index = 0
     # err_lvl = None
     last_err = None
     host_id = None
@@ -21,7 +23,10 @@ class Game:
         self.words = words
         self.scores = scores
         # Load round word at start of game
-        Game.words['used'].append(Game.words['words'].pop())
+        shuffle(Game.words['words'])
+        i = getWordIndex(Game.words['words'])
+        Game.words['used'].append(Game.words['words'][i])
+        Game.word_index = i + 1
 
     def __setattr__(self, name, value):
         """Performs data validation before setting class attributes"""
@@ -96,14 +101,21 @@ class Game:
             print({'error': 'Invalid turn!'})
             return {'error': 'Invalid turn!'}
 
-        # Clear previous error state
+        # Clear previous error and skip states
         if Game.players[turn].get('error'):
             Game.players[turn].pop('error')
+        if Game.players[turn].get('skipped'):
+            Game.players[turn].pop('skipped')
 
         # Process skip button request
+        words = Game.words['words']
+        i = Game.word_index
         if skip:
-            if len(Game.words['words']):
-                Game.words['used'].append(Game.words['words'].pop())
+            if len(words[i:]) > 1:
+                i = getWordIndex(words[i:]) + i
+                Game.words['used'].append(words[i])
+                Game.word_index = i + 1
+                Game.players[turn]['skipped'] = True
             else:
                 print({'error': 'ERROR: That\'s the last word for the game!'})
                 return {'error': 'ERROR: That\'s the last word for the game!'}
@@ -115,9 +127,11 @@ class Game:
             return Game.players[turn]
 
         # Process player's submitted word
+        root_word = Game.words['used'][-1]
         if word:
+            word = word.lower()
             # Check if given word is the root word for the current round
-            if word.lower() == root_word.lower():
+            if word == root_word.lower():
                 err_msg = 'You can\'t use the given word!<br>'\
                           'Try forming a new word from it instead.'
                 print({'error': f'ERROR: {err_msg}'})
@@ -180,10 +194,14 @@ class Game:
     def reset(self, words: dict, scores: list):
         """Resets the class to start a new game session."""
         self.words = words
-        Game.words['used'].append(Game.words['words'].pop())
         self.scores = scores
         Game.players, Game.change_round = [], 0
         Game.err_lvl = Game.last_err = Game.host_id = None
+        # Load round word at start of game
+        shuffle(Game.words['words'])
+        i = getWordIndex(Game.words['words'])
+        Game.words['used'].append(Game.words['words'][i])
+        Game.word_index = i + 1
 
     def __str__(self):
         """String representation of Game statistics for printing."""
@@ -214,6 +232,29 @@ class Game:
         """Prevents error when unknown attribute is requested."""
         print(f'{item} is not a valid attribute of {self.__class__.__name__}')
         return None
+
+
+def getWordIndex(words: list):
+    """
+    Returns the index of the first word in a given words list that meets the
+    following requirements:
+
+    * LENGTH: word must have between 9 and 16 characters
+
+    * UNIQUE: index is unique to the current session (i.e. not in used list)
+
+    :param words: Given words list.
+    :return: Index of first word that meets requirements,
+             0 otherwise.
+    """
+    i = 0
+    for num, word in enumerate(words):
+        if 8 < len(word) < 17:
+            i = num
+            break
+    print(f'Tried {i} time(s). Current index is {Game.word_index + i} = '
+          f'{words[i]}.')
+    return i
 
 
 def isAnagram(word: str, root: str) -> bool:

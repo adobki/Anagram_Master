@@ -97,7 +97,7 @@ function updateWords(JSON){
     console.log(" round_limit: ", round_limit, "\n", "words_limit: ", words_limit,
                 "\n", "round_words: ", round_words);
 
-    root_word = JSON["word"][0];
+    root_word = JSON["word"];
     used = JSON["words"][root_word];
     if (used){
         used_words = used;

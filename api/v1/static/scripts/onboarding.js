@@ -58,9 +58,9 @@ $("#onboarding").on("submit", function(event){
             if (JSON.status){
                 header["Session ID"] = JSON["Session ID"];
                 // Store loaded words
-                root_word = JSON["word"][0];
                 round_limit = JSON["round_limit"] - 1;
                 words_limit = JSON["round_limit"];
+                root_word = JSON["word"];
                 used = JSON["words"][root_word];
                 if (used){
                     used_words = used;
