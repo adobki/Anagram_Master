@@ -7,6 +7,12 @@
 console.log("header: ", header);
 console.log("round_limit: ", round_limit, "\n", "words_limit: ", words_limit);
 
+// Prevent user from leaving game screen accidentally
+window.onbeforeunload = function() {
+   // Return any value to trigger alert message
+   return true;
+};
+
 // Dialog box and function for displaying errors
 dialog = document.getElementById("error");
 dialog_txt = $("dialog p");
@@ -192,7 +198,8 @@ $("#quit").click(()=>{
     $.post(url_close, JSON.stringify(header), function(JSON){
         // Begin off-boarding if quit action was successful
         if (!JSON.error){
-            // Load highscores page
+            // Disable page exit popup/warning and load highscores page
+            window.onbeforeunload = undefined;
             window.location.href = url_scores;
         }
     });

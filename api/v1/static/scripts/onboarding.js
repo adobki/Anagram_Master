@@ -13,6 +13,13 @@ let words_limit = 0;
 // Dialog box for displaying errors
 let dialog = document.getElementById("error");
 let dialog_txt = $("dialog p");
+
+// Prevent user from leaving onboarding screen accidentally
+window.onbeforeunload = function() {
+   // Return any value to trigger alert message
+   return false;
+};
+
 // Loads the game screen
 function loadGame(){
     $.post(url_game, JSON.stringify(header), function(JSON){
