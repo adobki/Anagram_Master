@@ -4,12 +4,6 @@
   ============================================================================
 */
 
-// Prevent user from leaving game screen accidentally
-window.onbeforeunload = function() {
-   // Return any value to trigger alert message
-   return true;
-};
-
 // Dialog box and function for displaying errors
 dialog = document.getElementById("error");
 dialog_txt = $("dialog p");
@@ -45,6 +39,7 @@ function displayWords(){
                 // Clear input box if inputted word is valid
                 if (current == $("#word").val().toLowerCase()){
                     $("#word").val("");
+                    setStatus("green");
                 }
             } else {
                 if (current == $("#word").val().toLowerCase()){
@@ -52,6 +47,8 @@ function displayWords(){
                 }
             }
         });
+    } else {
+        setStatus("green");
     }
 }
 
@@ -71,6 +68,8 @@ function gameRound(check){
     if (!round_limit || round_limit < 0){
         displayError("ERROR: Game over! That's the last word for the game!");
         console.log("ERROR: Game over! That's the last word for the game!");
+        // Quit game session
+        $("#quit").click();
         return false;
     } else {
         round_limit--;
@@ -153,7 +152,7 @@ $("#root").on("submit", function(event){
         if (JSON.status){
             // Update words
             updateWords(JSON);
-            // Set status based
+            // Set status based on word validity
             if (!$("#word").val().length){
                 setStatus("green");
             }
@@ -192,9 +191,10 @@ $("#quit").click(()=>{
     $.post(url_close, JSON.stringify(header), function(JSON){
         // Begin off-boarding if quit action was successful
         if (!JSON.error){
-            // Disable page exit popup/warning and load highscores page
-            window.onbeforeunload = undefined;
+            // Load highscores page
             window.location.href = url_scores;
         }
     });
+    // Disable page exit popup/warning and stop game clock
+    window.onbeforeunload = undefined;
 });

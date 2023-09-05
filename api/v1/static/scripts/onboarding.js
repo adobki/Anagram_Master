@@ -14,7 +14,7 @@ let words_limit = 0;
 let dialog = document.getElementById("error");
 let dialog_txt = $("dialog p");
 
-// Prevent user from leaving onboarding screen accidentally
+// Prevent user from leaving game screen accidentally
 window.onbeforeunload = function() {
    // Return any value to trigger alert message
    return false;
@@ -41,6 +41,7 @@ function loadGame(){
         const o_script=document.createElement('script');
         o_script.src="../static/scripts/game.js?="+ new Date().getTime();
         document.head.appendChild(o_script);
+        document.title = "Anagram Master | " + header["User Name"]
     });
 };
 
