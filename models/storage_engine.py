@@ -9,8 +9,8 @@ class Storage:
     def __init__(self):
         """Set private attributes for new instance."""
         self.__types = ('words', 'scores')
-        self.__paths = {'words': 'storage_data/words.txt',
-                        'scores': 'storage_data/scores.json'}
+        self.__paths = {'words': 'api/v1/storage_data/words.txt',
+                        'scores': 'api/v1/storage_data/scores.json'}
 
     def save(self, f_type: str, data: list):
         """Serialises data to a JSON file"""
