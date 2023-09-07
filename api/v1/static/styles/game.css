@@ -62,6 +62,40 @@ body {
 	font-size: 5vw;
 }
 
+#clock, #score, #score_aux {
+	position: relative;
+	top: -5.5vw;
+	left: -35vw;
+	font-size: 3vw;
+}
+
+#score, #score_aux {
+	top: -9.4vw;
+	left: 86.5vw;
+	padding-top: 1vw;
+	width: 10vh;
+	height: 10vh;
+}
+
+#score_aux {
+	background: green;
+	border-radius: 100px;
+	top: -13.4vw;
+	left: 93.3vw;
+	padding-top: .5vw;
+	width: 7vh;
+	height: 7vh;
+	padding-top: .88vw;
+	font-size: 1.5vw;
+	font-style: italic;
+}
+
+#score_aux.penalty {
+	background: rgb(247, 63, 82) !important;
+	color: white !important;
+	left: 82vw !important;
+}
+
 #used {
 	position: fixed;
 	top: 30vh;

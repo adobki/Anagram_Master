@@ -9,6 +9,7 @@ let root_word = "overwhelmingly";
 let used_words = [];
 let round_limit = 6;
 let words_limit = 0;
+let current_time = 0;
 
 // Dialog box for displaying errors
 let dialog = document.getElementById("error");
@@ -69,6 +70,7 @@ $("#onboarding").on("submit", function(event){
                 words_limit = JSON["round_limit"];
                 root_word = JSON["word"];
                 used = JSON["words"][root_word];
+                current_time = JSON.time;
                 if (used){
                     used_words = used;
                 }

@@ -2,11 +2,10 @@
 """ Contains Anagram Master's API Flask app """
 from flask import Flask, jsonify, redirect, render_template, request
 from uuid import uuid4
-import models
+from models import newGame, addScore, getScores, getWords
 
 app = Flask(__name__)
-isAnagram = models.isAnagram
-game = models.newGame()
+game = newGame()
 if not game:
     print("Error: Game engine initialisation failed!")
     quit(1)
@@ -35,14 +34,34 @@ def init(name):
 @app.route('/api/v1/status', methods=['GET', 'POST'], strict_slashes=False)
 def status():
     """ Anagram Master API status route. This is the main/gameplay route """
+    # Check if request method for monitoring app and return all player info
     if request.method == 'GET':
-        data = game.status(turn=0)
+        if len(game.players):
+            data = []
+            for turn in range(len(game.players)):
+                temp = game.status(turn=turn)
+                player = {}
+                for key in sorted(temp.keys()):
+                    # Omit private player data
+                    if 'ID' in key:
+                        continue
+                    player[key] = temp[key]
+                # Show only player words for the current round
+                word = player['words'].get(player['word'])
+                player['words'] = {player['word']: word} if word else {}
+                # Save trimmed player data
+                data.append(player)
+                print(data[-1])
+            print('Number of Players:', len(data), True)
+        else:
+            data = game.status(turn=0)
         return jsonify(data)
     else:
         is_skip = request.get_json().get('new_word')
         word = request.get_json().get('word')
         session_id = request.get_json().get('Session ID')
         session_ids_all = [player.get('Session ID') for player in game.players]
+        print('All IDs:', session_ids_all)
         if session_id and session_id in session_ids_all:
             turn = session_ids_all.index(session_id)
             if is_skip:
@@ -73,9 +92,9 @@ def close():
             turn = session_ids_all.index(session_id)
             score = game.players[turn].get('Score')
             name = game.players[turn].get('User Name')
-            models.addScore(name, score)
+            addScore(name, score)
             # Reset game state/data
-            game.reset(models.getWords(), models.getScores())
+            game.reset(getWords(), getScores())
             print('{0} Game Engine Reset!{0}'.format('\n' + '-\t' * 5 + '\n'))
             return jsonify({'score': (score, name)})
         print('{0}  Reset Failed! [#403]{0}'.format('\n' + '-\t' * 6 + '\n'))

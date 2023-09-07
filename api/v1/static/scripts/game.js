@@ -15,6 +15,39 @@ function displayError(err_msg){
     dialog.showModal();
 }
 
+// Game clock function
+const game_clock = setInterval(function roundTimer(){
+    if (current_time < 0){
+        setStatus("red");
+        $("#skip").click();
+        return;
+    }
+
+    const clock = $("#clock");
+    const minutes = parseInt(current_time / 60);
+    let seconds = current_time % 60;
+
+    // Update displayed time
+    if (seconds < 10){
+        seconds = `0${seconds}`;
+    }
+    if (minutes){
+        clock.text(`0${minutes}:${seconds}`);
+        clock.css("color", "white");
+    } else {
+        clock.text(seconds);
+        if (!parseInt(seconds)) {
+            clock.text(0);
+        } else if (seconds <= 30){
+            clock.css("color", "#F73F52");
+        } else {
+            clock.css("color", "white");
+        }
+    }
+
+    current_time--
+}, 1000);
+
 // Set status indicator and load words
 setStatus("orange");
 let round_words = 0;
@@ -152,6 +185,8 @@ $("#root").on("submit", function(event){
         if (JSON.status){
             // Update words
             updateWords(JSON);
+            // Update time
+            current_time = JSON.time;
             // Set status based on word validity
             if (!$("#word").val().length){
                 setStatus("green");
@@ -168,12 +203,16 @@ $("#skip").click(()=>{
     if (!gameRound()){
         return;
     }
+    $("#clock").css("color", "black");
+    setStatus("orange");
     header["new_word"] = true;
     header["time"] = 40;
     header["quit"] = false;
     $.post(url_status, JSON.stringify(header), function(JSON){
         if (!JSON.error){
             updateWords(JSON);
+            // Update time
+            current_time = JSON.time;
             // Clear input box
             $("#word").val("");
         } else {
@@ -197,4 +236,6 @@ $("#quit").click(()=>{
     });
     // Disable page exit popup/warning and stop game clock
     window.onbeforeunload = undefined;
+    clearInterval(game_clock);
+    $("#clock").text(" ");
 });

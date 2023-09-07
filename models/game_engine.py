@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """ Contains Game engine class and word checker isAnagram function """
 from random import shuffle
+from time import time
 from uuid import uuid4
 
 
@@ -12,6 +13,8 @@ class Game:
     word_index = 0
     last_err = None
     host_id = None
+    round_time = None
+    time_limit = 120
     round_limit = 20
 
     def __init__(self, words: dict = {}, scores: list = ['<score>, <name>']):
@@ -62,11 +65,13 @@ class Game:
                 'Priority': len(Game.players),
                 'User Name': name,
                 'Score': 0,
+                'time': Game.time_limit,
                 'round_limit': Game.round_limit,
                 'word': Game.words['used'][-1],
                 'words': {}}
         Game.players.append(data)
         Game.err_lvl = None
+        Game.round_time = time()
         return data
 
     def status(self, turn: int, skip: bool = False, word: str = None,
@@ -83,6 +88,13 @@ class Game:
         if Game.players[turn].get('skipped'):
             Game.players[turn].pop('skipped')
 
+        # Process round time
+        Game.round_time = time() if not Game.round_time else Game.round_time
+        current_time = Game.time_limit - int(time() - Game.round_time)
+        Game.players[turn]['time'] = current_time if current_time > 0 else 0
+        if current_time <= 0:
+            skip = True
+
         # Process skip button request
         words = Game.words['words']
         i = Game.word_index
@@ -92,14 +104,16 @@ class Game:
                 Game.words['used'].append(words[i])
                 Game.word_index = i + 1
                 Game.players[turn]['skipped'] = True
+                Game.round_time = time()
             else:
                 print({'error': 'ERROR: That\'s the last word for the game!'})
                 return {'error': 'ERROR: That\'s the last word for the game!'}
 
-        # Set current word in each user's data
-        for player in Game.players:
-            player['word'] = Game.words['used'][-1]
+        # Set current word and time in each user's data
         if skip:
+            for player in Game.players:
+                player['word'] = Game.words['used'][-1]
+                player['time'] = Game.time_limit
             return Game.players[turn]
 
         # Process player's submitted word
