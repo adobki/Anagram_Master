@@ -5,7 +5,7 @@
           <div id="score"></div>
           <div hidden id="score_aux"></div>
           <form><fieldset id="used">
-            <legend>USED WORDS</legend>
+            <legend>NEW WORDS</legend>
             <div id="used_words">
               <p>ego</p>
               <p>gin</p>
@@ -30,9 +30,12 @@
             </div>
           </fieldset></form>
           <div id="controls">
-            <p><input type="text" id="word" name="word" minlength="2" maxlength="18"
+            <p>
+              <div id="word_status"></div>
+              <input type="text" id="word" name="word" minlength="2" maxlength="18"
                    pattern="[A-Za-z]{2,18}" placeholder="type new word here"
-                   title="Two or more letters only! (No special characters)"></p>
+                   title="Two or more letters only! (No special characters)">
+            </p>
             <button type="submit">Submit</button>
             <button type="button" id="skip">Skip Word</button>
             <button type="button" id="quit">Quit</button>

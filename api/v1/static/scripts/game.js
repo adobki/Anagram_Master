@@ -15,6 +15,23 @@ function displayError(err_msg){
     dialog.showModal();
 }
 
+// Word status messages and function for displaying them
+word_status = $("#word_status");
+function displayMessage(message, isError){
+    if (isError){
+        word_status.addClass("error");
+    } else {
+        word_status.removeClass("error");
+    }
+    word_status.text(message);
+
+    // Clear message after two seconds
+    setTimeout(function(){
+        word_status.removeClass("error");
+        word_status.text("");
+    }, 2000);
+}
+
 // Game clock function
 const game_clock = setInterval(function roundTimer(){
     if (current_time < 0){
@@ -100,6 +117,7 @@ function gameRound(check){
     // Check if last round and update round otherwise
     if (!round_limit || round_limit < 0){
         displayError("ERROR: Game over! That's the last word for the game!");
+//        displayMessage("ERROR: Game over! That's the last word for the game!", true);
         console.log("ERROR: Game over! That's the last word for the game!");
         // Quit game session
         $("#quit").click();
@@ -146,6 +164,36 @@ function updateWords(JSON){
     displayWords();
 }
 
+// Toggles visibility of score status indicator
+function showScoreStatus(show){
+    if (show){
+        $("#score_aux").show();
+        // Hide status indicator again after two seconds
+        setTimeout(function(){
+            showScoreStatus(false);
+        }, 2000);
+    } else {
+        $("#score_aux").hide();
+    }
+}
+
+// Updates the displayed score
+function updateScore(new_score){
+    score = $("#score");
+    score_status = $("#score_aux");
+    diff = new_score - score.text();
+    score.text(new_score);
+    if (diff > 0){
+        score_status.removeClass("penalty");
+        score_status.text(`+${diff}`);
+        showScoreStatus(true);
+    } else if (diff < 0){
+        score_status.addClass("penalty");
+        score_status.text(diff);
+        showScoreStatus(true);
+    }
+}
+
 // Submits a new word from the user
 $("#root").on("submit", function(event){
     event.preventDefault();
@@ -158,21 +206,29 @@ $("#root").on("submit", function(event){
     // Input Validation
     if (word.length == 0){
         displayError("ERROR: Blank! You must type a new word!");
+//        displayMessage("You must type a new word!", true);
         return;
     } else if (word.length < 2){
-        displayError("ERROR: Word is too short!<br>" +
-                     "Must be 2 to 18 characters long!");
+//        displayError("ERROR: Word is too short!<br>" +
+//                     "Must be 2 to 18 characters long!");
+        displayMessage("Word is too short!", true);
         return;
     }
     // Check if duplicate word
     used_words.forEach(function(used){
         if (word.toLowerCase() == used[0]){
-            err_msg = "ERROR: Duplicate word!<br>Try another new word.";
+//            err_msg = "ERROR: Duplicate word!<br>Try another new word.";
+            if (used[1]){
+                err_msg = "Duplicate word! Try another new word";
+            } else {
+                err_msg = "Invalid word!";
+            }
             return;
         }
     });
     if (err_msg){
-        displayError(err_msg);
+//        displayError(err_msg);
+        displayMessage(err_msg, true);
         return;
     }
     // Update header with current game stats
@@ -185,14 +241,20 @@ $("#root").on("submit", function(event){
         if (JSON.status){
             // Update words
             updateWords(JSON);
+            // Update score
+            updateScore(JSON.Score);
             // Update time
             current_time = JSON.time;
             // Set status based on word validity
             if (!$("#word").val().length){
                 setStatus("green");
+                displayMessage("Correct!");
+            } else {
+                displayMessage("Invalid word!", true);
             }
         } else {
             displayError(JSON.error);
+//            displayMessage(JSON.error, true);
             console.log("ERROR! ", JSON);
         }
     });
