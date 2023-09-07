@@ -88,4 +88,17 @@ if __name__ == '__main__':
     print(len(words), '=', words[:9])
     # Remove trailing newline character and print again
     words = list(map(str.strip, words))
-    print(len(words), '=', words[:9])
+    print(len(words), '=', words[:9], '\n')
+
+    w_max = ''
+    w_alt = ''
+    for word in words:
+        w_max = word if len(word) > len(w_max) else w_max
+        w_alt = word if len(w_alt) < len(word) < 45 else w_alt
+    print(f'Longest word is {w_max} ({len(w_max)} letters).')
+    print(f'Longest "real" word is {w_alt} ({len(w_alt)} letters).')
+    round_time = 2
+    valid = [word for word in words if 8 < len(word) < 17]
+    print('round words (8 < len < 17) =', len(valid), '\n')
+    print('\t>\t>>\t', round((len(valid) / round_time / 60 / 24), 1),
+          ' days to run out of game words‽ Cool!\t<<\t<\t', sep='')

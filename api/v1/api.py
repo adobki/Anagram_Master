@@ -20,7 +20,7 @@ def not_found(e):
 @app.route('/api/v1/init', methods=['GET'], strict_slashes=False)
 def init(name):
     """ Anagram Master API init route. Triggers on-boarding events """
-    # Truncate player if it's too long (>15 characters)
+    # Truncate player name if it's too long (>15 characters)
     name = name[:15] if len(name) > 15 else name
 
     # Check if players limit reached
@@ -162,4 +162,4 @@ def redirect_internal(page):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5555, threaded=True, debug=True)
+    app.run(host='0.0.0.0', port=5555, threaded=True)

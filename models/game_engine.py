@@ -16,6 +16,8 @@ class Game:
     round_time = None
     time_limit = 120
     round_limit = 20
+    word_len_min = 8
+    word_len_max = 17
 
     def __init__(self, words: dict = {}, scores: list = ['<score>, <name>']):
         """Initialises Engine."""
@@ -122,7 +124,7 @@ class Game:
             word = word.lower()
             # Check if given word is the root word for the current round
             if word == root_word.lower():
-                err_msg = 'You can\'t use the given word!<br>'\
+                err_msg = 'You can\'t use the given word!<br>' \
                           'Try forming a new word from it instead.'
                 print({'error': f'ERROR: {err_msg}'})
                 return {'error': f'ERROR: {err_msg}'}
@@ -138,7 +140,8 @@ class Game:
                 Game.players[turn]['Score'] += round(round(score, 1))
             else:
                 # Penalise player for invalid input
-                Game.players[turn]['Score'] -= 2
+                Game.players[turn]['Score'] = Game.players[turn]['Score'] - 2 \
+                    if Game.players[turn]['Score'] >= 2 else 0
             word = (word, valid)
             if root_word in Game.players[turn]['words'].keys():
                 if word not in Game.players[turn]['words'][root_word]:
@@ -221,7 +224,7 @@ def getWordIndex(words: list):
     """
     i = 0
     for num, word in enumerate(words):
-        if 8 < len(word) < 17:
+        if Game.word_len_min < len(word) < Game.word_len_max:
             i = num
             break
     print(f'Tried {i} time(s). Current index is {Game.word_index + i} = '
