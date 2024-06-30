@@ -1,5 +1,5 @@
 # ___Anagram Master___
-![Anagram Master's Homepage Mockup](ref/Design%20Diagrams/Anagram%20Master's%20Drawings-Mockups-Homepage.drawio.png)
+![Anagram Master's Homepage](api/static/media/screenshot_splash.png)
 Created as the Research/Portfolio Project at the end of the _Software Engineering Foundations_ stage of the [ALX Software Engineering Course](https://www.alxafrica.com/software-engineering), Anagram Master is a multiplayer word game that involves rearranging letters from a root word to form new words. 
 
 
@@ -36,16 +36,18 @@ However, it should work in any other environment that is configured to run Pytho
 > ___[api/v1](api/v1):___<br>
 > Ambigram Master API which has three routes (see [#API Routes](#API-Routes) below for details).
 > <br><br>___[api/v1/templates](api/v1/templates):___<br>
-> Static web pages and their resources ([styles](api/v1/templates/styles), [scripts](api/v1/templates/scripts), [images](api/v1/templates/media), etc.)
+> Static web pages used for the four game screens.
+> <br>___[api/v1/static](api/v1/static):___<br>
+> Static web pages and their resources ([styles](api/v1/static/styles), [scripts](api/v1/static/scripts), [images](api/v1/static/media), etc.)
+> <br>___[api/v1/storage_data](api/v1/storage_data):___<br>
+> Third-party [word list](api/v1/storage_data/words.txt) and [current highscores](api/v1/storage_data/scores.json) used by the game engine.
+
 
 > ___[models](models):___<br>
 > Ambigram Master Models and Classes. [game_engine.py](models/game_engine.py) contains the Game class which implements the game engine and logic.
 
 > ___[ref](ref):___<br>
 > Reference materials such as [documentation](ref/AnagramMaster%20MVP%20Specification.txt) and [UI Mockups](ref/Design%20Diagrams) used in the design and development of Ambigram Master.
-
-> ___[src](src):___<br>
-> Third-party [word lists](src/words.txt) and [source code](src/scowl-2020.12.07) used by the game engine.
 
 ## API Routes
 Routes available for HTTP requests from the API are:
@@ -63,8 +65,8 @@ Routes available for HTTP requests from the API are:
 * Clone this repository:<br>
 `git clone https://github.com/adobki/Anagram_Master.git`
 * Access repo folder and run script to launch app server:
-  * Windows: [AmbigramMaster.cmd](AmbigramMaster.cmd)
-  * Ubuntu: [AmbigramMaster.sh](AmbigramMaster.sh)
+  * Windows: [AnagramMaster.cmd](AnagramMaster.cmd)
+  * Ubuntu: [AnagramMaster.sh](AnagramMaster.sh)
   * Others: `gunicorn --bind localhost:5555 api.v1.api_wsgi:app`
 * Open the bound address in a local web browser:<br>
   `http://localhost:5555`
