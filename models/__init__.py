@@ -1,10 +1,7 @@
 #!/usr/bin/python3
 """ Initializes the models package """
-from .game_engine import Game, isAnagram
-from .storage_engine import Storage
+from .game_engine import Game
 
-# Initialise storage engine to read/write from/to file system
-fs = Storage()
 
 
 def getScores():
@@ -31,21 +28,3 @@ def addScore(name: str, score: int):
         scores = scores[:20] if len(scores) > 20 else scores
         scores = fs.save('scores', scores)
     return scores
-
-
-def getWords():
-    """Loads words list from storage."""
-    words = fs.load('words')
-    # Convert to lowercase, remove trailing newline character, store in a dict
-    words = {'words': [word.lower().strip() for word in words],
-             'used': []}
-    return words
-
-
-def newGame():
-    """Creates a new Game class instance for the API."""
-    words = getWords()
-    if words:
-        print(f'Game engine initialised with {len(words["words"])} words!')
-        return Game(words, getScores())
-    print('Error: Failed to load words list!')
