@@ -5,5 +5,5 @@ from .MongoDB import DBRecords, db, isAlive, DESCENDING, PyMongoErrors
 
 records = DBRecords()
 
-// Print health status on module import
+# Print health status on module import
 print(f' status: {health()}\n')

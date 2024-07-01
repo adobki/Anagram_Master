@@ -2,6 +2,7 @@
 """ Contains auxiliary/miscellaneous functions """
 from random import sample
 from models.storage_engine import Storage
+from utils.MongoDB import isAlive
 
 
 def getWords():
@@ -74,7 +75,7 @@ def health():
             'FileStorage': bool(dictionary)}
 
 
-// Prepare words dictionary
+# Prepare words dictionary
 dictionary = None
 try:
     dictionary = getWords()
