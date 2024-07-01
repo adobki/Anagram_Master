@@ -1,30 +1,17 @@
 #!/usr/bin/python3
 """ Initializes the models package """
 from .game_engine import Game
+from .db_scores import DBScores
 
 
-
-def getScores():
-    """Loads list of high scores from storage."""
-    return fs.load('scores')
-
-
-def addScore(name: str, score: int):
-    """Saves list of high scores to storage."""
-    # Data Validation
-    if not isinstance(name, str) or not isinstance(score, int):
-        err = {'error': 'ERROR: name must be a string, score must be an int'}
-        print(err)
-        return err
-    if score < 1 or score > 9999:
-        err = {'error': 'ERROR: Invalid score! Must be >= 1 and <=9999'}
-        print(err)
-        return err
-    scores = fs.load('scores')
-    score = (score, name)
-    if score not in scores:
-        scores.append(score)
-        scores.sort(reverse=True)
-        scores = scores[:20] if len(scores) > 20 else scores
-        scores = fs.save('scores', scores)
+def highscores(full: bool = False) -> list[tuple]:
+    """Helper functon for getting highscores from the database"""
+    limit = 0 if full else 20
+    try:
+        scores = DBScores().load(limit=limit)
+    except Exception:
+        scores = []
     return scores
+
+
+print(f' highscores: {len(highscores(True))}\n\n')
