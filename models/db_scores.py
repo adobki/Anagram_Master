@@ -6,6 +6,7 @@ from utils import db, isAlive, DESCENDING
 
 class DBScores:
     """Highscores class"""
+    __db = db['scores']
     __min_score = 10
 
     @staticmethod
@@ -14,10 +15,6 @@ class DBScores:
         if not isAlive():
             raise ConnectionError('MongoDB database connection failed!')
         return True
-
-    def __init__(self):
-        """Set private attributes for new instance"""
-        self.__db = db['scores']
 
     def load(self, limit: int = 0) -> list[tuple]:
         """Loads specified number of top highscores scores from the database"""
