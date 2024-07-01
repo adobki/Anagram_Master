@@ -21,9 +21,9 @@ class Game:
         self.__db = DBGame()
         self.__db_scores = DBScores()
         if name:
-            self.new(name, host_id, _init=True)  # New game requested
+            self.new(name, host_id)  # New game requested
         elif _id:
-            self.__id = str(_id)                 # Load game requested
+            self.__id = str(_id)     # Load game requested
             self.load(_init=True)
         else:
             error = 'ERROR: name or _id must be given to create/load game'
@@ -64,7 +64,7 @@ class Game:
         self.__update(self.db.load(self.id))
         return self.status if not _init else None
 
-    def new(self, name, host_id: str = None, _init: bool = False):
+    def new(self, name, host_id: str = None):
         """Creates a new game session."""
         # Prevents accidental game resets
         if self.__id:
@@ -82,7 +82,7 @@ class Game:
         self.__id = payload['_id']
         self.__update(payload)
 
-        return {'id': payload['_id'], **self.status} if not _init else None
+        return {'id': payload['_id'], **self.status}
 
     def new_round(self, forced: bool = False) -> str | None:
         """Starts a new game round in the current game session"""
