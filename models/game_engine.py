@@ -182,9 +182,8 @@ class Game:
         if not self.active:  # Check if current session is active
             return 'Game session is already over'
 
-        # Add player's score to highscores database
-        if self.score > 10:
-            # Add player's score to highscores database
+        # Add player's score to highscores database if it's up to the threshold
+        if self.score >= self.__db_scores.min_score:
             self.__db_scores.add(name=self.name, score=self.score)
             self.__save(status=False)
         else:

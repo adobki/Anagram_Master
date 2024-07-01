@@ -6,6 +6,7 @@ from utils import db, isAlive, DESCENDING
 
 class DBScores:
     """Highscores class"""
+    __min_score = 10
 
     @staticmethod
     def isAlive() -> bool:
@@ -39,8 +40,8 @@ class DBScores:
         if not isinstance(name, str):
             error = 'ERROR: name must be a string'
             raise ValueError(error)
-        if not isinstance(score, int) or score < 1:
-            error = 'ERROR: score must an integer greater than 0'
+        if not isinstance(score, int) or score < self.min_score:
+            error = f'ERROR: score must be an integer >= {self.min_score}'
             raise ValueError(error)
         # Save player's score
         add = self.__db.insert_one({'name': name,
@@ -66,6 +67,11 @@ class DBScores:
         if not remove.deleted_count:
             error = 'ERROR: Failed to remove player\'s score'
             raise IOError(error)
+
+    @property
+    def min_score(self):
+        """Minimum score/score threshold for highscores"""
+        return self.__min_score
 
     def __getattr__(self, item) -> None:
         """Prevents error when unknown attribute is requested."""
