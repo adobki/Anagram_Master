@@ -1,0 +1,186 @@
+/*
+  ============================================================================
+                   Anagram Master's Header and Footer Styles
+  ============================================================================
+*/
+
+/*
+    /* Specify the color in one place. *
+    --class-item-color: #0076A5;
+    /* Reference it in another. *
+    background-color: var(--class-item-color);
+
+*/
+
+header, footer {
+	background: white;
+}
+
+.canvas {
+	position: absolute;
+	width: 80vw;
+	margin: 5vw;
+	margin-top: 10vh;
+	font-size: 2vw;
+	line-height: 4vw;
+	text-align: center;
+}
+
+.canvas img {
+	border-radius: 1vw;
+	width: 40vw;
+	float: left;
+	margin: 2vw 3vw 0 0;
+}
+
+.canvas img:nth-child(even) {
+	float: right;
+	margin: 2vw 0 0 3vw;
+}
+
+.canvas a {
+	text-decoration: inherit;
+}
+
+.canvas p, .canvas ul, .canvas td {
+	text-align: justify;
+	vertical-align: top;
+}
+
+.canvas table, .canvas td {
+	padding: 0 1vw;
+}
+
+h1, h2 {
+	font-size: 5vw;
+	font-weight: 100;
+	padding-top: 5vw;
+	line-height: 6vw;
+	text-align: justify;
+	border-radius: 5px;
+	border-bottom: 3px solid rgb(247, 63, 82);
+}
+
+h2 {
+	font-size: 2.5vw;
+	font-weight: 600;
+	line-height: 4vw;
+	padding-top: 2vw;
+	border-bottom: 2px solid rgb(247, 63, 82);
+}
+
+.hero {
+	width: 98vw;
+	margin: -2vh 0 -3vh -10vw;
+	padding: 5vw 10vw;
+	padding-bottom: 0;
+}
+
+.hero table {
+	width: 90vw;
+	margin-left: -5vw;
+}
+
+.hero table, .hero td, .hero tr {
+	text-align: center;
+	/*border: 1px solid;*/
+}
+
+.splash {
+	text-align: center;
+	margin-top: 5vh;
+}
+
+.splash img {
+	float: none;
+	display: inline-block;
+	width: 50vw;
+	margin: 0;
+	margin-top: -4vh;
+}
+
+.splash img:first-of-type {
+	margin-bottom: 2vh;
+}
+
+.hero p {
+	margin-top: 1vw;
+	margin-bottom: 1.5vw;
+}
+
+.action {
+	vertical-align: bottom;
+	text-align: center;
+	font-size: 2vw;
+	color: white;
+	line-height: 6vw;
+	border-radius: 100px;
+	border: 1px solid white;
+	padding: 1.5vw 3vw;
+	background: rgb(0, 50, 220);
+	background: linear-gradient(to right bottom, rgba(0, 50, 220, 1), rgba(0, 50, 150, 1));
+}
+
+.action:hover{
+	box-shadow: 4px 3px 1px rgba(0, 0, 0, .5);
+}
+
+.diagrams {
+	height: 35vw;
+	text-align: center;
+	font-style: italic;
+	font-size: 1.5vw;
+	font-weight: 900;
+}
+
+.diagrams img {
+	width: 38vw;
+}
+
+.diagrams img:nth-child(odd) {
+	margin: 10vw -2vw 0 1vw;
+}
+
+.video {
+	width: 72vw;
+	height: 40.5vw;
+	margin-top: 1.5vw;
+	border-radius: 15px;
+	background: linear-gradient(to right bottom, rgba(0, 50, 220, 1), rgba(0, 50, 150, 1));
+}
+
+.contact {
+	border-top: 1px solid rgba(0, 0, 0, .2);
+	padding: 3vw;
+	width: 80vw;
+	height: 13vw;
+	text-align: center;
+	font-style: italic;
+	font-size: 1.5vw;
+	font-weight: 900;
+}
+
+.contact a img {
+	float: none;
+	width: auto;
+	height: 5vw;
+	margin: 0;
+	border-radius: 0;
+}
+
+#contact_first {
+	padding-right: 2vw;
+}
+
+#contact_last {
+	margin-right: -6vw;
+}
+
+#contact_main {
+	float: left;
+	border: 0;
+	border-right: 1px solid rgba(0, 0, 0, .2);
+	padding-right: 7vw;
+	margin-right: 2vw;
+	margin-left: 1vw;
+}

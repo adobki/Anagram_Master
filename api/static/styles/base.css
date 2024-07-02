@@ -58,6 +58,31 @@ header a:hover, footer a:hover {
 .menu li {
 	display: inline-block;
 	padding-left: 1em;
+	font-size: 2vw;
+}
+
+.nav {
+	visibility: hidden;
+	position: fixed;
+	background: white;
+	border: 1px solid rgba(0, 0, 0, .05);
+	border-right-color: rgba(0, 0, 0, .4);
+	border-bottom-color: rgba(0, 0, 0, .4);
+	border-radius: 2vw;
+	margin: 1.5vw 0 4vh -3vw;
+	padding-top: 1.5vw;
+	padding-bottom: 1vw;
+	width: 12vw;
+}
+
+.nav li {
+	font-size: 1.5vw;
+	line-height: 2.5vw;
+	padding-bottom: .7vw;
+}
+
+.about:hover .nav {
+	visibility: visible;
 }
 
 #status {

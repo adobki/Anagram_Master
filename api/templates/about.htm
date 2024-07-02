@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>About | Anagram Master</title>
+    <link rel="shortcut icon" type=”image/x-icon” href="../static/media/logo_icon.png">
+    <link rel="stylesheet" type="text/css" href="../static/styles/reset.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/base.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/main.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/about.css?{{ cache_id }}">
+<!--    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>-->
+    <script src="../static/scripts/_jquery-3.7.0.min.js"></script>
+    <script defer src="../static/scripts/main.js?{{ cache_id }}"></script>
+  </head>
+  <body>
+    <section class="canvas">
+      <div class="hero">
+        <table>
+          <div class="splash">
+            <img src="../static/media/logo_horizontal.png">
+          </div>
+          <tr>
+            <td>
+              <div class="splash">
+                <img src="../static/media/screenshot_interface.png">
+              </div>
+            </td>
+            <td>
+              <p>An addictive and engaging word game where players have fun rearranging the letters from a root word to form new words.</p>
+              <a href="../" class="action">Play Anagram Master</a>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div id="features">
+        <h1>Features</h1>
+        <p>The key features of the game include:</p>
+        <h2>Scoring System</h2>
+        <img src="../static/media/screenshot_gameplay.png">
+        <p>The game assigns points for words created by the player. Invalid words are penalised, while valid words are rewarded. Points given for valid words are a factor of the number of letters used from the root word they are formed from. Special bonuses are given for using all the letters in the root word, and for forming twenty words within the time limit of a game round. All of these add up to form the player's total score.</p>
+        <h2>High Scores/Leaderboards</h2>
+        <img src="../static/media/screenshot_highscores.png">
+        <p>Anagram Master has a high scores page that displays a leaderboard. At the end of a game session, a player's score is added to the list if it is greater than the lowest score on the list. Scores displayed are the twenty highest scores to date, sorted in descending order. This acts as a rewards system for players, and it fosters competition among them.</p>
+        <h2>Rounds, Timing and Limits</h2>
+        <img src="../static/media/screenshot_limits.png">
+        <p>A game session is broken down into units called rounds. A game round consists of two minutes in which a player has the chance to form up to twenty anagrams for a single root word (called the round word). Once that time elapses, the clock resets and a new root word is given to the player to signify the start of a new round. However, if the player is able to create twenty valid anagrams before the time runs out, they are rewarded with a bonus, and taken to the next round. These limits, bonuses and the penalties for invalid words create a sense of urgency and engagement that excites the player, making the game more fun.</p>
+      </div>
+      <div id="project">
+        <h1>About the Project</h1>
+        <p>Anagram Master was conceived as the portfolio project for completing the Foundations stage of the ALX Software Engineering Course. Created by Donald Ajaps in September 2023, it was built as a digital reimagining of a classic word game. A game he played a lot with friends over the years with pen and paper. Playing Anagram Master should be nostalgic for those who love that classic game and would like to play it again digitally, with the added advantages that digital systems offer.</p>
+        <iframe class="video" src="https://www.youtube.com/embed/PRH3_1Zs9Sc?si=9V5FgIMDYr99rPCv&rel=0&autoplay=1&showinfo=1&iv_load_policy=1&vq=hd720" title="Anagram Master Preview | YouTube video player" loading="lazy" allow="fullscreen; accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        <p>Though there are similarities, it is not designed to serve as an alternative to Scrabble, or as some kind of word solver for any word game. English (en-GB and en-US) is the only supported language, but future versions could be multilingual.</p>
+        <div class="diagrams">
+          Diagrams of Anagram Master's Architecture and Data Structure
+          <img src="../static/media/diagram-web_app_architecture.png">
+          <img src="../static/media/diagram-data_model.png">
+        </div>
+        <div class="contact">
+          <a href="https://github.com/adobki/Anagram_Master">
+            <img src="../static/media/logo_text.png" title="Anagram Master on GitHub"
+                 id="contact_main">
+          </a>
+          <a href="https://ng.linkedin.com/in/DonaldAjaps">
+            <img src="../static/media/contact-LinkedIn-Logo.png" title="Donald Ajaps on LinkedIn"
+                 id="contact_first">
+          </a>
+          <a href="https://github.com/adobki">
+            <img src="../static/media/contact-GitHub-Logo.png" title="Donald Ajaps on GitHub">
+          </a>
+          <a href="https://twitter.com/adobki">
+            <img src="../static/media/contact-Twitter-Logo.png" title="Donald Ajaps on Twitter"
+                 id="contact_last">
+          </a>
+        </div>
+      </div>
+    </section>
+    <header class="container">
+      <div class="logo"><img ></div>
+      <nav class="menu">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="scores">Highscores</a></li>
+          <li><a href="https://www.youtube.com/watch?v=PRH3_1Zs9Sc">Help</a></li>
+          <li class="about">
+            <ul class="nav">
+              <li><a href="about#features">Features</a></li>
+              <li><a href="about#project">The Project</a></li>
+            </ul>
+            <a href="about">About</a>
+          </li>
+        </ul>
+      </nav>
+      <div id="status"></div>
+    </header>
+    <footer class="container">
+      <p class="credits">Anagram Master. Copyright © 2023, Donald Ajaps.</p>
+    </footer>
+  </body>
+</html>
