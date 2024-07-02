@@ -46,6 +46,20 @@ function loadGame(){
     });
 };
 
+// Checks if user's screen resolution/aspect ratio are unsuitable for the game
+function checkScreen(user_name){
+    if (user_name === "Tester") {
+        return false
+    }
+
+    if (window.outerWidth < window.outerHeight || window.outerWidth < 1280
+            || window.outerWidth/window.outerHeight >= 2) {
+        return true;
+    }
+
+    return false;
+}
+
 // Onboarding Page Actions
 $("#onboarding").on("submit", function(event){
     event.preventDefault();
@@ -59,6 +73,11 @@ $("#onboarding").on("submit", function(event){
         let err_msg = "ERROR: Name is too short!<br>";
         err_msg += "Must be 3 to 15 characters long!";
         dialog_txt.html(err_msg);
+        dialog.showModal();
+    } else if (checkScreen(user_name)){
+        const err_msg =
+        dialog_txt.html("ERROR: Your screen or device is not supported!<br>" +
+                        "Must be run on a modern PC in landscape mode.");
         dialog.showModal();
     } else {
         // Submit name to server
