@@ -15,6 +15,27 @@ function displayError(err_msg){
     dialog.showModal();
 }
 
+// Gameplay key events/keyboard shortcuts
+document.addEventListener('keydown', function(event) {
+    const key = event.key;
+    const input_box = document.getElementById('word');
+    const ignored_keys = ['Tab', 'Shift', 'Control', 'Alt'];
+
+    // Automatically activates input box on key press
+    if (ignored_keys.includes(key)) {
+        input_box.blur();
+    } else {
+        if (document.activeElement !== input_box) {
+            input_box.focus();
+        }
+    }
+
+    // Clears input box on Esc or Delete
+    if (['Escape', 'Delete'].includes(key)) {
+        input_box.value = '';
+    }
+});
+
 // Word status messages and function for displaying them
 word_status = $("#word_status");
 function displayMessage(message, isError){
