@@ -19,7 +19,6 @@
 }
 
 .prompt p:last-of-type {
-	font-weight: 100;
 	font-size: 1.25vw;
 	font-style: italic;
 	line-height: 3vh;
@@ -27,7 +26,6 @@
 
 #user_name {
 	text-align: center;
-	font-weight: 100;
 	margin-top: 3vh;
 	margin-bottom: 1.5vh;
 	font-size: 3vw;

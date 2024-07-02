@@ -12,9 +12,6 @@ const url_api_scores = "../api/v1/scores";
 $(".logo").click(()=>{
     window.location.href = url_home;
 });
-$("#scores").click(()=>{
-    window.location.href = url_scores;
-});
 $("#back").click(()=>{
     history.back();
 });

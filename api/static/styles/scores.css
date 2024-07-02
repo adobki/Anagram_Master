@@ -20,6 +20,13 @@ header a:hover, footer a:hover {
 	background-image: url("../media/logo_white.png");
 }
 
+.nav {
+	background: rgb(247, 63, 82);
+	border: 1px solid rgba(255, 255, 255, .05);
+	border-right-color: rgba(255, 255, 255, .4);
+	border-bottom-color: rgba(255, 255, 255, .4);
+}
+
 /*
   ============================================================================
                     Anagram Master's Highscores Body Styles
@@ -27,7 +34,7 @@ header a:hover, footer a:hover {
 */
 
 body {
-	background: rgb(255, 50, 120);
+	background: rgb(247, 63, 82);
 	color: white;
 }
 

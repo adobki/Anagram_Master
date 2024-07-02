@@ -20,6 +20,13 @@ header a:hover, footer a:hover {
 	background-image: url("../media/logo.png");
 }
 
+.nav {
+	background: black;
+	border: 1px solid rgba(255, 255, 255, .05);
+	border-right-color: rgba(255, 255, 255, .4);
+	border-bottom-color: rgba(255, 255, 255, .4);
+}
+
 /*
   ============================================================================
                         Anagram Master's Game Body Styles
@@ -67,6 +74,14 @@ body {
 	top: -5.5vw;
 	left: -35vw;
 	font-size: 3vw;
+}
+
+#clock {
+	color: black !important;
+}
+
+#clock.enabled {
+	color: white !important;
 }
 
 #score, #score_aux {
@@ -137,7 +152,6 @@ body {
 #word {
 	text-align: center;
 	font-size: 3vw;
-	font-weight: 100;
 	font-style: italic;
 	line-height: 8vh;
 	margin-top: 3vh;
@@ -153,11 +167,10 @@ body {
 #word_status {
 	position: relative;
 	top: 2vh;
-	width: 34.5vw;
+	width: 40vw;
 	font-size: 2vw;
-	font-weight: 100;
 	font-style: italic;
-	margin-left: -13vw;
+	margin-left: -16vw;
 	color: rgb(0, 255, 0);
 }
 

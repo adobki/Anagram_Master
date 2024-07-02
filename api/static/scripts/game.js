@@ -62,6 +62,9 @@ const game_clock = setInterval(function roundTimer(){
         }
     }
 
+    // Ensure clock is visible
+    $("#clock").addClass("enabled");
+
     current_time--
 }, 1000);
 
@@ -115,10 +118,11 @@ function gameRound(check){
     }
 
     // Check if last round and update round otherwise
-    if (!round_limit || round_limit < 0){
-        displayError("ERROR: Game over! That's the last word for the game!");
-//        displayMessage("ERROR: Game over! That's the last word for the game!", true);
-        console.log("ERROR: Game over! That's the last word for the game!");
+    if (rounds_limit <= 0){
+        // Display error message
+        displayError("ERROR: Game over! That's the last round for the game!");
+        console.log("ERROR: Game over! That's the last round for the game!");
+
         // Quit game session
         $("#quit").click();
         return false;
@@ -131,7 +135,7 @@ function gameRound(check){
 
 function loadUserWord(){
     if (round_words >= words_limit){
-        // Check if round over
+        // Check if round is over
         if (gameRound(true)){
             displayError(`\n ${round_words} is enough words! Skipping. . .\n`);
             console.log("\n", round_words, " is enough words! Skipping. . .\n");
@@ -206,18 +210,14 @@ $("#root").on("submit", function(event){
     // Input Validation
     if (word.length == 0){
         displayError("ERROR: Blank! You must type a new word!");
-//        displayMessage("You must type a new word!", true);
         return;
     } else if (word.length < 2){
-//        displayError("ERROR: Word is too short!<br>" +
-//                     "Must be 2 to 18 characters long!");
-        displayMessage("Word is too short!", true);
+        displayMessage("Word is too short!", true)
         return;
     }
     // Check if duplicate word
     used_words.forEach(function(used){
         if (word.toLowerCase() == used[0]){
-//            err_msg = "ERROR: Duplicate word!<br>Try another new word.";
             if (used[1]){
                 err_msg = "Duplicate word! Try another new word";
             } else {
@@ -227,7 +227,6 @@ $("#root").on("submit", function(event){
         }
     });
     if (err_msg){
-//        displayError(err_msg);
         displayMessage(err_msg, true);
         return;
     }
@@ -293,5 +292,6 @@ $("#quit").click(()=>{
     // Disable page exit popup/warning and stop game clock
     window.onbeforeunload = undefined;
     clearInterval(game_clock);
-    $("#clock").text(" ");
+    $("#clock").text(0);
+    $("#clock").removeClass("enabled");
 });

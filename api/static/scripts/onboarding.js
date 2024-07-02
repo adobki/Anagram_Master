@@ -30,6 +30,7 @@ window.onbeforeunload = function() {
 // Loads the game screen
 function loadGame(){
     $.post(url_game, '{}', function(JSON){
+//    $.get(url_api_play, JSON.stringify(header), function(JSON){
         if (JSON.error){
             setStatus("red");
             dialog_txt.html(JSON.error);
@@ -48,12 +49,12 @@ function loadGame(){
         const o_script=document.createElement('script');
         o_script.src="../static/scripts/game.js?="+ new Date().getTime();
         document.head.appendChild(o_script);
-        document.title = "Anagram Master | " + header["User Name"]
+        document.title = user_name + " | Anagram Master"
         // Set score and time for resumed saved game
         $("#score").text(score);
         $("#clock").text(time);
     });
-};
+}
 
 // Checks if user's screen resolution/aspect ratio are unsuitable for the game
 function checkScreen(user_name){
@@ -71,6 +72,7 @@ function checkScreen(user_name){
 
 // Onboarding Page Actions
 $("#onboarding").on("submit", function(event){
+    // Stop browser from reloading the page
     event.preventDefault();
 
     user_name = $("#user_name").val();
@@ -79,9 +81,8 @@ $("#onboarding").on("submit", function(event){
         dialog_txt.html("ERROR: No name! You must provide a name!");
         dialog.showModal();
     } else if (user_name.length < 3){
-        let err_msg = "ERROR: Name is too short!<br>";
-        err_msg += "Must be 3 to 15 characters long!";
-        dialog_txt.html(err_msg);
+        dialog_txt.html("ERROR: Name is too short!<br>" +
+                        "Must be 3 to 15 characters long!");
         dialog.showModal();
     } else if (checkScreen(user_name)){
         const err_msg =
@@ -115,3 +116,7 @@ $("#onboarding").on("submit", function(event){
         setStatus("orange");
     }
 });
+
+// Auto-focuses input box if autofocus attribute fails due to usage in index.htm
+$("#onboarding").click(() => { $("#user_name").focus(); });
+setTimeout(() => { $("#user_name").focus(); }, 1000);

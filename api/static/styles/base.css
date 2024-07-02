@@ -49,9 +49,8 @@ header a:hover, footer a:hover {
 .menu {
 	display: inline-block;
 	position: absolute;
-	right: 11vh;
-	top: 3.7vh;
-	font-size: 2vw;
+	right: 6em;
+	top: 1.75em;
 	line-height: 2vh;
 }
 
