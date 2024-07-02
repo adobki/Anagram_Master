@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """Contains helper functions for Anagram Master's controllers"""
-from flask import jsonify, redirect, make_response, send_from_directory
+from flask import jsonify, make_response, send_from_directory
 from models import Cypher
 
 
@@ -64,12 +64,3 @@ def error_handler(e):
             return jsonify({'error': f'{code}: Internal Server Error'}), code
         case _:
             return jsonify({'error': f'501: Not Implemented [{code}]'}), 501
-
-
-def redirect_internal(page: str):
-    """Redirects *.htm routes to corresponding route if available"""
-    if page == 'index':
-        return redirect('/', code=302)
-    if page == 'about' or page == 'scores' or page == 'game':
-        return redirect(f'/{page}', code=302)
-    return error_handler(404)

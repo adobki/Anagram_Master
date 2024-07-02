@@ -2,7 +2,7 @@
 """Contains Anagram Master's webpage route controllers"""
 from api.controllers_auxiliary import delete_player_id, get_player_id, \
                                       signed_response, error_handler
-from flask import jsonify, render_template, request
+from flask import jsonify, redirect, render_template, request
 from json import dumps
 from models import Game
 from uuid import uuid4
@@ -67,3 +67,12 @@ def about():
     """Anagram Master about page"""
     return render_template('about.htm',
                            cache_id=uuid4().__str__())
+
+
+def redirect_internal(page: str):
+    """Redirects *.htm routes to corresponding route if available"""
+    if page == 'index':
+        return redirect('/', code=302)
+    if page == 'about' or page == 'scores' or page == 'game':
+        return redirect(f'/{page}', code=302)
+    return error_handler(404)
