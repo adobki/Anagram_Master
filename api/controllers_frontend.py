@@ -30,11 +30,19 @@ def home():
 
 def onboarding():
     """Anagram Master onboarding page/new game form"""
+    # Prevent user from opening this route directly in a browser
+    if request.method != 'POST':
+        return error_handler(404)
+
     return jsonify({"code": render_template('onboarding.htm')})
 
 
 def gameplay():
     """Anagram Master gameplay page/game screen"""
+    # Prevent user from opening this route directly in a browser
+    if request.method != 'POST':
+        return error_handler(404)
+
     # Get player_id from cookie
     player_id = get_player_id(request)
     if player_id:

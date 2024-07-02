@@ -41,9 +41,11 @@ html_routes = [
     {'rule': '/', 'view_func': home},
     {'rule': '/index', 'view_func': home},
     # onboarding route: Player onboarding form
-    {'rule': '/onboarding', 'view_func': onboarding, 'strict_slashes': False},
+    {'rule': '/onboarding', 'view_func': onboarding, 'strict_slashes': False,
+     'methods': ['GET', 'POST']},
     # gameplay route: Game screen/page
-    {'rule': '/game', 'view_func': gameplay, 'strict_slashes': False},
+    {'rule': '/game', 'view_func': gameplay, 'strict_slashes': False,
+     'methods': ['GET', 'POST']},
     # scores route: Highscores page
     {'rule': '/scores', 'view_func': html_scores, 'strict_slashes': False},
     # about route: About/info page
