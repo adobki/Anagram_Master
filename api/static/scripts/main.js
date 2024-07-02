@@ -24,24 +24,64 @@ const url_api_play = "../api/v1/play";
 const url_api_close = "../api/v1/close";
 const url_api_scores = "../api/v1/scores";
 
+// Check if player has an active/saved game and update interface
+let status = $("#active").text();
+$("#active").remove();
+let score = "";
+let time = 0;
+if (status) {
+    status = JSON.parse(status);
+    console.log(status);
+    $("#start").text(status.action);
+    user_name = status.name;
+    document.title = user_name + " | " + document.title;
+}
+
 // Homepage Buttons Actions
 $(".logo").click(()=>{
     window.location.href = url_home;
 });
 $("#start").click(()=>{
-    $.post(url_onboarding, function(JSON){
-        // Display onboarding screen in canvas
-        $(".canvas").html(JSON.code);
-        // Add onboarding window script
-        const m_script=document.createElement('script');
-        m_script.src="../static/scripts/onboarding.js?="+ new Date().getTime();
-        document.head.appendChild(m_script);
-    });
+    if (status) {
+        // Load and display game screen in canvas
+        resume(status)
+    } else {
+        // Load and display onboarding screen in canvas
+        $.post(url_onboarding, function(data){
+            $(".canvas").html(data.code);
+        });
+    }
+    // Add onboarding window script
+    $.getScript("../static/scripts/onboarding.js?=" + new Date().getTime());
 });
 $("#scores").click(()=>{
     window.location.href = url_scores;
 });
 
+// Resumes active/last saved game instead of starting a new one
+function resume (active) {
+    if (!active) { return }
+    $.post(url_api_play, '{}', function(data){
+        if (data.status){
+            // Store values to be parsed by game screen
+            root_word = data.word;
+            current_time = data.time;
+            words_limit = data.rounds_limit;
+            rounds_limit = data.rounds_limit - data.round;
+            used = data["words"][root_word];
+            if (used){
+                used_words = used;
+            }
+            score = data.score;
+            time = data.time;
+        } else {
+            window.onbeforeunload = null
+            setStatus("red");
+            dialog_txt.html(data.error);
+            dialog.showModal();
+        }
+    });
+}
 
 // Add onboarding window stylesheet (Moved out here to prevent flashing on load)
 const style=document.createElement('link');

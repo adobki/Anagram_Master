@@ -4,12 +4,18 @@
   ============================================================================
 */
 
-// Global variables used for game screen
-let root_word = "overwhelmingly";
-let used_words = [];
-let round_limit = 6;
-let words_limit = 0;
-let current_time = 0;
+// Check if new game or resumed saved game
+if (status) {
+    // Go directly to game screen for resumed saved game
+    loadGame();
+} else {
+    // Global variables used for game screen
+    let root_word = "";
+    let used_words = [];
+    let rounds_limit = 0;
+    let words_limit = 0;
+    let current_time = 0;
+}
 
 // Dialog box for displaying errors
 let dialog = document.getElementById("error");
@@ -43,6 +49,9 @@ function loadGame(){
         o_script.src="../static/scripts/game.js?="+ new Date().getTime();
         document.head.appendChild(o_script);
         document.title = "Anagram Master | " + header["User Name"]
+        // Set score and time for resumed saved game
+        $("#score").text(score);
+        $("#clock").text(time);
     });
 };
 
