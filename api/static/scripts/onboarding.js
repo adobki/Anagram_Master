@@ -23,7 +23,7 @@ window.onbeforeunload = function() {
 
 // Loads the game screen
 function loadGame(){
-    $.post(url_game, JSON.stringify(header), function(JSON){
+    $.post(url_game, '{}', function(JSON){
         if (JSON.error){
             setStatus("red");
             dialog_txt.html(JSON.error);
@@ -49,7 +49,8 @@ function loadGame(){
 // Onboarding Page Actions
 $("#onboarding").on("submit", function(event){
     event.preventDefault();
-    const user_name = $("#user_name").val();
+
+    user_name = $("#user_name").val();
     // Input Validation
     if (user_name.length == 0){
         dialog_txt.html("ERROR: No name! You must provide a name!");
@@ -60,20 +61,22 @@ $("#onboarding").on("submit", function(event){
         dialog_txt.html(err_msg);
         dialog.showModal();
     } else {
-        header["User Name"] = user_name;
-        $.post(url_home, JSON.stringify(header), function(JSON){
+        // Submit name to server
+        payload = JSON.stringify({ "name": user_name })
+        $.post(url_api_init, payload, function(JSON){
             // Check if new player was created successfully and start game
             if (JSON.status){
-                header["Session ID"] = JSON["Session ID"];
-                // Store loaded words
-                round_limit = JSON["round_limit"] - 1;
-                words_limit = JSON["round_limit"];
-                root_word = JSON["word"];
-                used = JSON["words"][root_word];
+                // Store loaded game session data
+                root_word = JSON.word;
                 current_time = JSON.time;
+                words_limit = JSON.rounds_limit;
+                rounds_limit = JSON.rounds_limit - JSON.round;
+                used = JSON["words"][root_word];
                 if (used){
                     used_words = used;
                 }
+
+                // Load game screen
                 loadGame();
             } else {
                 setStatus("red");

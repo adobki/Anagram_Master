@@ -4,10 +4,9 @@
   ============================================================================
 */
 
-// Set headers and data type and URLs for all HTTP requests
-const header = {"Content-Type": "application/json"};
+// Set header and data type for all HTTP requests
 $.ajaxSetup({
-    headers: header,
+    headers: {"Content-Type": "application/json"},
     dataType: "json"
 });
 
@@ -18,9 +17,12 @@ const url_onboarding = "../onboarding";
 const url_scores = "../scores";
 
 // API routes
-const url_init = "../api/v1/init";
-const url_status = "../api/v1/status";
-const url_close = "../api/v1/close";
+const url_api_health = "../api/v1/health";
+const url_api_init = "../api/v1/init";
+const url_api_status = "../api/v1/status";
+const url_api_play = "../api/v1/play";
+const url_api_close = "../api/v1/close";
+const url_api_scores = "../api/v1/scores";
 
 // Homepage Buttons Actions
 $(".logo").click(()=>{

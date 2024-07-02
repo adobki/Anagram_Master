@@ -106,7 +106,7 @@ function displayWords(){
 function gameRound(check){
     // Check and return last round status
     if (check){
-        if (!round_limit){
+        if (!rounds_limit){
             return false
         } else {
             setStatus("green");
@@ -123,7 +123,7 @@ function gameRound(check){
         $("#quit").click();
         return false;
     } else {
-        round_limit--;
+        rounds_limit--;
         setStatus("green");
         return true;
     }
@@ -156,7 +156,7 @@ function updateWords(JSON){
     }
 
     // Clear input box if skip was triggered on round words_limit reached
-    if (JSON.skipped){
+    if (JSON.new_round){
         $("#word").val("");
     }
 
@@ -231,18 +231,15 @@ $("#root").on("submit", function(event){
         displayMessage(err_msg, true);
         return;
     }
-    // Update header with current game stats
-    header["word"] = word;
-    header["time"] = 40;
-    header["new_word"] = false;
-    header["quit"] = false;
+
     // Submit new word from user
-    $.post(url_status, JSON.stringify(header), function(JSON){
+    payload = JSON.stringify({ "word": word, "time": 40 })
+    $.post(url_api_play, payload, function(JSON){
         if (JSON.status){
             // Update words
             updateWords(JSON);
             // Update score
-            updateScore(JSON.Score);
+            updateScore(JSON.score);
             // Update time
             current_time = JSON.time;
             // Set status based on word validity
@@ -267,10 +264,7 @@ $("#skip").click(()=>{
     }
     $("#clock").css("color", "black");
     setStatus("orange");
-    header["new_word"] = true;
-    header["time"] = 40;
-    header["quit"] = false;
-    $.post(url_status, JSON.stringify(header), function(JSON){
+    $.post(url_api_play, JSON.stringify({"new_word": true}), function(JSON){
         if (!JSON.error){
             updateWords(JSON);
             // Update time
@@ -286,16 +280,16 @@ $("#skip").click(()=>{
 
 // Quit Button: Ends the game and loads off-boarding actions
 $("#quit").click(()=>{
-    header["quit"] = true;
     console.log("Quit button clicked!");
     displayError("Game Over! Refresh page or go back to homepage");
-    $.post(url_close, JSON.stringify(header), function(JSON){
+    $.post(url_api_close, JSON.stringify({"quit": true}), function(JSON){
         // Begin off-boarding if quit action was successful
         if (!JSON.error){
             // Load highscores page
             window.location.href = url_scores;
         }
     });
+
     // Disable page exit popup/warning and stop game clock
     window.onbeforeunload = undefined;
     clearInterval(game_clock);

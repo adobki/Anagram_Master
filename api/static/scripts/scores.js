@@ -6,7 +6,7 @@
 
 // Site routes
 const url_home = "../";
-const url_scores = "../scores";
+const url_api_scores = "../api/v1/scores";
 
 // Highscores Buttons Actions
 $(".logo").click(()=>{
@@ -21,18 +21,18 @@ $("#back").click(()=>{
 
 // Get high scores from server and display them on page
 $(window).ready(function(){
-    $.post(url_scores, function(JSON){
+    $.get(url_api_scores, function(JSON){
         if (JSON.scores){
             const list_a = $("#scores_a");
             const list_b = $("#scores_b");
             list_a.text(""), list_b.text("");
             let index = 0;
             let scores = list_a;
-            JSON.scores.forEach(function(item){
-                const data =  `<tr><td class="name">${item[1]}: </td>` +
+            JSON.scores.slice(0, 20).forEach(function(item){
+                const data =  `<tr><td class="name">${item[1]} </td>` +
                               `<td>${item[0]}</td></tr>`;
                 scores.html(scores.html() + data);
-                // Check if first list is full and switch to second
+                // Switch to second column if the first one is full
                 index++;
                 if (index >= 10){
                     scores = list_b;
