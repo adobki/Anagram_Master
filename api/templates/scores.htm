@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Highscores | Anagram Master</title>
+    <link rel="shortcut icon" type=”image/x-icon” href="../static/media/logo_icon.png">
+    <link rel="stylesheet" type="text/css" href="../static/styles/reset.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/base.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/main.css?{{ cache_id }}">
+    <link rel="stylesheet" type="text/css" href="../static/styles/scores.css?{{ cache_id }}">
+<!--    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>-->
+    <script src="../static/scripts/_jquery-3.7.0.min.js"></script>
+    <script defer src="../static/scripts/scores.js?{{ cache_id }}"></script>
+  </head>
+  <body>
+    <section class="canvas">
+      <div class="main">
+        <div class="title">
+          <img src="../static/media/logo_text_white.png" class="logo_scores" alt="">
+          <h1>Highscores</h1>
+        </div>
+        <table id="scores_a">
+        </table>
+        <table id="scores_b">
+        </table>
+        <div class="controls">
+          <button type="button" id="back">Back</button>
+        </div>
+      </div>
+    </section>
+    <header class="container">
+      <div class="logo"><img ></div>
+      <nav class="menu">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="scores">Highscores</a></li>
+          <li><a href="https://www.youtube.com/watch?v=PRH3_1Zs9Sc">Help</a></li>
+          <li class="about">
+            <ul class="nav">
+              <li><a href="about#features">Features</a></li>
+              <li><a href="about#project">The Project</a></li>
+            </ul>
+            <a href="about">About</a>
+          </li>
+        </ul>
+      </nav>
+      <div id="status"></div>
+    </header>
+    <footer class="container">
+      <p class="credits">Anagram Master. Copyright © 2023, Donald Ajaps.</p>
+    </footer>
+  </body>
+</html>

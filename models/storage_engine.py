@@ -1,16 +1,19 @@
 #!/usr/bin/python3
 """Contains file storage engine class for loading/saving data to file system"""
+import os
 from json import dumps, loads
 
 
 class Storage:
     """Class serialises/deserialises words and scores to/from a JSON file"""
+    root = '\\storage_data\\' if os.name == 'nt' else '/storage_data/'
+    path = os.path.dirname(__file__) + root
 
     def __init__(self):
         """Set private attributes for new instance."""
         self.__types = ('words', 'scores')
-        self.__paths = {'words': 'api/v1/storage_data/words.txt',
-                        'scores': 'api/v1/storage_data/scores.json'}
+        self.__paths = {'words':  f'{self.path}words.txt',
+                        'scores': f'{self.path}scores.json'}
 
     def save(self, f_type: str, data: list):
         """Serialises data to a JSON file"""
@@ -30,22 +33,20 @@ class Storage:
             return {'error': f'ERROR: {e}'}
 
     def load(self, f_type: str):
-        """Deserialises data from a JSON file"""
+        """Deserialises data from a JSON or TXT file"""
         # Data validation
         if f_type not in self.__types:
-            return {'error': 'ERROR: Invalid storage type was specified'}
+            error = 'ERROR: Invalid storage type was specified'
+            raise ValueError(error)
         # Open and read file then return read data or error on failure
-        try:
-            with open(self.__paths[f_type], 'r', encoding='UTF-8') as my_file:
-                if f_type == 'words':
-                    data = my_file.readlines()
-                else:
-                    data = loads(my_file.read())
-                    # Convert lists back to tuple and sort it
-                    data = sorted([tuple(item) for item in data])
-            return data
-        except Exception as e:
-            return {'error': f'ERROR: {e}'}
+        with open(self.__paths[f_type], 'r', encoding='UTF-8') as my_file:
+            if f_type == 'words':
+                data = my_file.readlines()
+            else:
+                data = loads(my_file.read())
+                # Convert lists back to tuple and sort it
+                data = sorted([tuple(item) for item in data])
+        return data
 
     def __getattr__(self, item):
         """Prevents error when unknown attribute is requested."""

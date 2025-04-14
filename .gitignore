@@ -4,6 +4,12 @@
 # Byte-compiled / optimized Python files
 __pycache__/
 
+# Python virtual environment files / environment variables
+.venv
+.env
+venv
+env
+
 # Temp files
 *~
 .idea
