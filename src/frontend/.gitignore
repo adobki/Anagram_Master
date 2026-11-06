@@ -1,0 +1,18 @@
+# Dependencies and build output
+node_modules
+dist
+dev-dist
+
+# Logs and local env files
+*.log
+*.local
+
+# Editors and OS
+.vscode
+.idea
+.DS_Store
+
+# The repo-root .gitignore ignores every *.json (meant for the API's data
+# files). Here the JSON files are source (package.json, package-lock.json,
+# tsconfig*.json), so re-include them.
+!*.json
