@@ -85,7 +85,6 @@ $("#onboarding").on("submit", function(event){
                         "Must be 3 to 15 characters long!");
         dialog.showModal();
     } else if (checkScreen(user_name)){
-        const err_msg =
         dialog_txt.html("ERROR: Your screen or device is not supported!<br>" +
                         "Must be run on a modern PC in landscape mode.");
         dialog.showModal();
