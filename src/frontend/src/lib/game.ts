@@ -3,7 +3,15 @@ import type { GameState } from './api'
 /** Scores below this are not saved. Mirrors DBScores.min_score on the server. */
 export const MIN_LEADERBOARD_SCORE = 10
 
-export type Tone = 'good' | 'bad' | 'info'
+/**
+ * Shortest word the game accepts. The server takes any length; two letters is
+ * the game's rule, and short words are a deliberate part of it (twenty words
+ * in two minutes is hard for humans otherwise). The UI enforces it.
+ */
+export const MIN_WORD_LENGTH = 2
+
+/** good: a valid word. great: it cleared the round. bad: rejected. info: neutral. */
+export type Tone = 'good' | 'great' | 'bad' | 'info'
 
 /** A short message about the player's last action. */
 export interface Feedback {
@@ -26,6 +34,17 @@ export interface GameController {
   submit(word: string): Promise<Feedback>
   skip(): Promise<void>
   quit(): Promise<void>
+  /**
+   * The game screen is closing. The round clock keeps running (it lives on
+   * the server, so players can't stop it to think), but the game won't move
+   * on to the next round when it runs out until resume() is called.
+   */
+  pause(): void
+  /**
+   * The game screen is showing again. If the round ran out of time meanwhile,
+   * the game moves on, and the returned message says so.
+   */
+  resume(): Promise<Feedback | null>
   /** Stops timers. Call it when the controller is no longer needed. */
   destroy(): void
 }

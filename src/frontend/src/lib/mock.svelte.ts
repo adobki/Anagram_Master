@@ -3,8 +3,10 @@
  * tried without Flask. Mission 5 deletes this file and implements
  * GameController on the real API.
  *
- * It follows the server's rules, with one shortcut: any answer of 3+ letters
- * that contains a vowel counts as a dictionary word.
+ * It follows the server's rules, with two shortcuts:
+ * - any answer of 3+ letters that contains a vowel counts as a dictionary word;
+ * - the round's word spelled backwards (blessed → desselb) fills the round
+ *   with valid words, to test the 20-word bonus.
  */
 
 import type { Answer, GameState } from './api'
@@ -80,13 +82,36 @@ function buildState(name: string, round: number, perRound: number[]): GameState 
   }
 }
 
+/** Fills a round up to GOAL valid answers (the backwards-root test shortcut). Returns the points earned. */
+function fillRound(root: string, answers: Answer[]) {
+  const pool = letters(root)
+  const pieces: string[] = [] // runs of the root's letters: always makeable
+  for (let length = 2; length <= 7; length++)
+    for (let i = 0; i + length <= pool.length; i++) pieces.push(pool.slice(i, i + length).join(''))
+  const seen = new Set(answers.map(([w]) => w))
+  let found = answers.filter(([, ok]) => ok).length
+  let earned = 0
+  for (const word of [...SAMPLE_WORDS.filter((w) => canMake(w, pool)), ...pieces]) {
+    if (found >= GOAL) break
+    if (seen.has(word)) continue
+    seen.add(word)
+    answers.push([word, true])
+    earned += points(word, root)
+    found++
+  }
+  return earned
+}
+
 export function createMockGame(name: string, round = 1, perRound: number[] = []): GameController {
   const g = $state({ state: buildState(name, round, perRound), timeLeft: TIME, busy: false })
+  // Paused until the game screen shows. The clock runs regardless, like the
+  // server's; a paused game just doesn't move on when time runs out.
+  let paused = true
 
   const clock = setInterval(() => {
     if (!g.state.status) return
     if (g.timeLeft > 0) g.timeLeft -= 1
-    else advance(true)
+    else if (!paused) advance(true)
   }, 1000)
 
   function advance(forced: boolean) {
@@ -126,6 +151,11 @@ export function createMockGame(name: string, round = 1, perRound: number[] = [])
         const word = raw.toLowerCase()
         const answers = s.words[root]
         if (word === letters(root).join('')) return { tone: 'info', text: "That's this round's word. Make new ones from it!" }
+        if (word === letters(root).reverse().join('')) {
+          s.score += fillRound(root, answers) + 50
+          advance(false)
+          return { tone: 'great', text: 'Round cleared! +50 bonus' }
+        }
         if (answers.some(([w]) => w === word)) {
           s.score = Math.max(0, s.score - 2)
           return { tone: 'bad', text: 'Already played · −2' }
@@ -140,13 +170,28 @@ export function createMockGame(name: string, round = 1, perRound: number[] = [])
         if (answers.filter(([, ok]) => ok).length === GOAL) {
           s.score += 50
           advance(false)
-          return { tone: 'good', text: 'Round cleared! +50 bonus' }
+          return { tone: 'great', text: 'Round cleared! +50 bonus' }
         }
         return { tone: 'good', text: praise(word.length, letters(root).length) }
       }),
 
     skip: () => request(() => advance(false)),
     quit: () => request(end),
+
+    pause: () => {
+      paused = true
+    },
+
+    resume: () =>
+      request((): Feedback | null => {
+        paused = false
+        const s = g.state
+        if (!s.status || g.timeLeft > 0) return null
+        const wasLast = s.round >= s.rounds_limit
+        advance(true) // on the last round this ends the game
+        return wasLast ? null : { tone: 'info', text: `Time ran out while you were away. On to round ${s.round}.` }
+      }),
+
     destroy: () => clearInterval(clock),
   }
 }

@@ -84,6 +84,11 @@
     margin-top: var(--space-2);
   }
 
+  /* Give an action class="span" to take the full width. */
+  .actions > :global(.span) {
+    grid-column: 1 / -1;
+  }
+
   @keyframes pop {
     from {
       opacity: 0;

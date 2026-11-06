@@ -22,7 +22,7 @@ The dev server forwards every `/api/...` request to Flask on `127.0.0.1:5555`. T
 
 To test on a phone on the same Wi-Fi, run `npm run dev:lan` and open the "Network" URL it prints. The first time, Windows Firewall asks whether Node.js may accept connections.
 
-**Design preview.** Until mission 5, the screens run on a local mock of the API (`src/lib/mock.svelte.ts`), so Flask isn't needed yet. Open `/#game` or `/#over` to jump straight to the game or game-over screen.
+**Design preview.** Until mission 5, the screens run on a local mock of the API (`src/lib/mock.svelte.ts`), so Flask isn't needed yet. Open `/#game` or `/#over` to jump straight to the game or game-over screen. In the mock, any word of 3+ letters with a vowel counts as valid. Typing the round's word backwards (`desselb` for `blessed`) clears the round, so you can test the 20-word bonus.
 
 ## Scripts
 
@@ -44,8 +44,10 @@ To test on a phone on the same Wi-Fi, run `npm run dev:lan` and open the "Networ
 | `src/main.ts` | Mounts the app |
 | `src/App.svelte` | The root component; switches between screens |
 | `src/screens/` | Full screens: home, game, game over |
-| `src/components/` | Reusable pieces: buttons, letter tiles, timer, score, word list, dialog, toasts |
+| `src/components/` | Reusable pieces: buttons, letter tiles, rack, tray, timer, score, word list, dialog, toasts |
 | `src/styles/tokens.css` | Design tokens: light and dark colours, type, spacing, radii, motion |
+| `src/styles/base.css` | Global styles, including the root font size that scales the UI up on big screens |
+| `src/lib/drag.svelte.ts` | Drag and drop for tiles (pointer events, so touch and mouse both work) |
 | `src/lib/api.ts` | Typed client for `/api/v1` |
 | `src/lib/game.ts` | `GameController`, the interface the game screen plays through |
 | `src/lib/letters.ts` | Turns a root word into tiles (letters only; `-` and `'` are dropped) |

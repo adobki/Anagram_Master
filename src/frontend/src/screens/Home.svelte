@@ -1,6 +1,7 @@
 <script lang="ts">
   import ArrowRight from '@lucide/svelte/icons/arrow-right'
   import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark'
+  import Clock from '@lucide/svelte/icons/clock'
   import Play from '@lucide/svelte/icons/play'
   import Trophy from '@lucide/svelte/icons/trophy'
   import { onMount } from 'svelte'
@@ -16,13 +17,17 @@
   interface Props {
     /** A game in progress that can be resumed, if any. */
     saved: GameState | null
+    /** Seconds left in the saved game's round. Its clock keeps running. */
+    timeLeft?: number
     onstart: (name: string) => void
     oncontinue: () => void
     onleaderboard: () => void
     onhelp: () => void
   }
 
-  let { saved, onstart, oncontinue, onleaderboard, onhelp }: Props = $props()
+  let { saved, timeLeft = 0, onstart, oncontinue, onleaderboard, onhelp }: Props = $props()
+
+  const clock = $derived(`${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`)
 
   let name = $state('')
   let tried = $state(false)
@@ -73,12 +78,22 @@
 
     {#if saved}
       <section class="card resume" aria-label="Game in progress">
-        <div>
-          <p class="eyebrow">Game in progress</p>
-          <p class="who">{saved.name}</p>
-          <p class="meta">Round {saved.round} of {saved.rounds_limit} · {saved.score} points</p>
+        <div class="resume-head">
+          <div>
+            <p class="eyebrow">Game in progress</p>
+            <p class="who">{saved.name}</p>
+            <p class="meta">Round {saved.round} of {saved.rounds_limit} · {saved.score} points</p>
+          </div>
+          <Button onclick={oncontinue}>Continue <ArrowRight size="1.125rem" /></Button>
         </div>
-        <Button onclick={oncontinue}>Continue <ArrowRight size={18} /></Button>
+        <p class="running" class:out={!timeLeft} role="timer">
+          <Clock size="1rem" />
+          {#if timeLeft}
+            <span><strong>{clock}</strong> left in this round. The clock keeps running while you're away.</span>
+          {:else}
+            <span>This round's time is up. The next round starts when you continue.</span>
+          {/if}
+        </p>
       </section>
     {/if}
 
@@ -96,15 +111,15 @@
         hint="3–15 characters. It appears on the leaderboard."
       />
       <Button type="submit" size="lg" block>
-        <Play size={20} />
+        <Play size="1.25rem" />
         {saved ? 'Start a new game' : 'Start game'}
       </Button>
     </form>
   </main>
 
   <footer>
-    <Button variant="ghost" onclick={onleaderboard}><Trophy size={18} /> Leaderboard</Button>
-    <Button variant="ghost" onclick={onhelp}><CircleQuestionMark size={18} /> How to play</Button>
+    <Button variant="ghost" onclick={onleaderboard}><Trophy size="1.125rem" /> Leaderboard</Button>
+    <Button variant="ghost" onclick={onhelp}><CircleQuestionMark size="1.125rem" /> How to play</Button>
   </footer>
 </div>
 
@@ -197,11 +212,41 @@
   }
 
   .resume {
+    display: grid;
+    gap: var(--space-4);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  }
+
+  .resume-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
-    border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  }
+
+  .running {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: var(--space-2);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line);
+    font-size: var(--text-sm);
+    color: var(--text-2);
+  }
+
+  .running :global(svg) {
+    margin-top: 0.15rem;
+    color: var(--warn);
+  }
+
+  .running strong {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .running.out :global(svg) {
+    color: var(--accent);
   }
 
   .eyebrow {

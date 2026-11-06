@@ -47,7 +47,7 @@
 {#key screen}
   <div in:fade={{ duration: ms(220) }}>
     {#if screen === 'game' && game}
-      <Game {game} onend={finish} />
+      <Game {game} onend={finish} onpause={() => go('home')} />
     {:else if screen === 'over' && result}
       <GameOver
         {result}
@@ -58,6 +58,7 @@
     {:else}
       <Home
         saved={game?.state.status ? game.state : null}
+        timeLeft={game?.timeLeft ?? 0}
         onstart={newGame}
         oncontinue={() => go('game')}
         onleaderboard={() => soon('The leaderboard')}

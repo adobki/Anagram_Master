@@ -7,6 +7,13 @@
 }
 
 html {
+  /*
+   * Everything is sized in rem, so this scales the whole UI. It stays at the
+   * browser default (normally 16px) up to a 1280×800 window, then grows with
+   * whichever of the width and height has less room, up to double. On a
+   * 2048×1280 screen that is 25.6px. Phones and tablets keep the default.
+   */
+  font-size: clamp(100%, min(1.25vw, 2vh), 200%);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }

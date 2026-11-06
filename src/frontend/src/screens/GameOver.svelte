@@ -43,7 +43,7 @@
 
 <div class="screen">
   <header class="bar">
-    <IconButton label="Home" onclick={onhome}><House size={20} /></IconButton>
+    <IconButton label="Home" onclick={onhome}><House size="1.25rem" /></IconButton>
     <ThemeToggle />
   </header>
 
@@ -57,7 +57,7 @@
       </p>
       <p class="badge" class:on={onLeaderboard}>
         {#if onLeaderboard}
-          <Trophy size={16} /> Saved to the leaderboard
+          <Trophy size="1rem" /> Saved to the leaderboard
         {:else}
           Score {MIN_LEADERBOARD_SCORE} or more to make the leaderboard
         {/if}
@@ -88,8 +88,8 @@
   </main>
 
   <footer>
-    <Button size="lg" block onclick={onplay}><RotateCcw size={20} /> Play again</Button>
-    <Button variant="secondary" size="lg" block onclick={onleaderboard}><Trophy size={20} /> Leaderboard</Button>
+    <Button size="lg" block onclick={onplay}><RotateCcw size="1.25rem" /> Play again</Button>
+    <Button variant="secondary" size="lg" block onclick={onleaderboard}><Trophy size="1.25rem" /> Leaderboard</Button>
   </footer>
 </div>
 

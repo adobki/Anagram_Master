@@ -12,7 +12,7 @@
 <IconButton label={dark ? 'Use light theme' : 'Use dark theme'} onclick={() => theme.toggle()}>
   {#key dark}
     <span class="icon" in:scale={{ duration: ms(250), start: 0.5 }}>
-      {#if dark}<Sun size={20} />{:else}<Moon size={20} />{/if}
+      {#if dark}<Sun size="1.25rem" />{:else}<Moon size="1.25rem" />{/if}
     </span>
   {/key}
 </IconButton>

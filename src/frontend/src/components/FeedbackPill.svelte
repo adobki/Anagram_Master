@@ -1,6 +1,7 @@
 <script lang="ts">
   import CircleX from '@lucide/svelte/icons/circle-x'
   import Info from '@lucide/svelte/icons/info'
+  import PartyPopper from '@lucide/svelte/icons/party-popper'
   import Sparkles from '@lucide/svelte/icons/sparkles'
   import { fade, fly } from 'svelte/transition'
   import type { Feedback } from '../lib/game'
@@ -17,12 +18,14 @@
         in:fly|global={{ y: 8, duration: ms(200) }}
         out:fade|global={{ duration: ms(150) }}
       >
-        {#if feedback.tone === 'good'}
-          <Sparkles size={16} />
+        {#if feedback.tone === 'great'}
+          <PartyPopper size="1.125rem" />
+        {:else if feedback.tone === 'good'}
+          <Sparkles size="1rem" />
         {:else if feedback.tone === 'bad'}
-          <CircleX size={16} />
+          <CircleX size="1rem" />
         {:else}
-          <Info size={16} />
+          <Info size="1rem" />
         {/if}
         {feedback.text}
       </p>
@@ -52,6 +55,22 @@
   .good {
     background: var(--good-soft);
     color: var(--good);
+  }
+
+  .great {
+    padding: var(--space-2) var(--space-5);
+    background: linear-gradient(135deg, var(--primary), #f59e0b);
+    color: #fff;
+    font-size: var(--text-base);
+    font-weight: 700;
+    box-shadow: 0 10px 24px -10px var(--primary);
+    animation: cheer 0.6s var(--ease-spring);
+  }
+
+  @keyframes cheer {
+    from {
+      transform: scale(0.6);
+    }
   }
 
   .bad {
