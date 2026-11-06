@@ -1,0 +1,233 @@
+<script lang="ts">
+  import ArrowRight from '@lucide/svelte/icons/arrow-right'
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark'
+  import Play from '@lucide/svelte/icons/play'
+  import Trophy from '@lucide/svelte/icons/trophy'
+  import { onMount } from 'svelte'
+  import { flip } from 'svelte/animate'
+  import { cubicInOut } from 'svelte/easing'
+  import { prefersReducedMotion } from 'svelte/motion'
+  import logo from '../assets/logo.png'
+  import Button from '../components/Button.svelte'
+  import TextField from '../components/TextField.svelte'
+  import ThemeToggle from '../components/ThemeToggle.svelte'
+  import type { GameState } from '../lib/api'
+
+  interface Props {
+    /** A game in progress that can be resumed, if any. */
+    saved: GameState | null
+    onstart: (name: string) => void
+    oncontinue: () => void
+    onleaderboard: () => void
+    onhelp: () => void
+  }
+
+  let { saved, onstart, oncontinue, onleaderboard, onhelp }: Props = $props()
+
+  let name = $state('')
+  let tried = $state(false)
+  const trimmed = $derived(name.trim())
+  const error = $derived(tried && trimmed.length < 3 ? 'Use at least 3 characters.' : undefined)
+
+  function start(event: SubmitEvent) {
+    event.preventDefault()
+    tried = true
+    if (trimmed.length >= 3) onstart(trimmed)
+  }
+
+  // Hero tiles spell MASTER, then glide into its anagrams (STREAM, TAMERS).
+  const LETTERS = ['m', 'a', 's', 't', 'e', 'r']
+  const ORDERS = [
+    [0, 1, 2, 3, 4, 5],
+    [2, 3, 5, 4, 1, 0],
+    [3, 1, 0, 4, 5, 2],
+  ]
+  let step = $state(0)
+  const order = $derived(ORDERS[step % ORDERS.length])
+  onMount(() => {
+    const timer = setInterval(() => {
+      if (!prefersReducedMotion.current) step++
+    }, 2800)
+    return () => clearInterval(timer)
+  })
+</script>
+
+<div class="screen">
+  <header class="bar">
+    <span></span>
+    <ThemeToggle />
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="deco" aria-hidden="true">
+        {#each order as id (id)}
+          <span class="deco-tile" class:hot={id === 0} style:--i={id} animate:flip={{ duration: 700, easing: cubicInOut }}>
+            {LETTERS[id]}
+          </span>
+        {/each}
+      </div>
+      <h1><img src={logo} alt="Anagram Master" width="580" height="150" /></h1>
+      <p class="tagline">Twenty rounds, two minutes each.<br />How many words can you make?</p>
+    </section>
+
+    {#if saved}
+      <section class="card resume" aria-label="Game in progress">
+        <div>
+          <p class="eyebrow">Game in progress</p>
+          <p class="who">{saved.name}</p>
+          <p class="meta">Round {saved.round} of {saved.rounds_limit} · {saved.score} points</p>
+        </div>
+        <Button onclick={oncontinue}>Continue <ArrowRight size={18} /></Button>
+      </section>
+    {/if}
+
+    <form class="card" onsubmit={start} novalidate>
+      <TextField
+        label={saved ? 'Or start over as' : 'Your name'}
+        placeholder="e.g. Ada"
+        maxlength={15}
+        autocomplete="nickname"
+        autocapitalize="words"
+        enterkeyhint="go"
+        spellcheck="false"
+        bind:value={name}
+        {error}
+        hint="3–15 characters. It appears on the leaderboard."
+      />
+      <Button type="submit" size="lg" block>
+        <Play size={20} />
+        {saved ? 'Start a new game' : 'Start game'}
+      </Button>
+    </form>
+  </main>
+
+  <footer>
+    <Button variant="ghost" onclick={onleaderboard}><Trophy size={18} /> Leaderboard</Button>
+    <Button variant="ghost" onclick={onhelp}><CircleQuestionMark size={18} /> How to play</Button>
+  </footer>
+</div>
+
+<style>
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-5);
+    width: 100%;
+    max-width: 26rem;
+    margin: 0 auto;
+    padding-block: var(--space-4) var(--space-6);
+  }
+
+  .hero {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-2);
+    text-align: center;
+  }
+
+  h1 img {
+    width: min(100%, 19rem);
+    height: auto;
+  }
+
+  .tagline {
+    font-size: var(--text-lg);
+    line-height: 1.45;
+    color: var(--text-2);
+  }
+
+  .deco {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-1);
+  }
+
+  .deco-tile {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.65rem;
+    background: linear-gradient(var(--tile-sheen), transparent) var(--tile);
+    color: var(--tile-text);
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    box-shadow:
+      0 3px 0 var(--tile-edge),
+      var(--shadow-sm);
+    rotate: calc((var(--i) - 2.5) * 3deg);
+    animation: bob 3.2s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -0.55s);
+  }
+
+  .hot {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: 0 3px 0 color-mix(in srgb, var(--primary) 60%, black);
+  }
+
+  @keyframes bob {
+    50% {
+      translate: 0 -5px;
+    }
+  }
+
+  .card {
+    padding: var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+  }
+
+  form {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .resume {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  }
+
+  .eyebrow {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .who {
+    margin-top: var(--space-1);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .meta {
+    font-size: var(--text-sm);
+    color: var(--text-2);
+  }
+
+  footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+</style>

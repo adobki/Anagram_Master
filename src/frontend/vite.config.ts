@@ -20,11 +20,13 @@ export default defineConfig({
         short_name: 'Anagram Master',
         description:
           'A timed word game: rearrange the letters of a root word to form as many new words as you can.',
-        theme_color: '#000000',
-        background_color: '#000000',
+        theme_color: '#0d0c11',
+        background_color: '#0d0c11',
         display: 'standalone',
       },
       workbox: {
+        // Precache the font and images too, so the app shell works offline.
+        globPatterns: ['**/*.{js,css,html,woff2,png,svg}'],
         // API calls must always reach the server, never the cached app shell.
         navigateFallbackDenylist: [/^\/api\//],
       },

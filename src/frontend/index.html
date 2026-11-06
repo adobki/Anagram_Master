@@ -2,14 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f6f5f2" />
     <meta
       name="description"
       content="A timed word game: rearrange the letters of a root word to form as many new words as you can."
     />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <title>Anagram Master</title>
+    <script>
+      // Apply the saved (or system) theme before first paint, so the page
+      // never flashes the wrong one. src/lib/theme.svelte.ts takes over after
+      // load; the colours are --bg from src/styles/tokens.css.
+      ;(function () {
+        var theme = null
+        try {
+          theme = localStorage.getItem('am-theme')
+        } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        }
+        document.documentElement.dataset.theme = theme
+        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#0d0c11' : '#f6f5f2'
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

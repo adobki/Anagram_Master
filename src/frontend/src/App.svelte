@@ -1,74 +1,70 @@
 <script lang="ts">
-  import logo from './assets/logo.png'
-  import { api } from './lib/api'
+  import { fade } from 'svelte/transition'
+  import Toaster from './components/Toaster.svelte'
+  import type { GameState } from './lib/api'
+  import type { GameController } from './lib/game'
+  import { createMockGame, sampleFinishedGame, sampleSavedGame } from './lib/mock.svelte'
+  import { ms } from './lib/motion'
+  import { toasts } from './lib/toast.svelte'
+  import Game from './screens/Game.svelte'
+  import GameOver from './screens/GameOver.svelte'
+  import Home from './screens/Home.svelte'
 
-  // Placeholder screen for the scaffold: proves the app can reach the Flask
-  // API through the dev proxy. The real screens replace it in missions 4–6.
-  const health = api.health()
+  // DESIGN PREVIEW (mission 4): the screens run on a local mock of the API.
+  // Mission 5 replaces the mock with the real API; the screens stay as they are.
+  // Open /#game or /#over to jump straight to a screen.
+  type Screen = 'home' | 'game' | 'over'
+
+  const requested = location.hash.slice(1)
+  let screen = $state<Screen>(requested === 'game' || requested === 'over' ? requested : 'home')
+  let game = $state.raw<GameController | null>(requested === 'game' ? createMockGame('Ada') : sampleSavedGame())
+  let result = $state.raw<GameState | null>(requested === 'over' ? sampleFinishedGame() : null)
+
+  function go(next: Screen) {
+    screen = next
+    history.replaceState(null, '', next === 'home' ? location.pathname : `#${next}`)
+    window.scrollTo(0, 0)
+  }
+
+  function newGame(name: string) {
+    game?.destroy()
+    game = createMockGame(name)
+    go('game')
+  }
+
+  function finish() {
+    if (game) {
+      result = $state.snapshot(game.state)
+      game.destroy()
+      game = null
+    }
+    go('over')
+  }
+
+  const soon = (what: string) => toasts.show(`${what} arrives in mission 6`)
 </script>
 
-<main>
-  <img src={logo} alt="Anagram Master" width="580" height="150" />
-  <p class="note">New front end, scaffold only. The game screens come next.</p>
+{#key screen}
+  <div in:fade={{ duration: ms(220) }}>
+    {#if screen === 'game' && game}
+      <Game {game} onend={finish} />
+    {:else if screen === 'over' && result}
+      <GameOver
+        {result}
+        onplay={() => newGame(result!.name)}
+        onhome={() => go('home')}
+        onleaderboard={() => soon('The leaderboard')}
+      />
+    {:else}
+      <Home
+        saved={game?.state.status ? game.state : null}
+        onstart={newGame}
+        oncontinue={() => go('game')}
+        onleaderboard={() => soon('The leaderboard')}
+        onhelp={() => soon('How to play')}
+      />
+    {/if}
+  </div>
+{/key}
 
-  {#await health}
-    <p class="status"><span class="dot"></span>Checking the API…</p>
-  {:then h}
-    <p class="status" class:ok={h.Database && h.FileStorage} class:down={!h.Database || !h.FileStorage}>
-      <span class="dot"></span>
-      API reachable · database {h.Database ? 'up' : 'down'} · word list {h.FileStorage ? 'loaded' : 'missing'}
-    </p>
-  {:catch err}
-    <p class="status down">
-      <span class="dot"></span>
-      Can't reach the API ({err.message}). Is Flask running on port 5555?
-    </p>
-  {/await}
-</main>
-
-<style>
-  main {
-    min-height: 100dvh;
-    display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: 1.5rem;
-    padding: 1.5rem 1rem;
-    text-align: center;
-  }
-
-  img {
-    width: min(100%, 22rem);
-    height: auto;
-  }
-
-  .note {
-    margin: 0;
-    color: var(--text-muted);
-  }
-
-  .status {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
-    font-size: 0.875rem;
-    color: var(--text-muted);
-  }
-
-  .dot {
-    flex: none;
-    width: 0.625rem;
-    height: 0.625rem;
-    border-radius: 50%;
-    background: var(--wait);
-  }
-
-  .ok .dot {
-    background: var(--ok);
-  }
-
-  .down .dot {
-    background: var(--brand);
-  }
-</style>
+<Toaster />

@@ -19,5 +19,9 @@
     "typescript": "~6.0.3",
     "vite": "^8.3.6",
     "vite-plugin-pwa": "^2.0.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/outfit": "^5.3.0",
+    "@lucide/svelte": "^1.70.0"
   }
 }
