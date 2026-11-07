@@ -7,7 +7,7 @@
   import Pin from '@lucide/svelte/icons/pin'
   import Shuffle from '@lucide/svelte/icons/shuffle'
   import SkipForward from '@lucide/svelte/icons/skip-forward'
-  import { onDestroy, onMount } from 'svelte'
+  import { onDestroy, onMount, untrack } from 'svelte'
   import { fade, scale } from 'svelte/transition'
   import Button from '../components/Button.svelte'
   import Dialog from '../components/Dialog.svelte'
@@ -75,13 +75,10 @@
   const emptySlots = $derived(dragged?.from === 'rack' ? [...picked, dragged.id] : picked)
 
   function startDrag(event: PointerEvent, tile: TileData, from: Origin) {
-    if (!game.busy) drag.start(event, tile.id, tile.letter, from)
+    drag.start(event, tile.id, tile.letter, from)
   }
 
   function drop(done: TileDrag) {
-    if (game.busy) return
-    if (done.from === 'rack') fresh()
-    else rejected = false // rearranging a rejected word keeps it
     const rest = picked.filter((id) => id !== done.id)
     if (done.index < 0) {
       if (done.from === 'tray') picked = rest // dragged off the tray: removed
@@ -102,14 +99,18 @@
     return timer
   }
 
+  // The controller this screen was opened with. App may clear its `game`
+  // before this component is destroyed, so keep our own reference.
+  const controller = untrack(() => game)
+
   onMount(() => {
     // Back on the game screen: if the round ran out meanwhile, the game moves on.
-    game.resume().then((message) => message && say(message))
+    controller.resume().then((message) => message && say(message))
   })
 
   onDestroy(() => {
     timers.forEach(clearTimeout)
-    game.pause()
+    controller.pause()
   })
 
   // Announce each new round.
@@ -130,48 +131,27 @@
   })
 
   // ── Building the word ────────────────────────────────────────────────────
-  // After a rejected word its tiles stay up while the tray shakes; the next
-  // letter from the rack (or the timeout in submit) starts a fresh word.
-  let rejected = false
-  function fresh() {
-    if (rejected) {
-      rejected = false
-      picked = []
-    }
-  }
-
+  // Input stays live while a word is being checked, so the next one can be
+  // typed straight away.
   function pick(id: number) {
-    if (game.busy || drag.justEnded) return
+    if (drag.justEnded) return
     if (picked.includes(id)) return remove(id)
-    fresh()
     picked = [...picked, id]
   }
 
   function remove(id: number) {
-    if (game.busy || drag.justEnded) return
-    rejected = false
+    if (drag.justEnded) return
     picked = picked.filter((p) => p !== id)
   }
 
   function pickLetter(letter: string) {
-    if (game.busy) return
-    fresh()
     const tile = tiles.find((t) => t.letter === letter && !picked.includes(t.id))
     if (tile) picked = [...picked, tile.id]
     else shake++
   }
 
-  function undo() {
-    if (game.busy) return
-    rejected = false
-    picked = picked.slice(0, -1)
-  }
-
-  function clear() {
-    rejected = false
-    picked = []
-  }
-
+  const undo = () => (picked = picked.slice(0, -1))
+  const clear = () => (picked = [])
   const shuffle = () => (tiles = shuffled(tiles))
   const restore = () => (tiles = [...tiles].sort((a, b) => a.id - b.id))
 
@@ -199,7 +179,7 @@
   }
 
   async function submit() {
-    if (!word || game.busy || rejected) return
+    if (!word || game.busy) return
     const sent = word
     const blocked = precheck(sent)
     if (blocked) {
@@ -208,18 +188,14 @@
       if (answers.some(([played, valid]) => valid && played === sent)) latest = sent
       return
     }
-    const result = await game.submit(sent) // letter input pauses while this is in flight
+    if (!keep) clear() // cleared at once, so the next word can be typed while this one is checked
+    const result = await game.submit(sent)
     say(result)
     if (result.tone === 'good' || result.tone === 'great') {
       latest = sent
       if (result.tone === 'great') celebrate()
-      if (!keep) clear()
     } else {
       shake++
-      if (!keep) {
-        rejected = true
-        later(fresh, 450)
-      }
     }
   }
 

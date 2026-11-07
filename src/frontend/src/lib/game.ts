@@ -20,9 +20,8 @@ export interface Feedback {
 }
 
 /**
- * Everything the game screen needs from "the game". During the design preview
- * a local mock implements it (lib/mock.svelte.ts); mission 5 implements it on
- * the API, and the screens stay as they are.
+ * Everything the game screen needs from "the game". lib/api-game.svelte.ts
+ * implements it on the API.
  */
 export interface GameController {
   /** The latest game state from the server. */

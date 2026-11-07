@@ -1,35 +1,48 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { fade } from 'svelte/transition'
   import Toaster from './components/Toaster.svelte'
-  import type { GameState } from './lib/api'
+  import { api, ApiError, type GameState } from './lib/api'
+  import { createApiGame, findSavedGame } from './lib/api-game.svelte'
   import type { GameController } from './lib/game'
-  import { createMockGame, sampleFinishedGame, sampleSavedGame } from './lib/mock.svelte'
   import { ms } from './lib/motion'
   import { toasts } from './lib/toast.svelte'
   import Game from './screens/Game.svelte'
   import GameOver from './screens/GameOver.svelte'
   import Home from './screens/Home.svelte'
 
-  // DESIGN PREVIEW (mission 4): the screens run on a local mock of the API.
-  // Mission 5 replaces the mock with the real API; the screens stay as they are.
-  // Open /#game or /#over to jump straight to a screen.
   type Screen = 'home' | 'game' | 'over'
 
-  const requested = location.hash.slice(1)
-  let screen = $state<Screen>(requested === 'game' || requested === 'over' ? requested : 'home')
-  let game = $state.raw<GameController | null>(requested === 'game' ? createMockGame('Ada') : sampleSavedGame())
-  let result = $state.raw<GameState | null>(requested === 'over' ? sampleFinishedGame() : null)
+  let screen = $state<Screen>('home')
+  let game = $state.raw<GameController | null>(null)
+  let result = $state.raw<GameState | null>(null)
+  let starting = false
+
+  // A game saved behind the player's cookie shows up as "Continue" on the home screen.
+  onMount(async () => {
+    const saved = await findSavedGame()
+    if (saved && !game) game = createApiGame(saved)
+  })
 
   function go(next: Screen) {
     screen = next
-    history.replaceState(null, '', next === 'home' ? location.pathname : `#${next}`)
     window.scrollTo(0, 0)
   }
 
-  function newGame(name: string) {
-    game?.destroy()
-    game = createMockGame(name)
-    go('game')
+  async function newGame(name: string) {
+    if (starting) return
+    starting = true
+    try {
+      // Starting over ends the current game first (saving its score if it's 10+).
+      if (game?.state.status) await game.quit()
+      game?.destroy()
+      game = createApiGame(await api.start(name))
+      go('game')
+    } catch (error) {
+      toasts.show(error instanceof ApiError ? error.message : "Couldn't reach the server. Try again.")
+    } finally {
+      starting = false
+    }
   }
 
   function finish() {

@@ -22,7 +22,7 @@ The dev server forwards every `/api/...` request to Flask on `127.0.0.1:5555`. T
 
 To test on a phone on the same Wi-Fi, run `npm run dev:lan` and open the "Network" URL it prints. The first time, Windows Firewall asks whether Node.js may accept connections.
 
-**Design preview.** Until mission 5, the screens run on a local mock of the API (`src/lib/mock.svelte.ts`), so Flask isn't needed yet. Open `/#game` or `/#over` to jump straight to the game or game-over screen. In the mock, any word of 3+ letters with a vowel counts as valid. Typing the round's word backwards (`desselb` for `blessed`) clears the round, so you can test the 20-word bonus.
+**The API must be running.** The app plays against the real game server, so start Flask first. Locally, games and scores go to whichever database `utils/MongoDB.py` points at.
 
 ## Scripts
 
@@ -50,9 +50,9 @@ To test on a phone on the same Wi-Fi, run `npm run dev:lan` and open the "Networ
 | `src/lib/drag.svelte.ts` | Drag and drop for tiles (pointer events, so touch and mouse both work) |
 | `src/lib/api.ts` | Typed client for `/api/v1` |
 | `src/lib/game.ts` | `GameController`, the interface the game screen plays through |
+| `src/lib/api-game.svelte.ts` | `GameController` on the API: local clock, game-over handling, reply messages |
 | `src/lib/letters.ts` | Turns a root word into tiles (letters only; `-` and `'` are dropped) |
 | `src/lib/theme.svelte.ts` | Light/dark theme: follows the system until toggled, then remembered |
-| `src/lib/mock.svelte.ts` | Stand-in for the API during the design preview (removed in mission 5) |
 | `src/assets/` | Images imported by components (fingerprinted on build) |
 | `public/` | Files copied as-is, such as the favicon |
 | `vite.config.ts` | Svelte and PWA plugins, and the API proxy |
