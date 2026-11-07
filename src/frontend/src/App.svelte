@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { fade } from 'svelte/transition'
+  import OfflineBanner from './components/OfflineBanner.svelte'
   import Toaster from './components/Toaster.svelte'
+  import UpdatePrompt from './components/UpdatePrompt.svelte'
   import { api, ApiError, type GameState } from './lib/api'
   import { createApiGame, findSavedGame } from './lib/api-game.svelte'
   import { MIN_LEADERBOARD_SCORE, type GameController } from './lib/game'
@@ -86,6 +88,8 @@
 
 <svelte:window {onpopstate} />
 
+<OfflineBanner />
+
 {#key screen}
   <div in:fade={{ duration: ms(220) }}>
     {#if screen === 'game' && game}
@@ -119,3 +123,4 @@
 {/key}
 
 <Toaster />
+<UpdatePrompt hidden={screen === 'game'} />

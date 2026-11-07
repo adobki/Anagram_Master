@@ -12,9 +12,13 @@ const API = 'http://127.0.0.1:5555'
 export default defineConfig({
   plugins: [
     svelte(),
-    // Emits the web app manifest and a Workbox service worker on build.
-    // Real icons, the offline screen and the update prompt come in mission 7.
+    // Emits the web app manifest and a Workbox service worker on build. The
+    // app registers the worker itself (src/components/UpdatePrompt.svelte), so
+    // a new version waits for the player's go-ahead instead of reloading mid-game.
     VitePWA({
+      registerType: 'prompt',
+      injectRegister: false,
+      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Anagram Master',
         short_name: 'Anagram Master',
@@ -23,6 +27,12 @@ export default defineConfig({
         theme_color: '#0d0c11',
         background_color: '#0d0c11',
         display: 'standalone',
+        orientation: 'any',
+        icons: [
+          { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
         // Precache the font and images too, so the app shell works offline.

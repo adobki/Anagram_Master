@@ -34,7 +34,7 @@ To test on a phone on the same Wi-Fi, run `npm run dev:lan` and open the "Networ
 | `npm run build` | Builds for production into `dist/`, including the service worker and manifest |
 | `npm run preview` | Serves `dist/` on http://localhost:4173, also proxied to the API |
 
-`npm run preview` registers the service worker, which caches the app. After a rebuild, the old version can stay on screen. To pick up the new one, enable DevTools → Application → Service workers → "Update on reload".
+`npm run preview` runs the real service worker, which caches the app for offline use. After a rebuild, an open page shows a "new version is ready" card; choose Update to switch. The card waits while a game is on screen. In DevTools, Application → Service workers → "Update on reload" skips this while developing.
 
 ## Layout
 
@@ -54,5 +54,5 @@ To test on a phone on the same Wi-Fi, run `npm run dev:lan` and open the "Networ
 | `src/lib/letters.ts` | Turns a root word into tiles (letters only; `-` and `'` are dropped) |
 | `src/lib/theme.svelte.ts` | Light/dark theme: follows the system until toggled, then remembered |
 | `src/assets/` | Images imported by components (fingerprinted on build) |
-| `public/` | Files copied as-is, such as the favicon |
+| `public/` | Files copied as-is: the favicon and the PWA icons (made from the logo's helix) |
 | `vite.config.ts` | Svelte and PWA plugins, and the API proxy |
