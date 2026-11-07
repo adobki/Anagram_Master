@@ -11,8 +11,6 @@
     tiles: TileData[]
     /** Increase to shake the tray (a rejected or blocked word). */
     shake?: number
-    /** A tile is being dragged: hide the blinking caret. */
-    dragging?: boolean
     /** A dragged tile is over the tray: highlight it as a drop target. */
     target?: boolean
     /** Tap on a tile: take it back out. */
@@ -26,7 +24,6 @@
   let {
     tiles,
     shake = 0,
-    dragging = false,
     target = false,
     onremove,
     ondrag,
@@ -41,8 +38,7 @@
   let width = $state(0)
   const size = $derived.by(() => {
     const count = Math.max(tiles.length, 1)
-    // n tiles plus the 2px caret need n gaps.
-    const fit = width ? (width - GAP * rem.px * count - 2) / count : MAX * rem.px
+    const fit = width ? (width - GAP * rem.px * (count - 1)) / count : MAX * rem.px
     return Math.floor(Math.max(MIN * rem.px, Math.min(MAX * rem.px, fit)))
   })
 
@@ -85,7 +81,6 @@
       </div>
     {/each}
     {#if !tiles.length}<span class="placeholder">Tap, drag or type letters</span>{/if}
-    {#if !dragging}<span class="caret" aria-hidden="true"></span>{/if}
   </div>
 </div>
 
@@ -124,22 +119,4 @@
     color: var(--text-3);
   }
 
-  .caret {
-    width: 2px;
-    height: calc(var(--size) * 0.7);
-    border-radius: 1px;
-    background: var(--accent);
-    animation: blink 1.1s steps(1) infinite;
-  }
-
-  .empty .caret {
-    order: -1;
-    height: 1.25rem;
-  }
-
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
-  }
 </style>

@@ -36,7 +36,7 @@
 
   let { game, onend, onpause }: Props = $props()
 
-  const FEEDBACK_MS = 2800
+  const FEEDBACK_MS = 3000
   const BANNER_MS = 1600
 
   const s = $derived(game.state)
@@ -321,7 +321,6 @@
       <Tray
           tiles={trayTiles}
           {shake}
-          dragging={!!dragged}
           target={!!dragged && dragged.index >= 0}
           onremove={remove}
           ondrag={(event, tile) => startDrag(event, tile, 'tray')}
@@ -515,12 +514,12 @@
   .banner {
     position: absolute;
     left: 50%;
-    bottom: calc(100% + var(--space-1));
+    bottom: calc(100% + var(--space-2));
     z-index: 5;
     display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-6);
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-8);
     border: 1px solid var(--line);
     border-radius: var(--radius-full);
     background: var(--surface);
@@ -531,15 +530,16 @@
   }
 
   .banner span {
-    font-size: var(--text-sm);
+    font-size: var(--text-lg);
     font-weight: 700;
+    line-height: 1;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--accent);
   }
 
   .banner strong {
-    font-size: var(--text-3xl);
+    font-size: 3.375rem;
     font-weight: 800;
     line-height: 1;
   }
@@ -672,7 +672,7 @@
     }
 
     .banner {
-      bottom: 2.75rem;
+      bottom: 3rem;
     }
   }
 
