@@ -11,9 +11,11 @@
     goal: number
     /** The word just found, highlighted until the next one. */
     latest?: string | null
+    /** A word was tapped: the game puts it in the tray. */
+    onuse?: (word: string) => void
   }
 
-  let { answers, goal, latest = null }: Props = $props()
+  let { answers, goal, latest = null, onuse }: Props = $props()
 
   // Longest first: the impressive finds lead.
   const found = $derived(
@@ -22,16 +24,38 @@
       .map(([word]) => word)
       .sort((a, b) => b.length - a.length || a.localeCompare(b)),
   )
-  const misses = $derived(answers.length - found.length)
+  // Most recent miss first.
+  const missed = $derived(
+    answers
+      .filter(([, valid]) => !valid)
+      .map(([word]) => word)
+      .reverse(),
+  )
+
+  // Found words or misses; the choice carries over between rounds. A round
+  // with no misses always shows the found words.
+  let chosen = $state<'found' | 'missed'>('found')
+  const view = $derived(missed.length ? chosen : 'found')
+  const shown = $derived(view === 'found' ? found : missed)
 </script>
 
 <section class="words" aria-labelledby="words-title">
   <header>
     <h2 id="words-title">Words</h2>
-    <p class="count">
-      {#if misses}<span class="misses">{misses} {misses === 1 ? 'miss' : 'misses'} ·</span>{/if}
-      <strong>{found.length}</strong>/{goal}
-    </p>
+    <div class="tabs" role="group" aria-label="Which words to show">
+      <button type="button" class:on={view === 'found'} aria-pressed={view === 'found'} onclick={() => (chosen = 'found')}>
+        Found <strong>{found.length}</strong>/{goal}
+      </button>
+      <button
+        type="button"
+        class:on={view === 'missed'}
+        aria-pressed={view === 'missed'}
+        disabled={!missed.length}
+        onclick={() => (chosen = 'missed')}
+      >
+        Missed <strong>{missed.length}</strong>
+      </button>
+    </div>
   </header>
   <div
     class="progress"
@@ -44,11 +68,19 @@
     <span style:width="{Math.min(1, found.length / goal) * 100}%"></span>
   </div>
 
-  {#if found.length}
+  {#if shown.length}
     <ul>
-      {#each found as word (word)}
-        <li class:latest={word === latest} animate:flip={{ duration: ms(250) }} in:scale={{ duration: ms(250), start: 0.6 }}>
-          {word}
+      {#each shown as word (word)}
+        <li animate:flip={{ duration: ms(250) }} in:scale={{ duration: ms(250), start: 0.6 }}>
+          <button
+            type="button"
+            class:latest={view === 'found' && word === latest}
+            class:miss={view === 'missed'}
+            title="Add “{word}” to the tray"
+            onclick={() => onuse?.(word)}
+          >
+            {word}
+          </button>
         </li>
       {/each}
     </ul>
@@ -85,19 +117,41 @@
     color: var(--text-3);
   }
 
-  .count {
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-full);
+    background: var(--surface-2);
     font-size: var(--text-sm);
-    color: var(--text-2);
     font-variant-numeric: tabular-nums;
   }
 
-  .count strong {
-    color: var(--text);
+  .tabs button {
+    padding: 0.125rem var(--space-3);
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--text-3);
+    cursor: pointer;
+    transition:
+      background-color var(--dur-fast, 150ms),
+      color var(--dur-fast, 150ms);
+  }
+
+  .tabs button strong {
     font-weight: 700;
   }
 
-  .misses {
-    color: var(--text-3);
+  .tabs button.on {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tabs button:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 
   .progress {
@@ -129,20 +183,32 @@
     list-style: none;
   }
 
-  li {
+  li button {
     padding: var(--space-1) var(--space-3);
+    border: 0;
     border-radius: var(--radius-full);
     background: var(--surface-2);
     font-weight: 500;
+    cursor: pointer;
     transition:
       background-color var(--dur-slow),
       color var(--dur-slow);
   }
 
-  .latest {
+  li button:active {
+    background: var(--line);
+  }
+
+  li button.latest {
     background: var(--good-soft);
     color: var(--good);
     font-weight: 600;
+  }
+
+  li button.miss {
+    color: var(--text-3);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
   }
 
   .empty {

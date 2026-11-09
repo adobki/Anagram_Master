@@ -32,9 +32,15 @@
     onend: () => void
     /** Go to the home screen; the game can be resumed from there. */
     onpause: () => void
+    /**
+     * The "Take a break?" menu. 'button' means the player opened it; 'back'
+     * means the device's back button did (App.svelte), so pressing back again
+     * goes home.
+     */
+    menu: 'closed' | 'button' | 'back'
   }
 
-  let { game, onend, onpause }: Props = $props()
+  let { game, onend, onpause, menu = $bindable() }: Props = $props()
 
   const FEEDBACK_MS = 3000
   const BANNER_MS = 1600
@@ -63,7 +69,6 @@
   let latest = $state<string | null>(null)
   let shake = $state(0)
   let skipArmed = $state(false)
-  let menuOpen = $state(false)
   let banner = $state<number | null>(null)
 
   // ── Drag and drop ────────────────────────────────────────────────────────
@@ -150,6 +155,19 @@
     else shake++
   }
 
+  /** Tapped a word in the list: put its letters in the tray, replacing what's there. */
+  function useWord(word: string) {
+    const free = new Set(tiles.map((tile) => tile.id))
+    const ids: number[] = []
+    for (const letter of word) {
+      const tile = tiles.find((t) => t.letter === letter && free.has(t.id))
+      if (!tile) return
+      free.delete(tile.id)
+      ids.push(tile.id)
+    }
+    picked = ids
+  }
+
   const undo = () => (picked = picked.slice(0, -1))
   const clear = () => (picked = [])
   const shuffle = () => (tiles = shuffled(tiles))
@@ -216,17 +234,17 @@
   }
 
   function leave() {
-    menuOpen = false
+    menu = 'closed'
     onpause()
   }
 
   async function end() {
-    menuOpen = false
+    menu = 'closed'
     await game.quit()
   }
 
   function onkeydown(event: KeyboardEvent) {
-    if (event.metaKey || event.ctrlKey || event.altKey || menuOpen) return
+    if (event.metaKey || event.ctrlKey || event.altKey || menu !== 'closed') return
     if (event.target instanceof HTMLInputElement) return
     const { key } = event
     if (key === 'Enter') {
@@ -255,7 +273,7 @@
 
 <div class="game">
   <header class="top">
-    <IconButton label="Pause or end the game" onclick={() => (menuOpen = true)}><Pause size="1.375rem" /></IconButton>
+    <IconButton label="Pause or end the game" onclick={() => (menu = 'button')}><Pause size="1.375rem" /></IconButton>
     <div class="round">
       <span>Round <strong>{s.round}</strong> of {s.rounds_limit}</span>
       <span class="round-bar"><span style:width="{(s.round / s.rounds_limit) * 100}%"></span></span>
@@ -281,7 +299,7 @@
     </div>
 
     <div class="found">
-      <WordList {answers} goal={s.rounds_limit} {latest} />
+      <WordList {answers} goal={s.rounds_limit} {latest} onuse={useWord} />
     </div>
 
     <div class="play">
@@ -367,7 +385,15 @@
     {/if}
   {/if}
 
-  <Dialog bind:open={menuOpen} title="Take a break?">
+  <!--
+    Esc and the device's back button dismiss the menu. If the menu came from a
+    back press, dismissing it with another one means "go home".
+  -->
+  <Dialog
+    bind:open={() => menu !== 'closed', (open) => !open && (menu = 'closed')}
+    oncancel={() => menu === 'back' && onpause()}
+    title="Take a break?"
+  >
     <div class="note">
       <Clock size="1.25rem" />
       <p>
@@ -376,7 +402,7 @@
       </p>
     </div>
     {#snippet actions()}
-      <Button variant="secondary" onclick={() => (menuOpen = false)}>Keep playing</Button>
+      <Button variant="secondary" onclick={() => (menu = 'closed')}>Keep playing</Button>
       <Button onclick={leave}>Go home</Button>
       <div class="span end">
         <Button variant="ghost" block onclick={end}>End game</Button>

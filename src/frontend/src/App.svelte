@@ -38,16 +38,23 @@
   let scroller: HTMLElement
   let viewHeight = $state(0)
 
+  // The game's "Take a break?" menu, and the history entry the game sits in.
+  let menu = $state<'closed' | 'button' | 'back'>('closed')
+  let gameEntry: object | null = null
+  let leaving = false
+
   function go(next: Screen, replace = false) {
     if (next === screen) return
     const origin = screen
     const carried = history.state?.from
     screen = next
+    menu = 'closed'
     // The game has no URL of its own (it sits at "/", like home), so reloading
     // or coming back to a paused game never reopens it. `from` remembers which
     // screen the game was opened from, for leaveGame().
     const url = next === 'home' || next === 'game' ? location.pathname : `#${next}`
     const state = { inApp: true, game: next === 'game', from: replace ? carried : origin }
+    if (next === 'game') gameEntry = state
     if (replace) history.replaceState(state, '', url)
     else history.pushState(state, '', url)
     scroller?.scrollTo(0, 0)
@@ -56,16 +63,40 @@
   // Back/forward. Only #scores, #help and (while its result is still in
   // memory) #over are restored. Everything else, the game included, is home.
   function onpopstate() {
+    if (screen === 'game' && !leaving && !location.hash) {
+      gameBack()
+      return
+    }
+    leaving = false
+    menu = 'closed'
     const hash = location.hash.slice(1) as Screen
     const restorable = hash === 'scores' || hash === 'help' || (hash === 'over' && result)
     screen = restorable ? hash : 'home'
     scroller?.scrollTo(0, 0)
   }
 
+  /**
+   * Back (browser or device) during a game doesn't leave it. The first press
+   * opens the "Take a break?" menu, a second one goes home. The browser has
+   * already stepped back, so the game's history entry is put back first.
+   */
+  function gameBack() {
+    if (menu === 'back') {
+      menu = 'closed'
+      screen = 'home' // the second press: the browser is already on the entry below the game
+      return
+    }
+    history.pushState(gameEntry, '', location.pathname)
+    menu = menu === 'button' ? 'closed' : 'back' // with the menu open from its button, back just closes it
+  }
+
   /** Pause: back to the home screen without leaving a paused game one "Back" press away. */
   function leaveGame() {
-    if (history.state?.game && history.state.from === 'home') history.back()
-    else go('home', true)
+    menu = 'closed'
+    if (history.state?.game && history.state.from === 'home') {
+      leaving = true
+      history.back()
+    } else go('home', true)
   }
 
   /** "Play" from the leaderboard or help: back into a game in progress, or home to start one. */
@@ -90,6 +121,16 @@
     }
   }
 
+  /** "End this game and start over" on the home screen, once confirmed. */
+  async function abandon() {
+    if (!game) return
+    await game.quit() // shows its own message if offline, and the game stays
+    if (!game.state.status) {
+      game.destroy()
+      game = null
+    }
+  }
+
   function finish() {
     if (game) {
       result = $state.snapshot(game.state)
@@ -108,7 +149,7 @@
 {#key screen}
   <div in:fade={{ duration: ms(220) }}>
     {#if screen === 'game' && game}
-      <Game {game} onend={finish} onpause={leaveGame} />
+      <Game {game} onend={finish} onpause={leaveGame} bind:menu />
     {:else if screen === 'over' && result}
       <GameOver
         {result}
@@ -129,6 +170,7 @@
         saved={game?.state.status ? game.state : null}
         timeLeft={game?.timeLeft ?? 0}
         onstart={newGame}
+        onabandon={abandon}
         oncontinue={() => go('game')}
         onleaderboard={() => go('scores')}
         onhelp={() => go('help')}

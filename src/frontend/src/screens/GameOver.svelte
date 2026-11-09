@@ -1,10 +1,12 @@
 <script lang="ts">
+  import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import House from '@lucide/svelte/icons/house'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
   import Trophy from '@lucide/svelte/icons/trophy'
   import { onMount } from 'svelte'
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
+  import { slide } from 'svelte/transition'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
   import ThemeToggle from '../components/ThemeToggle.svelte'
@@ -26,9 +28,18 @@
     Object.entries(result.words).map(([root, answers], i) => ({
       number: i + 1,
       root,
-      found: answers.filter(([, valid]) => valid).map(([word]) => word),
+      // Longest first, like the game screen.
+      found: answers
+        .filter(([, valid]) => valid)
+        .map(([word]) => word)
+        .sort((a, b) => b.length - a.length || a.localeCompare(b)),
+      missed: answers.filter(([, valid]) => !valid).map(([word]) => word),
     })),
   )
+  /** Rounds opened to show every word, right and wrong. */
+  let open = $state<number[]>([])
+  const toggle = (number: number) =>
+    (open = open.includes(number) ? open.filter((n) => n !== number) : [...open, number])
   const totalFound = $derived(rounds.reduce((sum, round) => sum + round.found.length, 0))
   const longest = $derived(
     rounds.flatMap((round) => round.found).reduce((best, word) => (word.length > best.length ? word : best), ''),
@@ -74,13 +85,38 @@
       <h2 id="recap-title">Round by round</h2>
       <ol>
         {#each rounds as round (round.number)}
+          {@const expanded = open.includes(round.number)}
+          {@const panel = `round-${round.number}`}
           <li>
-            <span class="n">{round.number}</span>
-            <span class="detail">
-              <span class="root">{round.root}</span>
-              <span class="list">{round.found.join(', ') || 'No words'}</span>
-            </span>
-            <span class="count">{round.found.length}</span>
+            <button type="button" class="row" aria-expanded={expanded} aria-controls={panel} onclick={() => toggle(round.number)}>
+              <span class="n">{round.number}</span>
+              <span class="detail">
+                <span class="root">{round.root}</span>
+                {#if !expanded}<span class="list">{round.found.join(', ') || 'No words'}</span>{/if}
+              </span>
+              <span class="count">{round.found.length}</span>
+              <ChevronDown class="chevron {expanded ? 'open' : ''}" size="1.125rem" />
+            </button>
+            {#if expanded}
+              <div class="all" id={panel} transition:slide={{ duration: ms(200) }}>
+                {#if round.found.length || round.missed.length}
+                  {#if round.found.length}
+                    <p class="group">Found · {round.found.length}</p>
+                    <ul class="chips">
+                      {#each round.found as word (word)}<li>{word}</li>{/each}
+                    </ul>
+                  {/if}
+                  {#if round.missed.length}
+                    <p class="group">Missed · {round.missed.length}</p>
+                    <ul class="chips miss">
+                      {#each round.missed as word (word)}<li>{word}</li>{/each}
+                    </ul>
+                  {/if}
+                {:else}
+                  <p class="group">You didn't try any words this round.</p>
+                {/if}
+              </div>
+            {/if}
           </li>
         {/each}
       </ol>
@@ -148,6 +184,9 @@
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.04em;
+    /* The tight spacing leaves the last digit hanging past the box, and the
+       gradient is clipped to the box, so pad it back in. */
+    padding-inline: 0.06em;
     background: linear-gradient(180deg, var(--text), color-mix(in srgb, var(--text) 55%, var(--accent)));
     background-clip: text;
     -webkit-background-clip: text;
@@ -241,16 +280,70 @@
     overflow: hidden;
   }
 
-  li {
-    display: grid;
-    grid-template-columns: 1.75rem minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
+  ol > li + li {
+    border-top: 1px solid var(--line);
   }
 
-  li + li {
-    border-top: 1px solid var(--line);
+  .row {
+    display: grid;
+    grid-template-columns: 1.75rem minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .row:active {
+    background: var(--surface-2);
+  }
+
+  .row :global(.chevron) {
+    color: var(--text-3);
+    transition: rotate var(--dur) var(--ease-out);
+  }
+
+  .row :global(.chevron.open) {
+    rotate: 180deg;
+  }
+
+  .all {
+    padding: 0 var(--space-4) var(--space-4) calc(var(--space-4) + 1.75rem + var(--space-3));
+  }
+
+  .group {
+    margin-top: var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    padding: 0;
+    list-style: none;
+  }
+
+  .chips li {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--surface-2);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  .chips.miss li {
+    color: var(--text-3);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
   }
 
   .n {

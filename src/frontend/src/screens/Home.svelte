@@ -3,6 +3,7 @@
   import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark'
   import Clock from '@lucide/svelte/icons/clock'
   import Play from '@lucide/svelte/icons/play'
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
   import Trophy from '@lucide/svelte/icons/trophy'
   import { onMount } from 'svelte'
   import { flip } from 'svelte/animate'
@@ -10,9 +11,11 @@
   import { prefersReducedMotion } from 'svelte/motion'
   import logo from '../assets/logo.png'
   import Button from '../components/Button.svelte'
+  import Dialog from '../components/Dialog.svelte'
   import TextField from '../components/TextField.svelte'
   import ThemeToggle from '../components/ThemeToggle.svelte'
   import type { GameState } from '../lib/api'
+  import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { loadName, saveName } from '../lib/player'
 
   interface Props {
@@ -21,14 +24,25 @@
     /** Seconds left in the saved game's round. Its clock keeps running. */
     timeLeft?: number
     onstart: (name: string) => void
+    /** Ends the saved game (saving its score if it's 10+). */
+    onabandon: () => Promise<void>
     oncontinue: () => void
     onleaderboard: () => void
     onhelp: () => void
   }
 
-  let { saved, timeLeft = 0, onstart, oncontinue, onleaderboard, onhelp }: Props = $props()
+  let { saved, timeLeft = 0, onstart, onabandon, oncontinue, onleaderboard, onhelp }: Props = $props()
 
   const clock = $derived(`${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`)
+
+  let confirming = $state(false)
+  let ending = $state(false)
+  async function abandon() {
+    ending = true
+    await onabandon()
+    ending = false
+    confirming = false
+  }
 
   let name = $state(loadName())
   let tried = $state(false)
@@ -97,12 +111,14 @@
             <span>This round's time is up. The next round starts when you continue.</span>
           {/if}
         </p>
+        <Button variant="ghost" size="sm" block onclick={() => (confirming = true)}>
+          <RotateCcw size="1rem" /> End this game and start over
+        </Button>
       </section>
-    {/if}
-
+    {:else}
     <form class="card" onsubmit={start} novalidate>
       <TextField
-        label={saved ? 'Or start over as' : 'Your name'}
+        label="Your name"
         placeholder="e.g. Ada"
         maxlength={15}
         autocomplete="nickname"
@@ -115,10 +131,29 @@
       />
       <Button type="submit" size="lg" block>
         <Play size="1.25rem" />
-        {saved ? 'Start a new game' : 'Start game'}
+        Start game
       </Button>
     </form>
+    {/if}
   </main>
+
+  {#if saved}
+    <Dialog bind:open={confirming} title="End this game?">
+      <p>
+        You're on round {saved.round} of {saved.rounds_limit} with {saved.score}
+        {saved.score === 1 ? 'point' : 'points'}. It can't be resumed once it's ended.
+        {#if saved.score >= MIN_LEADERBOARD_SCORE}
+          Your score goes on the leaderboard.
+        {:else}
+          Scores under {MIN_LEADERBOARD_SCORE} aren't saved.
+        {/if}
+      </p>
+      {#snippet actions()}
+        <Button variant="secondary" onclick={() => (confirming = false)}>Keep playing</Button>
+        <Button disabled={ending} onclick={abandon}>End game</Button>
+      {/snippet}
+    </Dialog>
+  {/if}
 
   <footer>
     <Button variant="ghost" onclick={onleaderboard}><Trophy size="1.125rem" /> Leaderboard</Button>
@@ -153,9 +188,15 @@
     text-align: center;
   }
 
+  /* Full width with a centred image: a percentage-width image in a shrink-to-fit heading can sit off-centre. */
+  h1 {
+    width: 100%;
+  }
+
   h1 img {
     width: min(100%, 19rem);
     height: auto;
+    margin-inline: auto;
   }
 
   .tagline {

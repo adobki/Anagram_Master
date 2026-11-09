@@ -4,11 +4,13 @@
   interface Props {
     open: boolean
     title: string
+    /** Esc or the device's back button asked to dismiss (not the backdrop or your own buttons). */
+    oncancel?: () => void
     children: Snippet
     actions: Snippet
   }
 
-  let { open = $bindable(), title, children, actions }: Props = $props()
+  let { open = $bindable(), title, oncancel, children, actions }: Props = $props()
 
   let dialog = $state<HTMLDialogElement>()
   const id = $props.id()
@@ -26,6 +28,7 @@
 <dialog
   bind:this={dialog}
   aria-labelledby={id}
+  oncancel={() => oncancel?.()}
   onclose={() => (open = false)}
   onclick={(event) => {
     if (event.target === dialog) open = false
