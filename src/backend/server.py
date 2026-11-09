@@ -1,4 +1,7 @@
-"""Starts Anagram Master WSGI Web Application Server with waitress"""
+"""Production entry point: serves the Flask app (API, web app and classic pages) with waitress.
+
+Run from this folder with `python -m server`. Listens on $PORT, default 5555.
+"""
 
 from api.api import app as am_api
 from os import environ

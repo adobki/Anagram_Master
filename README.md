@@ -24,8 +24,7 @@ One Flask server serves all three: the web app at `/`, the classic pages at `/v1
 |---|---|
 | `src/backend/` | The Flask API, game engine and database layer, plus the classic `/v1/` pages (`api/templates`, `api/static`) |
 | `src/frontend/` | The web app. See [its README](src/frontend/README.md) for development details |
-| `build.sh`, `build.cmd` | Install, build and run everything |
-| `am_wsgi_server.py`, `requirements.txt` | Thin wrappers so the server can still be installed and started from the repo root |
+| `src/build.sh`, `src/build.cmd` | Install, build and run everything |
 | `ref/` | The original specification and design diagrams |
 
 ## Running it
@@ -35,11 +34,12 @@ Requirements: Python 3.12 and Node.js 20.19+. The server reads these environment
 |---|---|
 | `am_cypher_key` | Fernet key that encrypts the player's game cookie |
 | `am_database_host`, `am_database_user`, `am_database_pass` | MongoDB Atlas credentials |
+| `am_database_name` | Database to use (optional, default `AM`) |
 
 Build and run everything, then open http://localhost:5555:
 
 ```sh
-./build.sh        # Windows: build.cmd
+src/build.sh      # Windows: src\build.cmd
 ```
 
 For development, run the API and the web app's dev server side by side:

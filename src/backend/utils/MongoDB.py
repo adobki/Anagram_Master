@@ -11,7 +11,7 @@ usr = environ.get('am_database_user')
 pwd = environ.get('am_database_pass')
 uri = f'mongodb+srv://{usr}:{pwd}@{host}/?retryWrites=true&w=majority'
 client = MongoClient(uri)
-db = client['AnagramMaster']
+db = client[environ.get('am_database_name', 'AM')]
 now = datetime.now
 
 
