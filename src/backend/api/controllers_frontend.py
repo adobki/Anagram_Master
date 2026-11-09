@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Contains Anagram Master's webpage route controllers"""
+"""Contains route controllers for the legacy (v1) web pages, served under /v1"""
 from api.controllers_auxiliary import delete_player_id, get_player_id, \
                                       signed_response, error_handler
 from flask import jsonify, redirect, render_template, request
@@ -80,7 +80,7 @@ def about():
 def redirect_internal(page: str):
     """Redirects *.htm routes to corresponding route if available"""
     if page == 'index':
-        return redirect('/', code=302)
+        return redirect('/v1/', code=302)
     if page == 'about' or page == 'scores' or page == 'game':
-        return redirect(f'/{page}', code=302)
+        return redirect(f'/v1/{page}', code=302)
     return error_handler(404)

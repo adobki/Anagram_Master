@@ -37,13 +37,15 @@ export default defineConfig({
       workbox: {
         // Precache the font and images too, so the app shell works offline.
         globPatterns: ['**/*.{js,css,html,woff2,png,svg}'],
-        // API calls must always reach the server, never the cached app shell.
-        navigateFallbackDenylist: [/^\/api\//],
+        // The API and the classic (v1) pages must always reach the server,
+        // never the cached app shell.
+        navigateFallbackDenylist: [/^\/api\//, /^\/v1(\/|$)/, /^\/static\//],
       },
     }),
   ],
   server: {
-    proxy: { '/api': API },
+    // /v1 and /static are the classic pages, so they work from the dev server too.
+    proxy: { '/api': API, '/v1': API, '/static': API },
   },
   // `vite preview` reuses server.proxy, so the production build can be
   // tried against the local API too.

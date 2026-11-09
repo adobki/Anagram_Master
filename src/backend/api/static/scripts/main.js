@@ -11,18 +11,18 @@ $.ajaxSetup({
 });
 
 // Site routes
-const url_home = "../";
-const url_game = "../game";
-const url_onboarding = "../onboarding";
-const url_scores = "../scores";
+const url_home = "/v1/";
+const url_game = "/v1/game";
+const url_onboarding = "/v1/onboarding";
+const url_scores = "/v1/scores";
 
 // API routes
-const url_api_health = "../api/v1/health";
-const url_api_init = "../api/v1/init";
-const url_api_status = "../api/v1/status";
-const url_api_play = "../api/v1/play";
-const url_api_close = "../api/v1/close";
-const url_api_scores = "../api/v1/scores";
+const url_api_health = "/api/v1/health";
+const url_api_init = "/api/v1/init";
+const url_api_status = "/api/v1/status";
+const url_api_play = "/api/v1/play";
+const url_api_close = "/api/v1/close";
+const url_api_scores = "/api/v1/scores";
 
 // Check if player has an active/saved game and update interface
 let status = $("#active").text();

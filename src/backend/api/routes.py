@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """ Contains Anagram Master's API route controllers """
+from api.controllers_app import app_file, app_index
 from api.controllers_auxiliary import favicon
 from api.controllers_frontend import about, home, gameplay, onboarding, \
                                      html_scores, redirect_internal
@@ -35,21 +36,28 @@ api_routes = [
      'strict_slashes': False},
 ]
 
-# HTML/frontend routes
+# Legacy (v1) web pages, kept under /v1. The new web app is served at /.
 html_routes = [
     # homepage route: Home/landing page
-    {'rule': '/', 'view_func': home},
-    {'rule': '/index', 'view_func': home},
+    {'rule': '/v1/', 'view_func': home},
+    {'rule': '/v1/index', 'view_func': home},
     # onboarding route: Player onboarding form
-    {'rule': '/onboarding', 'view_func': onboarding, 'strict_slashes': False,
+    {'rule': '/v1/onboarding', 'view_func': onboarding, 'strict_slashes': False,
      'methods': ['GET', 'POST']},
     # gameplay route: Game screen/page
-    {'rule': '/game', 'view_func': gameplay, 'strict_slashes': False,
+    {'rule': '/v1/game', 'view_func': gameplay, 'strict_slashes': False,
      'methods': ['GET', 'POST']},
     # scores route: Highscores page
-    {'rule': '/scores', 'view_func': html_scores, 'strict_slashes': False},
+    {'rule': '/v1/scores', 'view_func': html_scores, 'strict_slashes': False},
     # about route: About/info page
-    {'rule': '/about', 'view_func': about, 'strict_slashes': False},
+    {'rule': '/v1/about', 'view_func': about, 'strict_slashes': False},
     # redirect route: makes above HTML routes accessible with a *.htm extension
-    {'rule': '/<page>.htm', 'view_func': redirect_internal},
+    {'rule': '/v1/<page>.htm', 'view_func': redirect_internal},
+]
+
+# The web app (src/frontend's production build). More specific rules above
+# (/api/v1/..., /v1/..., /static/...) always win over the catch-all file route.
+app_routes = [
+    {'rule': '/', 'view_func': app_index},
+    {'rule': '/<path:filename>', 'view_func': app_file},
 ]

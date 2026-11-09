@@ -1,17 +1,11 @@
-"""Starts Anagram Master WSGI Web Application Server with waitress"""
+"""Compatibility shim: the server now lives in src/backend.
 
-from api.api import app as am_api
-from paste.translogger import TransLogger
-from waitress import serve
+Keeps `python -m am_wsgi_server` working from the repo root (for example an
+existing Render start command). New setups can run it from src/backend.
+"""
+import runpy
+import sys
+from pathlib import Path
 
-log_format = (' %(REMOTE_ADDR)s %(REMOTE_USER)s [%(time)s]'
-              ' %(REQUEST_METHOD)s "%(REQUEST_URI)s"'
-              ' %(status)s %(bytes)s\n')
-
-options = {'application':           am_api,
-           'setup_console_handler': False,
-           'logger_name':           'AnagramMaster',
-           'format':                log_format}
-
-if __name__ == "__main__":
-    serve(TransLogger(**options), port=5555, threads=4, ident='AnagramMaster')
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'src' / 'backend'))
+runpy.run_module('am_wsgi_server', run_name='__main__')

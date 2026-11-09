@@ -1,85 +1,69 @@
 # ___Anagram Master___
-![Anagram Master's Homepage](api/static/media/screenshot_splash.png)
-Created as the Research/Portfolio Project at the end of the _Software Engineering Foundations_ stage of the [ALX Software Engineering Course](https://www.alxafrica.com/software-engineering), Anagram Master is a multiplayer word game that involves rearranging letters from a root word to form new words. 
 
+A timed word game. Each round deals you a long word: make as many new words as you can from its letters before the two-minute clock runs out. There are twenty rounds, and good scores make the leaderboard.
+
+Anagram Master began as the Research/Portfolio Project at the end of the _Software Engineering Foundations_ stage of the [ALX Software Engineering Course](https://www.alxafrica.com/software-engineering). It is now an installable, touch-friendly web app (PWA), with the original version still playable at `/v1/`.
 
 ## Table of Contents
-* [Environment](#Environment)
-* [Technologies and Frameworks](#Technologies-and-Frameworks)
-* [Folder Structure](#Folder-Structure)
-* [API Routes](#API-Routes)
-* [Installation and Usage](#Installation-and-Usage)
-* [Bugs](#Bugs)
-* [Authors](#Authors)
-* [License](#License)
+* [How it's built](#how-its-built)
+* [Folder structure](#folder-structure)
+* [Running it](#running-it)
+* [API](#api)
+* [Authors](#authors)
+* [License](#license)
 
+## How it's built
+* **API:** Python 3.12, Flask, MongoDB (Atlas), served by waitress. The server owns the rules, the score and the round clock.
+* **Web app:** Svelte 5 and TypeScript, built with Vite, made installable and offline-capable with vite-plugin-pwa.
+* **Classic version:** the original jQuery pages, served at `/v1/`.
 
-## Environment
-This project was developed and tested in the following environments:
-* Windows 11 22H2 using Python v3.10.5, and
-* Ubuntu 20.04.05 LTS using Python v3.8.10.
+One Flask server serves all three: the web app at `/`, the classic pages at `/v1/`, and the JSON API at `/api/v1/`.
 
-However, it should work in any other environment that is configured to run Python v3+ as well as all the required pip packages and their dependencies. 
+## Folder structure
+| Path | Contents |
+|---|---|
+| `src/backend/` | The Flask API, game engine and database layer, plus the classic `/v1/` pages (`api/templates`, `api/static`) |
+| `src/frontend/` | The web app. See [its README](src/frontend/README.md) for development details |
+| `build.sh`, `build.cmd` | Install, build and run everything |
+| `am_wsgi_server.py`, `requirements.txt` | Thin wrappers so the server can still be installed and started from the repo root |
+| `ref/` | The original specification and design diagrams |
 
-## Technologies and Frameworks
-| S/N | Technology            | Implementation                      |
-|-----|-----------------------|-------------------------------------|
-| 1.  | **Flask/Python**      | **BACKEND**: API                    |
-| 2.  | **Gunicorn**          | **BACKEND**: Application Server     |
-| 3.  | **HTML**              | **FRONTEND**: Static Web Pages      |
-| 4.  | **CSS**               | **FRONTEND**: Web Pages' Design     |
-| 5.  | **jQuery/JavaScript** | **FRONTEND**: Web Application       |
-| 6.  | **Shell/Bash Script** | **AUTOMATION**: Launches Web Server |
+## Running it
+Requirements: Python 3.12 and Node.js 20.19+. The server reads these environment variables:
 
+| Variable | Purpose |
+|---|---|
+| `am_cypher_key` | Fernet key that encrypts the player's game cookie |
+| `am_database_host`, `am_database_user`, `am_database_pass` | MongoDB Atlas credentials |
 
-## Folder Structure
-> ___[api/v1](api/v1):___<br>
-> Ambigram Master API which has three routes (see [#API Routes](#API-Routes) below for details).
-> <br><br>___[api/v1/templates](api/v1/templates):___<br>
-> Static web pages used for the four game screens.
-> <br>___[api/v1/static](api/v1/static):___<br>
-> Static web pages and their resources ([styles](api/v1/static/styles), [scripts](api/v1/static/scripts), [images](api/v1/static/media), etc.)
-> <br>___[api/v1/storage_data](api/v1/storage_data):___<br>
-> Third-party [word list](api/v1/storage_data/words.txt) and [current highscores](api/v1/storage_data/scores.json) used by the game engine.
+Build and run everything, then open http://localhost:5555:
 
+```sh
+./build.sh        # Windows: build.cmd
+```
 
-> ___[models](models):___<br>
-> Ambigram Master Models and Classes. [game_engine.py](models/game_engine.py) contains the Game class which implements the game engine and logic.
+For development, run the API and the web app's dev server side by side:
 
-> ___[ref](ref):___<br>
-> Reference materials such as [documentation](ref/AnagramMaster%20MVP%20Specification.txt) and [UI Mockups](ref/Design%20Diagrams) used in the design and development of Ambigram Master.
+```sh
+cd src/backend && python -m api.api      # API on port 5555
+cd src/frontend && npm run dev           # web app on http://localhost:5173, proxied to the API
+```
 
-## API Routes
-Routes available for HTTP requests from the API are:
-1. `/api/v1/init`
-  <br>**GET**: _Creates a new session ID for a new player at the start of the game._
-2. `/api/v1/status`
-  <br>**POST**: _Returns information about the ongoing game, using player's session ID to authenticate. This information would include round info (current root word, whose turn it is, current time on clock, etc.) and game stats (number of players in current games, their scores, words formed for the current round/root word, etc.)._
-3. `/api/v1/close`
-  <br>**POST**: _Ends the game for the player who requests it, using player's session ID to authenticate. Removes them from the list of active players, returns their game stats, and notifies other players._
+## API
+All routes are under `/api/v1`. The player's game is identified by an encrypted, HttpOnly `session` cookie, so clients must be served from the same origin.
 
-
-## Installation and Usage
-* Install the following packages and their dependencies:<br>
-`Python`, `Flask`, `Gunicorn`.
-* Clone this repository:<br>
-`git clone https://github.com/adobki/Anagram_Master.git`
-* Access repo folder and run script to launch app server:
-  * Windows: [AnagramMaster.cmd](AnagramMaster.cmd)
-  * Ubuntu: [AnagramMaster.sh](AnagramMaster.sh)
-  * Others: `gunicorn --bind localhost:5555 api.v1.api_wsgi:app`
-* Open the bound address in a local web browser:<br>
-  `http://localhost:5555`
-
-
-
-## Bugs
-There are no known bugs at this time.
-
+| Method and route | Purpose |
+|---|---|
+| `GET /health` | API, database and word-list status |
+| `POST /init` `{"name"}` | Start a game |
+| `GET /status` | The current game |
+| `POST /play` `{"word"}` | Submit a word |
+| `POST /play` `{"new_word": true}` | Skip to the next round |
+| `POST /close` | End the game (scores of 10+ are saved) |
+| `GET /scores` | The top 20 scores |
 
 ## Authors
 [Donald Ajaps](https://github.com/adobki)
-
 
 ## License
 Anagram Master is the intellectual property of Donald Ajaps, Copyright © 2023. No part of it should be copied or reproduced without express permission from him.
