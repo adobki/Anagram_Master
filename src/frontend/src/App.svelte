@@ -6,6 +6,7 @@
   import UpdatePrompt from './components/UpdatePrompt.svelte'
   import { api, ApiError, type GameState } from './lib/api'
   import { createApiGame, findSavedGame } from './lib/api-game.svelte'
+  import { loadBest, recordScore } from './lib/best'
   import { MIN_LEADERBOARD_SCORE, type GameController } from './lib/game'
   import { ms } from './lib/motion'
   import { toasts } from './lib/toast.svelte'
@@ -27,6 +28,9 @@
   let screen = $state<Screen>(fromHash())
   let game = $state.raw<GameController | null>(null)
   let result = $state.raw<GameState | null>(null)
+  /** The best score on this device, and the earlier best the last game beat (if it did). */
+  let best = $state(loadBest())
+  let beaten = $state<number | null>(null)
   let starting = false
 
   // A game saved behind the player's cookie shows up as "Continue" on the home screen.
@@ -110,7 +114,10 @@
     starting = true
     try {
       // Starting over ends the current game first (saving its score if it's 10+).
-      if (game?.state.status) await game.quit()
+      if (game?.state.status) {
+        await game.quit()
+        best = recordScore(game.state.score).best
+      }
       game?.destroy()
       game = createApiGame(await api.start(name))
       go('game', screen === 'over')
@@ -126,6 +133,7 @@
     if (!game) return
     await game.quit() // shows its own message if offline, and the game stays
     if (!game.state.status) {
+      best = recordScore(game.state.score).best
       game.destroy()
       game = null
     }
@@ -134,6 +142,7 @@
   function finish() {
     if (game) {
       result = $state.snapshot(game.state)
+      ;({ best, beaten } = recordScore(result.score))
       game.destroy()
       game = null
     }
@@ -153,6 +162,8 @@
     {:else if screen === 'over' && result}
       <GameOver
         {result}
+        {best}
+        {beaten}
         onplay={() => newGame(result!.name)}
         onhome={() => go('home')}
         onleaderboard={() => go('scores')}
@@ -168,6 +179,7 @@
     {:else}
       <Home
         saved={game?.state.status ? game.state : null}
+        {best}
         timeLeft={game?.timeLeft ?? 0}
         onstart={newGame}
         onabandon={abandon}

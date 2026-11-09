@@ -21,6 +21,8 @@
   interface Props {
     /** A game in progress that can be resumed, if any. */
     saved: GameState | null
+    /** The best score on this device; 0 until a game has been played. */
+    best?: number
     /** Seconds left in the saved game's round. Its clock keeps running. */
     timeLeft?: number
     onstart: (name: string) => void
@@ -31,7 +33,7 @@
     onhelp: () => void
   }
 
-  let { saved, timeLeft = 0, onstart, onabandon, oncontinue, onleaderboard, onhelp }: Props = $props()
+  let { saved, best = 0, timeLeft = 0, onstart, onabandon, oncontinue, onleaderboard, onhelp }: Props = $props()
 
   const clock = $derived(`${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`)
 
@@ -91,6 +93,7 @@
       </div>
       <h1><img src={logo} alt="Anagram Master" width="580" height="150" /></h1>
       <p class="tagline">Twenty rounds, two minutes each.<br />How many words can you make?</p>
+      {#if best}<p class="best"><Trophy size="1rem" /> Your best: <strong>{best}</strong></p>{/if}
     </section>
 
     {#if saved}
@@ -203,6 +206,27 @@
     font-size: var(--text-lg);
     line-height: 1.45;
     color: var(--text-2);
+  }
+
+  .best {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-4);
+    border-radius: var(--radius-full);
+    background: var(--surface-2);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-2);
+  }
+
+  .best :global(svg) {
+    color: var(--warn);
+  }
+
+  .best strong {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
   }
 
   .deco {

@@ -22,7 +22,8 @@
   import WordList from '../components/WordList.svelte'
   import { celebrate } from '../lib/confetti'
   import { createTileDrag, type Origin, type TileDrag } from '../lib/drag.svelte'
-  import { MIN_LEADERBOARD_SCORE, MIN_WORD_LENGTH, type Feedback, type GameController } from '../lib/game'
+  import { MIN_LEADERBOARD_SCORE, MIN_WORD_LENGTH, recapText, type Feedback, type GameController } from '../lib/game'
+  import { buzzBad, buzzCleared } from '../lib/haptics'
   import { shuffled, tilesOf, type Tile as TileData } from '../lib/letters'
   import { ms } from '../lib/motion'
 
@@ -44,6 +45,7 @@
 
   const FEEDBACK_MS = 3000
   const BANNER_MS = 1600
+  const RECAP_MS = 2600 // longer when the banner also carries the last round's recap
 
   const s = $derived(game.state)
   const root = $derived(s.word ?? '')
@@ -70,6 +72,7 @@
   let shake = $state(0)
   let skipArmed = $state(false)
   let banner = $state<number | null>(null)
+  let recap = $state<string | null>(null)
 
   // ── Drag and drop ────────────────────────────────────────────────────────
   let trayElement = $state<HTMLElement>()
@@ -123,10 +126,12 @@
   $effect(() => {
     const round = s.round
     if (seenRound && round !== seenRound) {
+      const summary = untrack(() => game.lastRound)
       banner = round
+      recap = summary ? recapText(summary) : null
       latest = null
       skipArmed = false
-      later(() => (banner = null), BANNER_MS)
+      later(() => (banner = null), recap ? RECAP_MS : BANNER_MS)
     }
     seenRound = round
   })
@@ -203,6 +208,7 @@
     if (blocked) {
       say(blocked)
       shake++
+      buzzBad()
       if (answers.some(([played, valid]) => valid && played === sent)) latest = sent
       return
     }
@@ -211,9 +217,13 @@
     say(result)
     if (result.tone === 'good' || result.tone === 'great') {
       latest = sent
-      if (result.tone === 'great') celebrate()
+      if (result.tone === 'great') {
+        celebrate()
+        buzzCleared()
+      }
     } else {
       shake++
+      buzzBad()
     }
   }
 
@@ -306,8 +316,11 @@
       <div class="stage">
         {#if banner}
           <div class="banner" aria-hidden="true" in:scale={{ duration: ms(350), start: 0.6 }} out:fade={{ duration: ms(250) }}>
-            <span>Round</span>
-            <strong>{banner}</strong>
+            <div class="head">
+              <span>Round</span>
+              <strong>{banner}</strong>
+            </div>
+            {#if recap}<p class="recap">{recap}</p>{/if}
           </div>
         {/if}
         <FeedbackPill {feedback} />
@@ -518,17 +531,29 @@
     left: 50%;
     bottom: calc(100% + var(--space-2));
     z-index: 5;
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
     padding: var(--space-4) var(--space-8);
     border: 1px solid var(--line);
-    border-radius: var(--radius-full);
+    border-radius: 2.5rem;
     background: var(--surface);
     box-shadow: var(--shadow-lg);
     translate: -50% 0;
     white-space: nowrap;
     pointer-events: none;
+  }
+
+  .banner .head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .banner .recap {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-2);
   }
 
   .banner span {

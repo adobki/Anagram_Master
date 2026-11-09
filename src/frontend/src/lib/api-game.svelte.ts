@@ -10,7 +10,7 @@
  */
 
 import { api, ApiError, isGameState, type ErrorReply, type GameState } from './api'
-import { praise, type Feedback, type GameController } from './game'
+import { praise, type Feedback, type GameController, type RoundSummary } from './game'
 import { tilesOf } from './letters'
 import { toasts } from './toast.svelte'
 
@@ -29,7 +29,9 @@ export async function findSavedGame(): Promise<GameState | null> {
 }
 
 export function createApiGame(initial: GameState): GameController {
-  const g = $state({ state: initial, timeLeft: initial.time, busy: false })
+  const g = $state({ state: initial, timeLeft: initial.time, busy: false, lastRound: null as RoundSummary | null })
+  // The score when the current round began; unknown for a game resumed after round 1.
+  let roundStart: number | null = initial.round === 1 ? 0 : null
   // Paused until the game screen shows (see GameController.pause).
   let paused = true
   let advancing = false
@@ -48,6 +50,16 @@ export function createApiGame(initial: GameState): GameController {
 
   function apply(reply: GameState | ErrorReply) {
     if (!isGameState(reply)) return end() // "Time up! Game is over"
+    const before = g.state
+    if (reply.status && before.word && reply.round !== before.round) {
+      const answers = reply.words[before.word] ?? []
+      g.lastRound = {
+        round: before.round,
+        words: answers.filter(([, valid]) => valid).length,
+        points: roundStart === null ? null : reply.score - roundStart,
+      }
+      roundStart = reply.score
+    }
     g.state = reply
     g.timeLeft = reply.time
     if (!reply.status) clearInterval(clock)
@@ -97,6 +109,9 @@ export function createApiGame(initial: GameState): GameController {
     },
     get busy() {
       return g.busy
+    },
+    get lastRound() {
+      return g.lastRound
     },
 
     async submit(word) {

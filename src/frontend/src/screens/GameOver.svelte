@@ -2,6 +2,7 @@
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import House from '@lucide/svelte/icons/house'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
+  import Share2 from '@lucide/svelte/icons/share-2'
   import Trophy from '@lucide/svelte/icons/trophy'
   import { onMount } from 'svelte'
   import { cubicOut } from 'svelte/easing'
@@ -13,16 +14,21 @@
   import type { GameState } from '../lib/api'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { ms } from '../lib/motion'
+  import { shareScore } from '../lib/share'
 
   interface Props {
     /** The final state of the finished game. */
     result: GameState
+    /** The best score on this device, this game included. */
+    best?: number
+    /** The earlier best this game beat, or null if it didn't beat one. */
+    beaten?: number | null
     onplay: () => void
     onhome: () => void
     onleaderboard: () => void
   }
 
-  let { result, onplay, onhome, onleaderboard }: Props = $props()
+  let { result, best = 0, beaten = null, onplay, onhome, onleaderboard }: Props = $props()
 
   const rounds = $derived(
     Object.entries(result.words).map(([root, answers], i) => ({
@@ -44,6 +50,15 @@
   const longest = $derived(
     rounds.flatMap((round) => round.found).reduce((best, word) => (word.length > best.length ? word : best), ''),
   )
+  const totalMissed = $derived(rounds.reduce((sum, round) => sum + round.missed.length, 0))
+  const accuracy = $derived(
+    totalFound + totalMissed ? `${Math.round((totalFound / (totalFound + totalMissed)) * 100)}%` : '—',
+  )
+  // The round with the most words (the earliest, if tied).
+  const bestRound = $derived(
+    rounds.reduce((top, round) => (round.found.length > top.found.length ? round : top), rounds[0]),
+  )
+  const average = $derived(rounds.length ? (totalFound / rounds.length).toFixed(1).replace(/\.0$/, '') : '0')
   const onLeaderboard = $derived(result.score >= MIN_LEADERBOARD_SCORE)
 
   const shown = new Tween(0, { easing: cubicOut })
@@ -73,12 +88,29 @@
           Score {MIN_LEADERBOARD_SCORE} or more to make the leaderboard
         {/if}
       </p>
+      {#if beaten}
+        <p class="badge on"><Trophy size="1rem" /> New personal best! It was {beaten}</p>
+      {:else if best > result.score}
+        <p class="badge">Your best: {best}</p>
+      {/if}
+      {#if result.score > 0}
+        <Button variant="ghost" size="sm" onclick={() => shareScore(result.score, result.name)}>
+          <Share2 size="1rem" /> Share your score
+        </Button>
+      {/if}
     </section>
 
     <dl class="stats">
       <div><dt>Rounds</dt><dd>{result.round}</dd></div>
       <div><dt>Words</dt><dd>{totalFound}</dd></div>
       <div><dt>Longest</dt><dd class="word">{longest || '—'}</dd></div>
+      <div><dt>Accuracy</dt><dd>{accuracy}</dd></div>
+      <div>
+        <dt>Best round</dt>
+        <dd>{bestRound && bestRound.found.length ? `#${bestRound.number}` : '—'}</dd>
+        {#if bestRound && bestRound.found.length}<span class="sub">{bestRound.found.length} words</span>{/if}
+      </div>
+      <div><dt>Per round</dt><dd>{average}</dd></div>
     </dl>
 
     <section class="recap" aria-labelledby="recap-title">
@@ -252,6 +284,12 @@
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
+  }
+
+  .sub {
+    margin-top: -0.25rem;
+    font-size: var(--text-xs);
+    color: var(--text-3);
   }
 
   dd.word {

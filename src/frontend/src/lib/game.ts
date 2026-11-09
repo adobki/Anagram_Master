@@ -19,6 +19,21 @@ export interface Feedback {
   text: string
 }
 
+/** How a finished round went, shown when the next one starts. */
+export interface RoundSummary {
+  round: number
+  /** Valid words found in it. */
+  words: number
+  /** Points gained in it, or null when its starting score isn't known (a game resumed mid-round). */
+  points: number | null
+}
+
+export function recapText({ round, words, points }: RoundSummary): string {
+  const found = `${words} ${words === 1 ? 'word' : 'words'}`
+  const score = points === null ? '' : points === 0 ? ' · 0 points' : ` · ${points > 0 ? '+' : '−'}${Math.abs(points)}`
+  return `Round ${round} · ${found}${score}`
+}
+
 /**
  * Everything the game screen needs from "the game". lib/api-game.svelte.ts
  * implements it on the API.
@@ -30,6 +45,8 @@ export interface GameController {
   readonly timeLeft: number
   /** True while a request is in flight. */
   readonly busy: boolean
+  /** The round that just ended, set at the moment `state` moves to the next one. */
+  readonly lastRound: RoundSummary | null
   submit(word: string): Promise<Feedback>
   skip(): Promise<void>
   quit(): Promise<void>
