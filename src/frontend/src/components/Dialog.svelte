@@ -66,7 +66,9 @@
     box-shadow: var(--shadow-lg);
   }
 
-  dialog[open] .panel {
+  /* Animate the dialog itself: moving the panel inside it pushed the panel past
+     the dialog's edge for a moment, which flashed scroll bars. */
+  dialog[open] {
     animation: pop var(--dur-slow) var(--ease-spring);
   }
 
