@@ -3,9 +3,12 @@
 from api.controllers_auxiliary import error_handler
 from api.routes import app_routes, api_routes, html_routes, general_routes
 from flask import Flask
+from os import environ
 from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
+# Keep dict keys in insertion order: a game's `words` lists rounds in play order.
+app.json.sort_keys = False
 
 
 # General/shared routes
@@ -33,4 +36,4 @@ app.register_error_handler(HTTPException, f=error_handler)
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5555, threaded=True)
+    app.run(host='0.0.0.0', port=int(environ.get('PORT', 5555)), threaded=True)

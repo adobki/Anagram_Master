@@ -28,47 +28,8 @@ export async function findSavedGame(): Promise<GameState | null> {
   return null
 }
 
-/*
- * Flask's jsonify sorts dictionary keys, so `words` arrives alphabetically
- * rather than in play order. The client records each round's word as it
- * first sees it (kept per game in localStorage, so a reload keeps the order)
- * and rebuilds `words` in play order. Rounds never seen here (played on
- * another device) come first, alphabetically.
- */
-const orderKey = (sessionId: string) => `am-rounds-${sessionId}`
-
-function loadOrder(sessionId: string): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(orderKey(sessionId)) ?? '[]')
-  } catch {
-    return []
-  }
-}
-
-function saveOrder(sessionId: string, order: string[] | null) {
-  try {
-    if (order) localStorage.setItem(orderKey(sessionId), JSON.stringify(order))
-    else localStorage.removeItem(orderKey(sessionId))
-  } catch {
-    // Storage blocked: the order lasts for this visit only.
-  }
-}
-
 export function createApiGame(initial: GameState): GameController {
-  const sessionId = initial.session_id
-  const order = loadOrder(sessionId)
-
-  function inPlayOrder(state: GameState): GameState {
-    if (state.word && !order.includes(state.word)) {
-      order.push(state.word)
-      saveOrder(sessionId, order)
-    }
-    const unseen = Object.keys(state.words).filter((root) => !order.includes(root))
-    const seen = order.filter((root) => root in state.words)
-    return { ...state, words: Object.fromEntries([...unseen, ...seen].map((root) => [root, state.words[root]])) }
-  }
-
-  const g = $state({ state: inPlayOrder(initial), timeLeft: initial.time, busy: false })
+  const g = $state({ state: initial, timeLeft: initial.time, busy: false })
   // Paused until the game screen shows (see GameController.pause).
   let paused = true
   let advancing = false
@@ -81,19 +42,15 @@ export function createApiGame(initial: GameState): GameController {
 
   function end() {
     clearInterval(clock)
-    saveOrder(sessionId, null)
     g.state = { ...g.state, status: false, word: null, time: 0 }
     g.timeLeft = 0
   }
 
   function apply(reply: GameState | ErrorReply) {
     if (!isGameState(reply)) return end() // "Time up! Game is over"
-    g.state = inPlayOrder(reply)
+    g.state = reply
     g.timeLeft = reply.time
-    if (!reply.status) {
-      clearInterval(clock)
-      saveOrder(sessionId, null)
-    }
+    if (!reply.status) clearInterval(clock)
   }
 
   async function call<T>(work: () => Promise<T>): Promise<T> {

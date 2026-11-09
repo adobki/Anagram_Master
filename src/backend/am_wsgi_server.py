@@ -1,6 +1,7 @@
 """Starts Anagram Master WSGI Web Application Server with waitress"""
 
 from api.api import app as am_api
+from os import environ
 from paste.translogger import TransLogger
 from waitress import serve
 
@@ -14,4 +15,4 @@ options = {'application':           am_api,
            'format':                log_format}
 
 if __name__ == "__main__":
-    serve(TransLogger(**options), port=5555, threads=4, ident='AnagramMaster')
+    serve(TransLogger(**options), port=int(environ.get('PORT', 5555)), threads=4, ident='AnagramMaster')

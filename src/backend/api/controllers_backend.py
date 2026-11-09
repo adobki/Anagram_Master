@@ -15,7 +15,10 @@ def api_status():
 def init():
     """Handles user on-boarding"""
     # Read JSON data passed with the request
-    name = request.get_json(force=True, silent=True).get('name')
+    data = request.get_json(force=True, silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Expected a JSON body'}), 400
+    name = data.get('name')
     if not name or len(name) < 3:
         return jsonify({'error': 'name must have >= 3 characters'}), 400
 
@@ -63,8 +66,10 @@ def play():
             game = Game(_id=player_id)
             # Read JSON data passed with the request
             if request.method == 'POST':
-                new = request.get_json(force=True, silent=True).get('new_word')
-                word = request.get_json(force=True, silent=True).get('word')
+                data = request.get_json(force=True, silent=True)
+                if not isinstance(data, dict):
+                    return jsonify({'error': 'Expected a JSON body'}), 400
+                new, word = data.get('new_word'), data.get('word')
             else:
                 new, word = False, None
             # Process session based on given data
