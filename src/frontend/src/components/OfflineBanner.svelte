@@ -14,9 +14,7 @@
 
 <style>
   .offline {
-    position: sticky;
-    top: 0;
-    z-index: 60;
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: center;

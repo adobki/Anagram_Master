@@ -13,6 +13,7 @@
   import TextField from '../components/TextField.svelte'
   import ThemeToggle from '../components/ThemeToggle.svelte'
   import type { GameState } from '../lib/api'
+  import { loadName, saveName } from '../lib/player'
 
   interface Props {
     /** A game in progress that can be resumed, if any. */
@@ -29,7 +30,7 @@
 
   const clock = $derived(`${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`)
 
-  let name = $state('')
+  let name = $state(loadName())
   let tried = $state(false)
   const trimmed = $derived(name.trim())
   const error = $derived(tried && trimmed.length < 3 ? 'Use at least 3 characters.' : undefined)
@@ -37,7 +38,9 @@
   function start(event: SubmitEvent) {
     event.preventDefault()
     tried = true
-    if (trimmed.length >= 3) onstart(trimmed)
+    if (trimmed.length < 3) return
+    saveName(trimmed)
+    onstart(trimmed)
   }
 
   // Hero tiles spell MASTER, then glide into its anagrams (STREAM, TAMERS).

@@ -396,7 +396,7 @@
   .game {
     display: flex;
     flex-direction: column;
-    height: 100dvh;
+    height: var(--view-h, 100dvh);
     padding-bottom: max(env(safe-area-inset-bottom), var(--space-4));
   }
 

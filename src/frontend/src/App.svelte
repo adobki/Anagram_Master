@@ -16,7 +16,6 @@
   import Leaderboard from './screens/Leaderboard.svelte'
 
   type Screen = 'home' | 'game' | 'over' | 'scores' | 'help'
-  const SCREENS: Screen[] = ['home', 'game', 'over', 'scores', 'help']
 
   // Each screen has a URL hash, so the browser's (and Android's) back button
   // moves between screens. #scores and #help can be linked to directly.
@@ -36,22 +35,37 @@
     if (saved && !game) game = createApiGame(saved)
   })
 
+  let scroller: HTMLElement
+  let viewHeight = $state(0)
+
   function go(next: Screen, replace = false) {
     if (next === screen) return
+    const origin = screen
+    const carried = history.state?.from
     screen = next
-    const url = next === 'home' ? location.pathname : `#${next}`
-    if (replace) history.replaceState(null, '', url)
-    else history.pushState({ inApp: true }, '', url)
-    window.scrollTo(0, 0)
+    // The game has no URL of its own (it sits at "/", like home), so reloading
+    // or coming back to a paused game never reopens it. `from` remembers which
+    // screen the game was opened from, for leaveGame().
+    const url = next === 'home' || next === 'game' ? location.pathname : `#${next}`
+    const state = { inApp: true, game: next === 'game', from: replace ? carried : origin }
+    if (replace) history.replaceState(state, '', url)
+    else history.pushState(state, '', url)
+    scroller?.scrollTo(0, 0)
   }
 
-  // Back/forward. The game and game-over screens need state, so a stale
-  // hash for them falls back to home.
+  // Back/forward. Only #scores, #help and (while its result is still in
+  // memory) #over are restored. Everything else, the game included, is home.
   function onpopstate() {
     const hash = location.hash.slice(1) as Screen
-    let next: Screen = SCREENS.includes(hash) ? hash : 'home'
-    if ((next === 'game' && !game?.state.status) || (next === 'over' && !result)) next = 'home'
-    screen = next
+    const restorable = hash === 'scores' || hash === 'help' || (hash === 'over' && result)
+    screen = restorable ? hash : 'home'
+    scroller?.scrollTo(0, 0)
+  }
+
+  /** Pause: back to the home screen without leaving a paused game one "Back" press away. */
+  function leaveGame() {
+    if (history.state?.game && history.state.from === 'home') history.back()
+    else go('home', true)
   }
 
   /** "Play" from the leaderboard or help: back into a game in progress, or home to start one. */
@@ -88,12 +102,13 @@
 
 <svelte:window {onpopstate} />
 
-<OfflineBanner />
-
+<div class="app">
+  <OfflineBanner />
+  <div class="scroller" bind:this={scroller} bind:clientHeight={viewHeight} style:--view-h="{viewHeight}px">
 {#key screen}
   <div in:fade={{ duration: ms(220) }}>
     {#if screen === 'game' && game}
-      <Game {game} onend={finish} onpause={() => go('home')} />
+      <Game {game} onend={finish} onpause={leaveGame} />
     {:else if screen === 'over' && result}
       <GameOver
         {result}
@@ -121,6 +136,32 @@
     {/if}
   </div>
 {/key}
+  </div>
+</div>
 
 <Toaster />
 <UpdatePrompt hidden={screen === 'game'} />
+
+<style>
+  /*
+   * The app fills the visible window and the page itself never scrolls, so a
+   * pull-down gesture or the browser toolbar sliding can't make a full-screen
+   * screen scrollable. Only .scroller scrolls, and only when a screen's content
+   * is taller than it. The offline banner sits above it, so the screens
+   * shrink to make room instead of pushing the page longer.
+   */
+  .app {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .scroller {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: none;
+  }
+</style>
