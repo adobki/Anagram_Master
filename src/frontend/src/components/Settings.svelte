@@ -7,6 +7,7 @@
   import { sparkle } from '../lib/confetti'
   import { canKeepAwake, canVibrate } from '../lib/device'
   import type { GameController } from '../lib/game'
+  import { fullscreen } from '../lib/fullscreen.svelte'
   import { buzzTest } from '../lib/haptics'
   import { clearMyData } from '../lib/data'
   import { install } from '../lib/install.svelte'
@@ -124,6 +125,14 @@
         bind:value={settings.motion}
         hint="Auto follows your device, which is set to {prefersReducedMotion.current ? 'reduced' : 'full'} motion."
       />
+      {#if fullscreen.supported}
+        <Switch
+          label="Full screen"
+          hint="Hides the browser's bars. Browsers only allow it after a tap, so it starts on your first tap each time you open the app."
+          bind:checked={settings.fullscreen}
+          onchange={(on) => on && fullscreen.enter()}
+        />
+      {/if}
     </div>
   </section>
 

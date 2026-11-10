@@ -49,6 +49,8 @@ interface Choices {
   motion: Motion
   /** Stronger text and border colours. */
   highContrast: boolean
+  /** Full screen, where the browser allows it (lib/fullscreen.svelte.ts keeps this true to what's on screen). */
+  fullscreen: boolean
 }
 
 /** Settings that are one of a few words: anything else in storage is ignored. */
@@ -86,6 +88,7 @@ const DEFAULTS: { [K in keyof Choices]: () => Choices[K] } = {
   textSize: () => 'default',
   motion: () => 'auto',
   highContrast: () => matchMedia('(prefers-contrast: more)').matches,
+  fullscreen: () => false,
 }
 
 const KEYS = Object.keys(DEFAULTS) as (keyof Choices)[]
@@ -256,6 +259,13 @@ class SettingsState {
   }
   set highContrast(value: boolean) {
     this.#set('highContrast', value)
+  }
+
+  get fullscreen() {
+    return this.#get('fullscreen')
+  }
+  set fullscreen(value: boolean) {
+    this.#set('fullscreen', value)
   }
 
   /** Back to the defaults. (The theme is reset separately, in lib/theme.svelte.ts.) */
