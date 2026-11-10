@@ -3,6 +3,7 @@
   import { fade } from 'svelte/transition'
   import OfflineBanner from './components/OfflineBanner.svelte'
   import Toaster from './components/Toaster.svelte'
+  import Settings from './components/Settings.svelte'
   import UpdatePrompt from './components/UpdatePrompt.svelte'
   import { api, ApiError, type GameState } from './lib/api'
   import { createApiGame, findSavedGame } from './lib/api-game.svelte'
@@ -10,7 +11,9 @@
   import { MIN_LEADERBOARD_SCORE, type GameController } from './lib/game'
   import { ms } from './lib/motion'
   import { network } from './lib/network.svelte'
+  import { player } from './lib/player.svelte'
   import { toasts } from './lib/toast.svelte'
+  import { ui } from './lib/ui.svelte'
   import About from './screens/About.svelte'
   import Game from './screens/Game.svelte'
   import GameOver from './screens/GameOver.svelte'
@@ -102,12 +105,14 @@
   // Back/forward. Only #scores, #help and (while its result is still in
   // memory) #over are restored. Everything else, the game included, is home.
   function onpopstate() {
-    if (screen === 'game' && !leaving && !location.hash) {
+    // (With Settings open, back closes it wherever the game was opened from.)
+    if (screen === 'game' && !leaving && (!location.hash || ui.settingsOpen)) {
       gameBack()
       return
     }
     leaving = false
     menu = 'closed'
+    ui.settingsOpen = false
     const hash = location.hash.slice(1) as Screen
     const restorable = hash === 'scores' || hash === 'help' || hash === 'about' || (hash === 'over' && result)
     screen = restorable ? hash : 'home'
@@ -120,6 +125,12 @@
    * already stepped back, so the game's history entry is put back first.
    */
   function gameBack() {
+    if (ui.settingsOpen) {
+      // Back closes Settings and nothing else: the game's entry goes back and the menu stays shut.
+      ui.settingsOpen = false
+      history.pushState(gameEntry, '', location.pathname)
+      return
+    }
     if (menu === 'back') {
       menu = 'closed'
       screen = 'home' // the second press: the browser is already on the entry below the game
@@ -155,6 +166,7 @@
       }
       game?.destroy()
       game = createApiGame(await api.start(name))
+      player.name = name
       go('game', screen === 'over')
     } catch (error) {
       toasts.show(error instanceof ApiError ? error.message : "Couldn't reach the server. Try again.")
@@ -193,13 +205,13 @@
 {#key screen}
   <div in:fade={{ duration: ms(220) }}>
     {#if screen === 'game' && game}
-      <Game {game} onend={finish} onpause={leaveGame} bind:menu />
+      <Game {game} onend={finish} onpause={leaveGame} onhelp={() => go('help', true)} bind:menu />
     {:else if screen === 'over' && result}
       <GameOver
         {result}
         {best}
         {beaten}
-        onplay={() => newGame(result!.name)}
+        onplay={() => newGame(player.valid ? player.trimmed : result!.name)}
         onhome={() => go('home')}
         onleaderboard={() => go('scores')}
       />
@@ -233,6 +245,7 @@
   </div>
 </div>
 
+<Settings {game} inGame={screen === 'game'} />
 <Toaster />
 <UpdatePrompt hidden={screen === 'game'} />
 

@@ -15,11 +15,11 @@
   import Button from '../components/Button.svelte'
   import Dialog from '../components/Dialog.svelte'
   import TextField from '../components/TextField.svelte'
-  import ThemeToggle from '../components/ThemeToggle.svelte'
+  import SettingsButton from '../components/SettingsButton.svelte'
   import type { GameState } from '../lib/api'
   import { network } from '../lib/network.svelte'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
-  import { loadName, saveName } from '../lib/player'
+  import { player } from '../lib/player.svelte'
 
   interface Props {
     /** A game in progress that can be resumed, if any. */
@@ -62,17 +62,15 @@
     confirming = false
   }
 
-  let name = $state(loadName())
+  // The name is shared with Settings (lib/player.svelte.ts), which saves it as it's typed.
   let tried = $state(false)
-  const trimmed = $derived(name.trim())
-  const error = $derived(tried && trimmed.length < 3 ? 'Use at least 3 characters.' : undefined)
+  const error = $derived(tried && !player.valid ? 'Use at least 3 characters.' : undefined)
 
   function start(event: SubmitEvent) {
     event.preventDefault()
     tried = true
-    if (trimmed.length < 3) return
-    saveName(trimmed)
-    onstart(trimmed)
+    if (!player.valid) return
+    onstart(player.trimmed)
   }
 
   // Hero tiles spell MASTER, then glide into its anagrams (STREAM, TAMERS).
@@ -95,7 +93,7 @@
 <div class="screen">
   <header class="bar">
     <span></span>
-    <ThemeToggle />
+    <SettingsButton />
   </header>
 
   <main>
@@ -157,7 +155,7 @@
         autocapitalize="words"
         enterkeyhint="go"
         spellcheck="false"
-        bind:value={name}
+        bind:value={player.name}
         {error}
         hint="3–15 characters. It appears on the leaderboard."
       />

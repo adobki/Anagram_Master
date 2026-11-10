@@ -1,10 +1,12 @@
 <script lang="ts">
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark'
   import Clock from '@lucide/svelte/icons/clock'
   import Delete from '@lucide/svelte/icons/delete'
   import Eraser from '@lucide/svelte/icons/eraser'
   import ListRestart from '@lucide/svelte/icons/list-restart'
   import Pause from '@lucide/svelte/icons/pause'
   import Pin from '@lucide/svelte/icons/pin'
+  import SettingsIcon from '@lucide/svelte/icons/settings'
   import Shuffle from '@lucide/svelte/icons/shuffle'
   import SkipForward from '@lucide/svelte/icons/skip-forward'
   import { onDestroy, onMount, untrack } from 'svelte'
@@ -14,7 +16,7 @@
   import FeedbackPill from '../components/FeedbackPill.svelte'
   import IconButton from '../components/IconButton.svelte'
   import Score from '../components/Score.svelte'
-  import ThemeToggle from '../components/ThemeToggle.svelte'
+  import SettingsButton from '../components/SettingsButton.svelte'
   import Tile from '../components/Tile.svelte'
   import TileRack from '../components/TileRack.svelte'
   import Timer from '../components/Timer.svelte'
@@ -26,6 +28,8 @@
   import { buzzBad, buzzCleared } from '../lib/haptics'
   import { shuffled, tilesOf, type Tile as TileData } from '../lib/letters'
   import { ms } from '../lib/motion'
+  import { settings } from '../lib/settings.svelte'
+  import { ui } from '../lib/ui.svelte'
 
   interface Props {
     game: GameController
@@ -33,6 +37,8 @@
     onend: () => void
     /** Go to the home screen; the game can be resumed from there. */
     onpause: () => void
+    /** Open How to play; the game can be resumed from there too. */
+    onhelp: () => void
     /**
      * The "Take a break?" menu. 'button' means the player opened it; 'back'
      * means the device's back button did (App.svelte), so pressing back again
@@ -41,7 +47,7 @@
     menu: 'closed' | 'button' | 'back'
   }
 
-  let { game, onend, onpause, menu = $bindable() }: Props = $props()
+  let { game, onend, onpause, onhelp, menu = $bindable() }: Props = $props()
 
   const FEEDBACK_MS = 3000
   const BANNER_MS = 1600
@@ -65,8 +71,6 @@
   const answer = $derived(picked.map((id) => byId.get(id)!))
   const word = $derived(answer.map((tile) => tile.letter).join(''))
 
-  /** Keep the tray's letters after submitting, instead of clearing it. */
-  let keep = $state(false)
   let feedback = $state<(Feedback & { id: number }) | null>(null)
   let latest = $state<string | null>(null)
   let shake = $state(0)
@@ -179,8 +183,11 @@
   const restore = () => (tiles = [...tiles].sort((a, b) => a.id - b.id))
 
   function toggleKeep() {
-    keep = !keep
-    say({ tone: 'info', text: keep ? 'Letters stay in the tray after you submit' : 'The tray clears after you submit' })
+    settings.keepLetters = !settings.keepLetters
+    say({
+      tone: 'info',
+      text: settings.keepLetters ? 'Letters stay in the tray after you submit' : 'The tray clears after you submit',
+    })
   }
 
   let hideFeedback: ReturnType<typeof setTimeout> | undefined
@@ -212,7 +219,7 @@
       if (answers.some(([played, valid]) => valid && played === sent)) latest = sent
       return
     }
-    if (!keep) clear() // cleared at once, so the next word can be typed while this one is checked
+    if (!settings.keepLetters) clear() // cleared at once, so the next word can be typed while this one is checked
     const result = await game.submit(sent)
     say(result)
     if (result.tone === 'good' || result.tone === 'great') {
@@ -253,8 +260,20 @@
     await game.quit()
   }
 
+  // Both close the menu first, so one tap later the player is back on the board.
+  function help() {
+    menu = 'closed'
+    onhelp()
+  }
+
+  function openSettings() {
+    menu = 'closed'
+    ui.settingsOpen = true
+  }
+
   function onkeydown(event: KeyboardEvent) {
-    if (event.metaKey || event.ctrlKey || event.altKey || menu !== 'closed') return
+    // Not while a dialog is open (the pause menu, Settings): its own controls take the keys.
+    if (event.metaKey || event.ctrlKey || event.altKey || document.querySelector('dialog[open]')) return
     if (event.target instanceof HTMLInputElement) return
     const { key } = event
     if (key === 'Enter') {
@@ -288,7 +307,7 @@
       <span>Round <strong>{s.round}</strong> of {s.rounds_limit}</span>
       <span class="round-bar"><span style:width="{(s.round / s.rounds_limit) * 100}%"></span></span>
     </div>
-    <ThemeToggle />
+    <SettingsButton />
   </header>
 
   <div class="board">
@@ -351,8 +370,8 @@
           <Button
             variant="ghost"
             size="sm"
-            class={keep ? 'on' : ''}
-            aria-pressed={keep}
+            class={settings.keepLetters ? 'on' : ''}
+            aria-pressed={settings.keepLetters}
             title="Keep the letters after submitting (Caps Lock)"
             onclick={toggleKeep}
           >
@@ -417,6 +436,8 @@
     {#snippet actions()}
       <Button variant="secondary" onclick={() => (menu = 'closed')}>Keep playing</Button>
       <Button onclick={leave}>Go home</Button>
+      <Button variant="ghost" size="sm" onclick={help}><CircleQuestionMark size="1.125rem" /> How to play</Button>
+      <Button variant="ghost" size="sm" onclick={openSettings}><SettingsIcon size="1.125rem" /> Settings</Button>
       <div class="span end">
         <Button variant="ghost" block onclick={end}>End game</Button>
         <p>

@@ -14,7 +14,7 @@
   import logoTextWhite from '../assets/about/logo-text-white.webp'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
-  import ThemeToggle from '../components/ThemeToggle.svelte'
+  import SettingsButton from '../components/SettingsButton.svelte'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { theme } from '../lib/theme.svelte'
   import { appVersion } from '../lib/version'
@@ -58,7 +58,7 @@
   <header class="bar">
     <IconButton label="Back" onclick={onback}><ArrowLeft size="1.25rem" /></IconButton>
     <h1>About</h1>
-    <ThemeToggle />
+    <SettingsButton />
   </header>
 
   <main>

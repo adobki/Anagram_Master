@@ -5,7 +5,7 @@
   import { fly } from 'svelte/transition'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
-  import ThemeToggle from '../components/ThemeToggle.svelte'
+  import SettingsButton from '../components/SettingsButton.svelte'
   import { api, type ScoreEntry } from '../lib/api'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { ms } from '../lib/motion'
@@ -36,7 +36,7 @@
   <header class="bar">
     <IconButton label="Back" onclick={onback}><ArrowLeft size="1.25rem" /></IconButton>
     <h1>Leaderboard</h1>
-    <ThemeToggle />
+    <SettingsButton />
   </header>
 
   <main>

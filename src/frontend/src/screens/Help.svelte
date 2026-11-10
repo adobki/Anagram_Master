@@ -8,7 +8,7 @@
   import Trophy from '@lucide/svelte/icons/trophy'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
-  import ThemeToggle from '../components/ThemeToggle.svelte'
+  import SettingsButton from '../components/SettingsButton.svelte'
   import { MIN_LEADERBOARD_SCORE, MIN_WORD_LENGTH } from '../lib/game'
 
   interface Props {
@@ -23,7 +23,7 @@
   <header class="bar">
     <IconButton label="Back" onclick={onback}><ArrowLeft size="1.25rem" /></IconButton>
     <h1>How to play</h1>
-    <ThemeToggle />
+    <SettingsButton />
   </header>
 
   <main>

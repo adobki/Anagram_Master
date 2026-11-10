@@ -1,10 +1,12 @@
 /**
- * Light/dark theme. It follows the system until the player picks one, and the
- * pick is remembered on this device. index.html applies the same rule before
+ * Light/dark theme. It follows the device until the player picks one (Settings
+ * has Auto, Light and Dark), and the pick is remembered on this device. index.html applies the same rule before
  * first paint, so keep KEY and the data-theme attribute in sync with it.
  */
 
 export type Theme = 'light' | 'dark'
+/** What the player picked: a theme, or "system" to follow the device. */
+export type ThemeChoice = Theme | 'system'
 
 const KEY = 'am-theme'
 const media = window.matchMedia('(prefers-color-scheme: dark)')
@@ -54,12 +56,16 @@ class ThemeState {
     })
   }
 
-  toggle() {
-    const next: Theme = this.current === 'dark' ? 'light' : 'dark'
-    // Choosing what the system already uses means "follow the system" again.
-    this.#choice = next === this.#system ? null : next
+  /** The player's pick, or 'system' while the theme follows the device. */
+  get choice(): ThemeChoice {
+    return this.#choice ?? 'system'
+  }
+
+  set(choice: ThemeChoice) {
+    if (choice === this.choice) return
+    this.#choice = choice === 'system' ? null : choice
     save(this.#choice)
-    apply(next)
+    apply(this.current)
   }
 }
 
