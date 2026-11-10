@@ -33,8 +33,29 @@ To test on a phone on the same Wi-Fi, run `npm run dev:lan` and open the "Networ
 | `npm run check` | Type-checks the code (`svelte-check` and `tsc`) |
 | `npm run build` | Builds for production into `dist/`, including the service worker and manifest |
 | `npm run preview` | Serves `dist/` on http://localhost:4173, also proxied to the API |
+| `npm run stamp` | Stamps a new version into `package.json` and `package-lock.json` (see Versioning) |
 
 `npm run preview` runs the real service worker, which caches the app for offline use. After a rebuild, an open page shows a "new version is ready" card; choose Update to switch. The card waits while a game is on screen. In DevTools, Application → Service workers → "Update on reload" skips this while developing.
+
+## Versioning
+
+The app's version is `v2.YYMMDD`, with `.HHMM` added when a second version ships on the same day (for example `v2.261110`, then `v2.261110.1432`). It is shown at the bottom of the About screen and in the update prompt.
+
+It is stored in `package.json` and `package-lock.json`, because that is where npm keeps a version, and the app imports it from there (`src/lib/version.ts`). npm needs three numeric parts without leading zeros, so the stored form is `2.261110.0` for a day's first version and `2.261110.<HHMM as a number>` for later ones (09:05 is `905`); `src/lib/version-format.ts` turns it back into the text above.
+
+**Run `npm run stamp` before every commit that changes the front end, and commit both files with it.** The script compares today with the version stored in the last commit, so running it twice before one commit gives the same date part.
+
+## About screen screenshots
+
+The About screen's pictures (`src/assets/about/shot-*.webp`) are 16 screenshots: four screens, each for phones and for desktop, in light and dark. `scripts/screenshots.mjs` plays real games in Edge to make them, and takes about two minutes. Start the server against a test database first, because games scoring 10 or more are saved:
+
+```sh
+npm i --no-save playwright-core sharp     # kept out of package.json on purpose
+cd ../backend && am_database_name=AM_FE_tests PORT=5555 python -m server
+node scripts/screenshots.mjs              # from src/frontend
+```
+
+Re-run it whenever a screen it shows changes. The diagrams on that screen are hand-drawn SVGs in `src/assets/about/`.
 
 ## Layout
 
@@ -43,7 +64,7 @@ To test on a phone on the same Wi-Fi, run `npm run dev:lan` and open the "Networ
 | `index.html` | The page shell Vite starts from |
 | `src/main.ts` | Mounts the app |
 | `src/App.svelte` | The root component; switches between screens |
-| `src/screens/` | Full screens: home, game, game over |
+| `src/screens/` | Full screens: home, game, game over, leaderboard, help, about |
 | `src/components/` | Reusable pieces: buttons, letter tiles, rack, tray, timer, score, word list, dialog, toasts |
 | `src/styles/tokens.css` | Design tokens: light and dark colours, type, spacing, radii, motion |
 | `src/styles/base.css` | Global styles, including the root font size that scales the UI up on big screens |

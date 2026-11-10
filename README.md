@@ -17,6 +17,8 @@ Anagram Master began as the Research/Portfolio Project at the end of the _Softwa
 * **Web app:** Svelte 5 and TypeScript, built with Vite, made installable and offline-capable with vite-plugin-pwa.
 * **Classic version:** the original jQuery pages, served at `/v1/`.
 
+The app has an About screen with screenshots and diagrams, and shows its version (`v2.YYMMDD`, stored in `src/frontend/package.json`).
+
 One Flask server serves all three: the web app at `/`, the classic pages at `/v1/`, and the JSON API at `/api/v1/`.
 
 ## Folder structure
