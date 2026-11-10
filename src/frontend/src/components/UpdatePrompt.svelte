@@ -16,10 +16,18 @@
 {#if update.ready && !hidden}
   <div class="update" role="status" in:fly={{ y: 24, duration: ms(260) }}>
     <RefreshCw size="1.25rem" />
-    <p>{update.waiting ? `Version ${update.waiting} is ready.` : 'A new version of Anagram Master is ready.'}</p>
+    <p>
+      {#if update.elsewhere}
+        Anagram Master was updated in another window. Reload to use it.
+      {:else if update.waiting}
+        Version {update.waiting} is ready.
+      {:else}
+        A new version of Anagram Master is ready.
+      {/if}
+    </p>
     <div class="actions">
       <Button variant="ghost" size="sm" onclick={() => update.dismiss()}>Later</Button>
-      <Button size="sm" onclick={() => update.apply()}>Update</Button>
+      <Button size="sm" onclick={() => update.apply()}>{update.elsewhere ? 'Reload' : 'Update'}</Button>
     </div>
   </div>
 {/if}

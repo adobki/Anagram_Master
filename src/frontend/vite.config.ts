@@ -27,8 +27,8 @@ export default defineConfig({
       },
     },
     // Emits the web app manifest and a Workbox service worker on build. The
-    // app registers the worker itself (src/components/UpdatePrompt.svelte), so
-    // a new version waits for the player's go-ahead instead of reloading mid-game.
+    // app registers the worker itself (src/lib/update.svelte.ts), so a new
+    // version waits for the player's go-ahead instead of reloading mid-game.
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
@@ -49,6 +49,11 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // A newer version only waits if a page is using the current one. A page the worker doesn't
+        // control (the first visit, or after a hard refresh) would let it switch in at once, unasked,
+        // so the worker takes pages over when it activates, and on request (public/sw-claim.js).
+        clientsClaim: true,
+        importScripts: ['sw-claim.js'],
         // Precache the font and images too, so the app shell works offline.
         globPatterns: ['**/*.{js,css,html,woff2,png,svg}'],
         // The API and the classic (v1) pages must always reach the server,

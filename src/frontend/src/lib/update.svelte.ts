@@ -2,6 +2,16 @@
  * App updates. The service worker, registered here once, installs a new
  * version in the background and waits. The player chooses when to switch to
  * it, from the banner (components/UpdatePrompt.svelte) or from Settings.
+ *
+ * Nothing in here reloads a page unasked: not when a version is found, not
+ * when another window updates (that window is told instead), and not on a
+ * refresh. Two things keep a new version from switching in by itself:
+ *   - the worker takes over every page it can (`clientsClaim` in vite.config.ts,
+ *     and `public/sw-claim.js` for a page loaded without it), because a new
+ *     version only waits while a page is using the current one;
+ *   - this window reloads only after Update was pressed in it.
+ * One thing remains by design: with every window closed, nothing is left to
+ * wait for, so the next open starts the version that was already downloaded.
  */
 import { useRegisterSW } from 'virtual:pwa-register/svelte'
 
@@ -10,11 +20,15 @@ const HOUR = 60 * 60 * 1000
 const MIN_GAP = 60 * 1000
 /** Longest to wait for a newly found version to finish installing. */
 const INSTALL_WAIT = 20 * 1000
+/** If the new worker hasn't taken over this soon after Update, reload anyway. */
+const TAKEOVER_WAIT = 4 * 1000
 
 class UpdateState {
   /** A new version is installed and waiting for the player to switch to it. */
   ready = $state(false)
-  /** Its version number, once known. */
+  /** Another window has already switched to the new version. This one still runs the old code until it reloads. */
+  elsewhere = $state(false)
+  /** The waiting version's number, once known. */
   waiting = $state<string | null>(null)
   /** A check is running, or a version it found is still installing. */
   busy = $state(false)
@@ -25,6 +39,8 @@ class UpdateState {
   #needRefresh: { set(value: boolean): void }
   #switchTo: (reload?: boolean) => Promise<void>
   #lastCheck = 0
+  /** The player pressed Update in this window. */
+  #applying = false
 
   constructor() {
     const { needRefresh, updateServiceWorker } = useRegisterSW({
@@ -32,16 +48,43 @@ class UpdateState {
         this.#registration = registration
         if (registration) setInterval(() => void this.check(), HOUR)
       },
+      // When a new worker takes over, the library reloads the page by itself. That is right for the window
+      // the player pressed Update in, but not for another one, which may be in the middle of a game.
+      onNeedReload: () => (this.#applying ? location.reload() : this.#updatedElsewhere()),
     })
     this.#needRefresh = needRefresh
     this.#switchTo = updateServiceWorker
     needRefresh.subscribe((value) => {
       this.ready = value
-      if (value) void this.#readVersion()
+      if (value) {
+        this.elsewhere = false // a version is waiting, which is a fresh update
+        void this.#readVersion()
+      }
     })
+
+    if ('serviceWorker' in navigator) {
+      // The worker changed under this window without Update being pressed here: another window did it.
+      let controlled = !!navigator.serviceWorker.controller
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (controlled && !this.#applying) this.#updatedElsewhere()
+        controlled = true
+      })
+      // A page loaded without the worker (a hard refresh) asks it to take over, so a newer version waits. See public/sw-claim.js.
+      if (import.meta.env.PROD) {
+        void navigator.serviceWorker.ready.then((registration) => {
+          if (!navigator.serviceWorker.controller) registration.active?.postMessage({ type: 'CLAIM' })
+        })
+      }
+    }
   }
 
-  /** The waiting version's number, read from the server (dist/version.json). */
+  #updatedElsewhere() {
+    this.elsewhere = true
+    this.ready = true
+    void this.#readVersion()
+  }
+
+  /** The newest version's number, read from the server (dist/version.json). */
   async #readVersion() {
     try {
       const reply = await fetch('/version.json', { cache: 'no-store' })
@@ -55,7 +98,7 @@ class UpdateState {
   /**
    * Looks for a new version. Quiet by default, and it won't repeat within a
    * minute. A manual check (the Settings button) always runs and says in
-   * `outcome` what it found.
+   * `outcome` what it found. Either way it only downloads: nothing switches.
    */
   async check(manual = false) {
     if (this.busy) return
@@ -93,14 +136,20 @@ class UpdateState {
     }
   }
 
-  /** Switch to the waiting version (the page reloads). */
+  /** Switch to the newest version (the page reloads). Only ever called by the player pressing a button. */
   apply() {
+    // Nothing is waiting: another window already switched, so just reload to join it.
+    if (this.elsewhere || !this.#registration?.waiting) return void location.reload()
+    this.#applying = true
     void this.#switchTo(true)
+    // Should the new worker not take over, don't leave the player with a button that did nothing.
+    setTimeout(() => location.reload(), TAKEOVER_WAIT)
   }
 
   /** "Later": hide the banner until the next version is found. */
   dismiss() {
     this.#needRefresh.set(false)
+    this.ready = false
   }
 }
 

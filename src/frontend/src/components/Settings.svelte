@@ -214,7 +214,11 @@
         <span class="label">Updates</span>
         <span class="hint" role="status">
           {#if update.ready}
-            {update.waiting ? `Version ${update.waiting} is ready.` : 'A new version is ready.'}
+            {update.elsewhere
+              ? 'Updated in another window. Reload to use it.'
+              : update.waiting
+                ? `Version ${update.waiting} is ready.`
+                : 'A new version is ready.'}
           {:else if update.busy}
             Checking…
           {:else if update.outcome === 'current'}
@@ -227,7 +231,7 @@
         </span>
       </span>
       {#if update.ready}
-        <Button size="sm" onclick={() => update.apply()}>Update now</Button>
+        <Button size="sm" onclick={() => update.apply()}>{update.elsewhere ? 'Reload' : 'Update now'}</Button>
       {:else}
         <Button variant="secondary" size="sm" disabled={update.busy} onclick={() => update.check(true)}>
           Check

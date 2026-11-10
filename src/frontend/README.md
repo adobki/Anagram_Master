@@ -35,7 +35,19 @@ To test on a phone on the same Wi-Fi, run `npm run dev:lan` and open the "Networ
 | `npm run preview` | Serves `dist/` on http://localhost:4173, also proxied to the API |
 | `npm run stamp` | Stamps a new version into `package.json` and `package-lock.json` (see Versioning) |
 
-`npm run preview` runs the real service worker, which caches the app for offline use. After a rebuild, an open page shows a "new version is ready" card; choose Update to switch. The card waits while a game is on screen. In DevTools, Application → Service workers → "Update on reload" skips this while developing.
+`npm run preview` runs the real service worker, which caches the app for offline use. See Updates below for what happens after a rebuild.
+
+## Updates
+
+A new version never takes over a page by itself. When one is found, the player is told and chooses when to switch.
+
+- **Finding one.** The app looks when the About screen opens, once an hour, and when Settings → Updates → Check is pressed. It only downloads; nothing switches.
+- **Telling the player.** A "Version … is ready" card with Update and Later (held back during a game), and a dot on the gear. Update switches and reloads. Later hides the card until the next version.
+- **Refreshing keeps the current version.** The old version stays until Update is pressed. A hard refresh (Ctrl+Shift+R) skips the service worker by design, so it loads whatever is on the server.
+- **Other windows** are never reloaded under their player: if Update is pressed in one window, the others get an "updated in another window" card with a Reload button.
+- **Why a new version waits.** A service worker only waits while some page is using the current one. So the worker takes over every page it can: `clientsClaim` in `vite.config.ts`, and `public/sw-claim.js` for a page that was loaded without it (a hard refresh). Without that, a page the worker doesn't control, such as the first visit, would let a newer version switch in at once, with no card, and the next refresh would show it.
+- **By design.** With every window closed, nothing is left to wait for, so the next open starts the version that was already downloaded.
+- **While developing,** DevTools → Application → Service workers → "Update on reload" and "Bypass for network" switch pages over without asking. Leave them off when testing updates.
 
 ## Versioning
 
