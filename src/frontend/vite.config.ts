@@ -1,6 +1,8 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import pkg from './package.json' with { type: 'json' }
+import { displayVersion } from './src/lib/version-format.ts'
 
 // The Flask API, started from the repo root with `python -m api.api`.
 // The dev and preview servers forward /api/* to it, so the browser sees a
@@ -12,6 +14,18 @@ const API = 'http://127.0.0.1:5555'
 export default defineConfig({
   plugins: [
     svelte(),
+    // dist/version.json lets a running app ask what version is waiting to be
+    // installed (see src/components/UpdatePrompt.svelte).
+    {
+      name: 'version-json',
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: JSON.stringify({ version: displayVersion(pkg.version) }),
+        })
+      },
+    },
     // Emits the web app manifest and a Workbox service worker on build. The
     // app registers the worker itself (src/components/UpdatePrompt.svelte), so
     // a new version waits for the player's go-ahead instead of reloading mid-game.

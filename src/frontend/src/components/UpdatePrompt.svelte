@@ -21,12 +21,22 @@
       if (registration) setInterval(() => registration.update(), HOUR)
     },
   })
+
+  // The waiting version's number, read from the server (dist/version.json).
+  let waiting = $state<string | null>(null)
+  $effect(() => {
+    if (!$needRefresh) return
+    fetch('/version.json', { cache: 'no-store' })
+      .then((reply) => reply.json())
+      .then((data) => (waiting = typeof data.version === 'string' ? data.version : null))
+      .catch(() => {}) // keep the plain message
+  })
 </script>
 
 {#if $needRefresh && !hidden}
   <div class="update" role="status" in:fly={{ y: 24, duration: ms(260) }}>
     <RefreshCw size="1.25rem" />
-    <p>A new version of Anagram Master is ready.</p>
+    <p>{waiting ? `Version ${waiting} is ready.` : 'A new version of Anagram Master is ready.'}</p>
     <div class="actions">
       <Button variant="ghost" size="sm" onclick={() => needRefresh.set(false)}>Later</Button>
       <Button size="sm" onclick={() => updateServiceWorker(true)}>Update</Button>

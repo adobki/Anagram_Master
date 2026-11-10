@@ -1,14 +1,15 @@
 {
   "name": "anagram-master-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.261110.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:lan": "vite --host",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "stamp": "node scripts/stamp-version.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
