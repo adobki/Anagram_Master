@@ -54,7 +54,8 @@
       }
       const travelled = Math.abs(top - anchor)
       if (direction < 0 && travelled >= SHOW_AFTER) away = false
-      else if (direction > 0 && travelled >= HIDE_AFTER) away = true
+      // Near the top, scrolling down just carries the bar off with the page, as a plain bar would, so no wait.
+      else if (direction > 0 && (travelled >= HIDE_AFTER || top < height)) away = true
     }
 
     scroller.addEventListener('scroll', onscroll, { passive: true })
@@ -62,14 +63,16 @@
   })
 </script>
 
-<!-- Tabbing into the bar brings it back, so a keyboard user never lands on something off screen. -->
+<!-- Tabbing into the bar while it is off screen brings it back, so a keyboard user never lands on something unseen. -->
 <header
   class="bar"
   class:lifted
   bind:this={bar}
   bind:offsetHeight={height}
   style:top="{away ? -height : 0}px"
-  onfocusin={() => (away = false)}
+  onfocusin={() => {
+    if (bar && bar.getBoundingClientRect().bottom <= 1) away = false
+  }}
 >
   {@render children()}
 </header>
