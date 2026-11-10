@@ -4,6 +4,7 @@
   import Clock from '@lucide/svelte/icons/clock'
   import Info from '@lucide/svelte/icons/info'
   import Play from '@lucide/svelte/icons/play'
+  import WifiOff from '@lucide/svelte/icons/wifi-off'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
   import Trophy from '@lucide/svelte/icons/trophy'
   import { onMount } from 'svelte'
@@ -16,12 +17,16 @@
   import TextField from '../components/TextField.svelte'
   import ThemeToggle from '../components/ThemeToggle.svelte'
   import type { GameState } from '../lib/api'
+  import { network } from '../lib/network.svelte'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { loadName, saveName } from '../lib/player'
 
   interface Props {
     /** A game in progress that can be resumed, if any. */
     saved: GameState | null
+    /** Whether the server has said yet if there is a saved game. */
+    lookup?: 'loading' | 'ready' | 'failed'
+    onretry?: () => void
     /** The best score on this device; 0 until a game has been played. */
     best?: number
     /** Seconds left in the saved game's round. Its clock keeps running. */
@@ -35,9 +40,18 @@
     onabout: () => void
   }
 
-  let { saved, best = 0, timeLeft = 0, onstart, onabandon, oncontinue, onleaderboard, onhelp, onabout }: Props = $props()
+  let { saved, lookup = 'ready', onretry, best = 0, timeLeft = 0, onstart, onabandon, oncontinue, onleaderboard, onhelp, onabout }: Props = $props()
 
   const clock = $derived(`${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`)
+
+  // After a few seconds of waiting, say why it may be slow (a sleeping server).
+  let slow = $state(false)
+  $effect(() => {
+    slow = false
+    if (lookup !== 'loading') return
+    const timer = setTimeout(() => (slow = true), 4000)
+    return () => clearTimeout(timer)
+  })
 
   let confirming = $state(false)
   let ending = $state(false)
@@ -98,7 +112,20 @@
       {#if best}<p class="best"><Trophy size="1rem" /> Your best: <strong>{best}</strong></p>{/if}
     </section>
 
-    {#if saved}
+    {#if lookup === 'loading'}
+      <section class="card wait" role="status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <p><strong>Checking for a saved game…</strong></p>
+        {#if slow}<p class="sub">Still trying. The server may be waking up.</p>{/if}
+      </section>
+    {:else if lookup === 'failed'}
+      <section class="card wait" role="status" aria-live="polite">
+        <WifiOff size="1.75rem" />
+        <p><strong>{network.online ? "Can't reach the server" : "You're offline"}</strong></p>
+        <p class="sub">We need to check for a saved game before you can start. We'll keep trying.</p>
+        <Button variant="secondary" onclick={onretry}>Try again</Button>
+      </section>
+    {:else if saved}
       <section class="card resume" aria-label="Game in progress">
         <div class="resume-head">
           <div>
@@ -168,6 +195,47 @@
 </div>
 
 <style>
+  .wait {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+    min-height: 13rem;
+    align-content: center;
+    text-align: center;
+    color: var(--text-2);
+  }
+
+  .wait strong {
+    color: var(--text);
+  }
+
+  .sub {
+    font-size: var(--text-sm);
+  }
+
+  .spinner {
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 3px solid var(--surface-2);
+    border-top-color: var(--accent, currentColor);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+      border-top-color: var(--surface-2);
+      border-style: dotted;
+    }
+  }
+
   .bar {
     display: flex;
     align-items: center;

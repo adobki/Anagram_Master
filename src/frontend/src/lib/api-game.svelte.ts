@@ -17,13 +17,19 @@ import { toasts } from './toast.svelte'
 const OFFLINE = "Couldn't reach the server. Check your connection and try again."
 
 /** The saved game behind the player's cookie, if it's still running. */
+/**
+ * The player's saved game, or null when there is none (no cookie, no game, or
+ * its last round just timed out). Throws when the server can't be reached or
+ * fails, so "no game" is never confused with "don't know yet".
+ */
 export async function findSavedGame(): Promise<GameState | null> {
   try {
     const state = await api.status()
     if (state.status) return state
     await api.quit().catch(() => {}) // a finished game: just clear its cookie
-  } catch {
+  } catch (error) {
     // 403: no cookie. 401: no game, or its last round just timed out.
+    if (!(error instanceof ApiError && (error.status === 401 || error.status === 403))) throw error
   }
   return null
 }

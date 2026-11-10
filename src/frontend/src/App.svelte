@@ -9,6 +9,7 @@
   import { loadBest, recordScore } from './lib/best'
   import { MIN_LEADERBOARD_SCORE, type GameController } from './lib/game'
   import { ms } from './lib/motion'
+  import { network } from './lib/network.svelte'
   import { toasts } from './lib/toast.svelte'
   import About from './screens/About.svelte'
   import Game from './screens/Game.svelte'
@@ -34,10 +35,43 @@
   let beaten = $state<number | null>(null)
   let starting = false
 
-  // A game saved behind the player's cookie shows up as "Continue" on the home screen.
-  onMount(async () => {
-    const saved = await findSavedGame()
-    if (saved && !game) game = createApiGame(saved)
+  // A game saved behind the player's cookie shows up as "Continue" on the home
+  // screen. Until the server answers, Home shows a loading card instead of the
+  // name form, so a saved game can't be ended by a quick tap on Start. If the
+  // server can't be reached the card says so, and the check is retried.
+  let lookup = $state<'loading' | 'ready' | 'failed'>('loading')
+  let checking = false
+
+  async function check() {
+    if (checking) return
+    checking = true
+    if (lookup === 'failed') lookup = 'loading'
+    try {
+      const saved = await findSavedGame()
+      if (saved && !game) game = createApiGame(saved)
+      lookup = 'ready'
+    } catch {
+      lookup = 'failed'
+    } finally {
+      checking = false
+    }
+  }
+
+  onMount(check)
+
+  // Retry while it's failing: when the connection comes back, and every 10 s.
+  $effect(() => {
+    if (lookup !== 'failed') return
+    if (network.online) {
+      const timer = setTimeout(check, 10_000)
+      return () => clearTimeout(timer)
+    }
+  })
+  let wasOnline = network.online
+  $effect(() => {
+    const online = network.online
+    if (online && !wasOnline && lookup === 'failed') void check()
+    wasOnline = online
   })
 
   let scroller: HTMLElement
@@ -182,6 +216,8 @@
     {:else}
       <Home
         saved={game?.state.status ? game.state : null}
+        {lookup}
+        onretry={check}
         {best}
         timeLeft={game?.timeLeft ?? 0}
         onstart={newGame}
