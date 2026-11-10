@@ -410,8 +410,8 @@
     <div class="note">
       <Clock size="1.25rem" />
       <p>
-        <strong>The clock keeps running.</strong> Rounds are timed on the server, so they can't be paused. If time runs
-        out while you're away, the next round starts when you come back.
+        <strong>The clock keeps running.</strong> Rounds can't be paused, to prevent cheating. If time runs out while
+        you're away, the next round starts when you return.
       </p>
     </div>
     {#snippet actions()}

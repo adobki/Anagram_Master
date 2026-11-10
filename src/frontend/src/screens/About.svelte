@@ -3,7 +3,9 @@
   import Play from '@lucide/svelte/icons/play'
   import { prefersReducedMotion } from 'svelte/motion'
   import architecture from '../assets/about/diagram-architecture.svg'
+  import architectureDark from '../assets/about/diagram-architecture-dark.svg'
   import dataModel from '../assets/about/diagram-data-model.svg'
+  import dataModelDark from '../assets/about/diagram-data-model-dark.svg'
   import contactGithub from '../assets/about/contact-github.webp'
   import contactLinkedin from '../assets/about/contact-linkedin.webp'
   import logoHorizontal from '../assets/about/logo-horizontal.webp'
@@ -120,7 +122,7 @@
           Anagram Master is a progressive web app. Use your browser's menu to add it to your home screen (or to install
           it, on a computer) and it opens like any other app, full screen and with its own icon. The app itself loads
           even without a connection, and you're told when a new version is ready. Games are timed and scored on the
-          server, so you still need to be online to play. Light or dark? Use the toggle at the top of any screen; it
+          server, so you still need to be online to play. (The server keeps the clock so nobody can cheat by pausing it.) Light or dark? Use the toggle at the top of any screen; it
           follows your device until you choose.
         </p>
       </article>
@@ -151,8 +153,8 @@
 
       <figure class="diagrams">
         <figcaption>Diagrams of Anagram Master's Architecture and Data Structure</figcaption>
-        <img src={architecture} alt="Architecture: the web app in the player's browser, the Flask server, and the MongoDB database" />
-        <img src={dataModel} alt="Data model: sessions with their round words and answers, and saved scores" />
+        <img src={dark ? architectureDark : architecture} alt="Architecture: the web app in the player's browser, the Flask server, and the MongoDB database" />
+        <img src={dark ? dataModelDark : dataModel} alt="Data model: sessions with their round words and answers, and saved scores" />
       </figure>
 
       <div class="contact">

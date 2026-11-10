@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520" role="img" aria-label="Anagram Master's data model: a Session holds its round words, each round has answers, and finished sessions with 10 or more points are saved as Scores.">
+  <defs>
+    <filter id="s" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity=".3"/></filter>
+  </defs>
+  <rect width="760" height="520" rx="14" fill="#17171c"/>
+  <g font-family="'Segoe UI', system-ui, Arial, sans-serif" font-size="17">
+    <!-- Session -->
+    <g filter="url(#s)">
+      <rect x="10" y="10" width="270" height="318" fill="#24242c"/>
+      <rect x="10" y="10" width="270" height="38" fill="#6a00ff"/>
+    </g>
+    <text x="145" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Session</text>
+    <g fill="#e8e8ee">
+      <text x="26" y="73">session_id</text><text x="26" y="103">host_id</text>
+      <text x="26" y="133">name</text><text x="26" y="163">status</text>
+      <text x="26" y="193">score</text><text x="26" y="223">round_time</text>
+      <text x="26" y="253">created_at, updated_at</text><text x="26" y="283">time_limit, rounds_limit</text>
+      <text x="26" y="313">words</text>
+    </g>
+    <g stroke="#3a3a46"><path d="M10 82h270M10 112h270M10 142h270M10 172h270M10 202h270M10 232h270M10 262h270M10 292h270"/></g>
+
+    <!-- Round words -->
+    <g filter="url(#s)">
+      <rect x="480" y="10" width="270" height="110" fill="#24242c"/>
+      <rect x="480" y="10" width="270" height="38" fill="#1ba1e2"/>
+    </g>
+    <text x="615" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Round words</text>
+    <g fill="#e8e8ee"><text x="496" y="73">words: roots still to come</text><text x="496" y="103">used: root word → answers</text></g>
+    <path d="M480 82h270" stroke="#3a3a46"/>
+
+    <!-- Answer -->
+    <g filter="url(#s)">
+      <rect x="480" y="190" width="270" height="110" fill="#24242c"/>
+      <rect x="480" y="190" width="270" height="38" fill="#a20025"/>
+    </g>
+    <text x="615" y="216" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Answer</text>
+    <g fill="#e8e8ee"><text x="496" y="253">word</text><text x="496" y="283">is_valid</text></g>
+    <path d="M480 262h270" stroke="#3a3a46"/>
+
+    <!-- Score -->
+    <g filter="url(#s)">
+      <rect x="10" y="390" width="270" height="110" fill="#24242c"/>
+      <rect x="10" y="390" width="270" height="38" fill="#d80073"/>
+    </g>
+    <text x="145" y="416" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Score</text>
+    <g fill="#e8e8ee"><text x="26" y="453">name, score</text><text x="26" y="483">date</text></g>
+    <path d="M10 462h270" stroke="#3a3a46"/>
+
+    <!-- Links -->
+    <g stroke="#aaa" stroke-width="1.5" fill="none">
+      <path d="M280 305h100V65h100"/>
+      <path d="M615 120v70"/>
+      <path d="M145 328v62" stroke-dasharray="6 5"/>
+    </g>
+    <g fill="#aaa" font-size="16" text-anchor="middle" stroke="#17171c" stroke-width="6" paint-order="stroke">
+            <text x="380" y="190" fill="#aaa">has</text>
+      <text x="637" y="160">has many</text>
+      <text x="205" y="365">saved at the end</text>
+      <text x="205" y="383" font-size="14">(10+ points)</text>
+    </g>
+  </g>
+</svg>

@@ -75,8 +75,8 @@
     <section>
       <h2><Clock size="1.25rem" /> The clock</h2>
       <p>
-        The clock runs on the server, so it never stops, even when you leave the game. You can go home and continue
-        later; if a round's time runs out meanwhile, the next one starts when you return.
+        The clock runs on the server, so it never stops, even when you leave the game. That's to prevent cheating.
+        You can go home and continue later; if a round's time runs out meanwhile, the next one starts when you return.
       </p>
     </section>
 
