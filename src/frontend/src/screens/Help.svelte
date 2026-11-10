@@ -9,7 +9,9 @@
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
+  import { touchFirst } from '../lib/device'
   import { MIN_LEADERBOARD_SCORE, MIN_WORD_LENGTH } from '../lib/game'
+  import { settings } from '../lib/settings.svelte'
 
   interface Props {
     onback: () => void
@@ -55,22 +57,29 @@
         <li>Tap letters, or drag them into the tray in any order. Tap a tile in the tray to take it back.</li>
         <li><strong>Shuffle</strong> the letters for a fresh look; <strong>Restore</strong> puts them back.</li>
         <li><strong>Keep</strong> leaves your letters in the tray after you submit, to build on a word.</li>
-        <li><strong>Skip word</strong> moves to the next round at no cost (tap twice to confirm).</li>
+        <li>
+          <strong>Skip word</strong> moves to the next round at no cost. It asks you to tap twice, unless you turn that off in
+          Settings.
+        </li>
       </ul>
     </section>
 
-    <section class="keys">
-      <h2><Keyboard size="1.25rem" /> Keyboard</h2>
-      <dl>
-        <div><dt>Letters</dt><dd>add to the tray</dd></div>
-        <div><dt><kbd>Enter</kbd></dt><dd>submit</dd></div>
-        <div><dt><kbd>Backspace</kbd></dt><dd>delete the last letter</dd></div>
-        <div><dt><kbd>Esc</kbd></dt><dd>clear the tray</dd></div>
-        <div><dt><kbd>Space</kbd></dt><dd>shuffle</dd></div>
-        <div><dt><kbd>Tab</kbd> <kbd>Tab</kbd></dt><dd>skip the word</dd></div>
-        <div><dt><kbd>Caps Lock</kbd></dt><dd>keep letters after submitting</dd></div>
-      </dl>
-    </section>
+    <!-- With on-screen controls only: hidden on a phone or tablet, greyed out (and labelled) elsewhere. -->
+    {#if !(settings.keyboardOff && touchFirst)}
+      <section class="keys" class:off={settings.keyboardOff}>
+        <h2><Keyboard size="1.25rem" /> Keyboard{settings.keyboardOff ? ' (disabled)' : ''}</h2>
+        {#if settings.keyboardOff}<p class="off-note">Switched off by On-screen controls only, in Settings.</p>{/if}
+        <dl>
+          <div><dt>Letters</dt><dd>add to the tray</dd></div>
+          <div><dt><kbd>Enter</kbd></dt><dd>submit</dd></div>
+          <div><dt><kbd>Backspace</kbd></dt><dd>delete the last letter</dd></div>
+          <div><dt><kbd>Esc</kbd></dt><dd>clear the tray</dd></div>
+          <div><dt><kbd>Space</kbd></dt><dd>shuffle</dd></div>
+          <div><dt><kbd>Tab</kbd> <kbd>Tab</kbd></dt><dd>skip the word</dd></div>
+          <div><dt><kbd>Caps Lock</kbd></dt><dd>keep letters after submitting</dd></div>
+        </dl>
+      </section>
+    {/if}
 
     <section>
       <h2><Clock size="1.25rem" /> The clock</h2>
@@ -162,6 +171,16 @@
     border-radius: var(--radius-md);
     background: var(--surface-2);
     font-size: var(--text-sm);
+  }
+
+  /* On-screen controls only, on a device that has a keyboard: shown, but greyed out. */
+  .keys.off {
+    opacity: 0.5;
+  }
+
+  .off-note {
+    font-size: var(--text-sm);
+    color: var(--text-2);
   }
 
   dl {

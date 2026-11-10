@@ -25,7 +25,8 @@
   import { celebrate } from '../lib/confetti'
   import { createTileDrag, type Origin, type TileDrag } from '../lib/drag.svelte'
   import { MIN_LEADERBOARD_SCORE, MIN_WORD_LENGTH, recapText, type Feedback, type GameController } from '../lib/game'
-  import { buzzBad, buzzCleared } from '../lib/haptics'
+  import { holdScreen } from '../lib/awake'
+  import { buzzBad, buzzCleared, buzzWarn } from '../lib/haptics'
   import { shuffled, tilesOf, type Tile as TileData } from '../lib/letters'
   import { ms } from '../lib/motion'
   import { sound } from '../lib/sound'
@@ -59,6 +60,8 @@
   const rootLetters = $derived(tilesOf(root).map((tile) => tile.letter).join(''))
   const answers = $derived(s.word ? (s.words[s.word] ?? []) : [])
   const lastRound = $derived(s.round >= s.rounds_limit)
+  /** A shortcut's name for a tooltip, unless the keyboard is off. */
+  const key = (name: string) => (settings.keyboardOff ? '' : ` (${name})`)
 
   // The rack's tiles follow the round's word; shuffling reorders them until it changes.
   let tiles = $derived(tilesOf(root))
@@ -152,6 +155,21 @@
         beeped = time
         sound.countdown(time)
       }
+    })
+  })
+
+  // Keep the screen from sleeping while this screen is showing (if the player wants that).
+  $effect(() => {
+    if (settings.keepAwake) return holdScreen()
+  })
+
+  // One buzz as the clock ticks from 11 to 10. Resuming at 10 or less doesn't buzz.
+  let lastTime = Infinity
+  $effect(() => {
+    const time = game.timeLeft
+    untrack(() => {
+      if (time === 10 && lastTime === 11) buzzWarn()
+      lastTime = time
     })
   })
 
@@ -257,7 +275,7 @@
     if (lastRound) return say({ tone: 'info', text: 'This is the last round: there is no next word' })
     if (game.busy) return
     // A skip costs the round, so it takes a second press to confirm.
-    if (!skipArmed) {
+    if (settings.confirmSkip && !skipArmed) {
       skipArmed = true
       disarm = later(() => (skipArmed = false), 2500)
       return
@@ -289,8 +307,8 @@
   }
 
   function onkeydown(event: KeyboardEvent) {
-    // Not while a dialog is open (the pause menu, Settings): its own controls take the keys.
-    if (event.metaKey || event.ctrlKey || event.altKey || document.querySelector('dialog[open]')) return
+    // Not with on-screen controls only, nor while a dialog is open (the pause menu, Settings): its own controls take the keys.
+    if (event.metaKey || event.ctrlKey || event.altKey || settings.keyboardOff || document.querySelector('dialog[open]')) return
     if (event.target instanceof HTMLInputElement) return
     const { key } = event
     if (key === 'Enter') {
@@ -335,7 +353,7 @@
         size="sm"
         class="skip {skipArmed ? 'armed' : ''}"
         disabled={lastRound || game.busy}
-        title={lastRound ? 'This is the last round' : 'Skip to the next word (Tab)'}
+        title={lastRound ? 'This is the last round' : `Skip to the next word${key('Tab')}`}
         onclick={skip}
       >
         <SkipForward size="1rem" />
@@ -378,7 +396,7 @@
 
       <div class="controls">
         <div class="tools">
-          <Button variant="ghost" size="sm" title="Shuffle the letters (Space)" onclick={shuffle}>
+          <Button variant="ghost" size="sm" title={`Shuffle the letters${key('Space')}`} onclick={shuffle}>
             <Shuffle size="1.125rem" /><span class="label">Shuffle</span>
           </Button>
           <Button variant="ghost" size="sm" title="Put the letters back in order" disabled={inOrder} onclick={restore}>
@@ -389,27 +407,29 @@
             size="sm"
             class={settings.keepLetters ? 'on' : ''}
             aria-pressed={settings.keepLetters}
-            title="Keep the letters after submitting (Caps Lock)"
+            title={`Keep the letters after submitting${key('Caps Lock')}`}
             onclick={toggleKeep}
           >
             <Pin size="1.125rem" /><span class="label">Keep</span>
           </Button>
         </div>
         <div class="actions">
-          <IconButton variant="filled" label="Clear the word (Esc)" disabled={!picked.length} onclick={clear}>
+          <IconButton variant="filled" label={`Clear the word${key('Esc')}`} disabled={!picked.length} onclick={clear}>
             <Eraser size="1.375rem" />
           </IconButton>
           <Button size="lg" class="submit" disabled={!word || game.busy} onclick={submit}>Submit</Button>
-          <IconButton variant="filled" label="Delete the last letter (Backspace)" disabled={!picked.length} onclick={undo}>
+          <IconButton variant="filled" label={`Delete the last letter${key('Backspace')}`} disabled={!picked.length} onclick={undo}>
             <Delete size="1.375rem" />
           </IconButton>
         </div>
       </div>
 
-      <p class="hints">
-        Type letters · <kbd>Enter</kbd> submit · <kbd>⌫</kbd> delete · <kbd>Esc</kbd> clear · <kbd>Space</kbd> shuffle ·
-        <kbd>Tab</kbd> skip · <kbd>Caps Lock</kbd> keep
-      </p>
+      {#if !settings.keyboardOff}
+        <p class="hints">
+          Type letters · <kbd>Enter</kbd> submit · <kbd>⌫</kbd> delete · <kbd>Esc</kbd> clear · <kbd>Space</kbd> shuffle ·
+          <kbd>Tab</kbd> skip · <kbd>Caps Lock</kbd> keep
+        </p>
+      {/if}
     </div>
   </div>
 

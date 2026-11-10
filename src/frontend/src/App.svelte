@@ -12,6 +12,7 @@
   import { ms } from './lib/motion'
   import { network } from './lib/network.svelte'
   import { player } from './lib/player.svelte'
+  import { settings } from './lib/settings.svelte'
   import { sound } from './lib/sound'
   import { toasts } from './lib/toast.svelte'
   import { ui } from './lib/ui.svelte'
@@ -52,7 +53,10 @@
     if (lookup === 'failed') lookup = 'loading'
     try {
       const saved = await findSavedGame()
-      if (saved && !game) game = createApiGame(saved)
+      if (saved && !game) {
+        game = createApiGame(saved)
+        if (settings.autoResume && screen === 'home') go('game') // the clock is running: skip the extra tap
+      }
       lookup = 'ready'
     } catch {
       lookup = 'failed'

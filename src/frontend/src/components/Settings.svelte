@@ -2,7 +2,10 @@
   import Clock from '@lucide/svelte/icons/clock'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
   import { onDestroy } from 'svelte'
+  import { sparkle } from '../lib/confetti'
+  import { canKeepAwake, canVibrate } from '../lib/device'
   import type { GameController } from '../lib/game'
+  import { buzzTest } from '../lib/haptics'
   import { MAX_NAME_LENGTH, MIN_NAME_LENGTH, player } from '../lib/player.svelte'
   import { settings } from '../lib/settings.svelte'
   import { theme } from '../lib/theme.svelte'
@@ -91,12 +94,58 @@
     <SoundSection />
   </section>
 
+  <section aria-labelledby="{uid}-feedback">
+    <h3 id="{uid}-feedback">Feedback</h3>
+    {#if canVibrate}
+      <Switch
+        label="Vibration"
+        hint="A buzz for a rejected word and a cleared round."
+        bind:checked={settings.haptics}
+        onchange={(on) => on && buzzTest()}
+      />
+      <Switch
+        label="Time-almost-up buzz"
+        hint="One buzz when ten seconds are left."
+        bind:checked={settings.lowTimeBuzz}
+        disabled={!settings.haptics}
+      />
+    {/if}
+    <Switch
+      label="Celebrations"
+      hint="Confetti when you clear a round."
+      bind:checked={settings.celebrations}
+      onchange={(on) => on && sparkle()}
+    />
+  </section>
+
   <section aria-labelledby="{uid}-play">
     <h3 id="{uid}-play">Play</h3>
+    <Switch
+      label="On-screen controls only"
+      hint="Games ignore the keyboard. Typing in text fields still works."
+      bind:checked={settings.keyboardOff}
+    />
     <Switch
       label="Keep letters after submitting"
       hint="Leaves your letters in the tray, to build on a word."
       bind:checked={settings.keepLetters}
+    />
+    <Switch
+      label="Skip needs a second tap"
+      hint="Skipping costs the round, so it asks you to tap twice."
+      bind:checked={settings.confirmSkip}
+    />
+    {#if canKeepAwake}
+      <Switch
+        label="Keep the screen on while playing"
+        hint="Stops the screen dimming mid-round. The clock keeps running."
+        bind:checked={settings.keepAwake}
+      />
+    {/if}
+    <Switch
+      label="Open straight into my game"
+      hint="Skips Home when you open the app with a game in progress."
+      bind:checked={settings.autoResume}
     />
   </section>
 
