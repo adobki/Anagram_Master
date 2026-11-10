@@ -26,6 +26,17 @@
         document.documentElement.dataset.theme = theme
         document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#0d0c11' : '#f6f5f2'
       })()
+      // Text size, motion and contrast (src/lib/settings.svelte.ts keeps them up to date).
+      ;(function () {
+        try {
+          var s = JSON.parse(localStorage.getItem('am-settings') || 'null') || {}
+          var root = document.documentElement
+          if (s.textSize === 'small' || s.textSize === 'large') root.dataset.text = s.textSize
+          if (s.motion === 'reduced' || s.motion === 'full') root.dataset.motion = s.motion
+          var contrast = typeof s.highContrast === 'boolean' ? s.highContrast : matchMedia('(prefers-contrast: more)').matches
+          if (contrast) root.dataset.contrast = 'high'
+        } catch (e) {}
+      })()
     </script>
   </head>
   <body>

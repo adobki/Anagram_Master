@@ -19,10 +19,43 @@ html {
    * browser default (normally 16px) up to a 1280×800 window, then grows with
    * whichever of the width and height has less room, up to double. On a
    * 2048×1280 screen that is 25.6px. Phones and tablets keep the default.
+   * The Text size setting multiplies it (--text-scale, set just below).
    */
-  font-size: clamp(100%, min(1.25vw, 2vh), 200%);
+  font-size: calc(clamp(100%, min(1.25vw, 2vh), 200%) * var(--text-scale, 1));
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+html[data-text='small'] {
+  --text-scale: 0.9;
+}
+
+html[data-text='large'] {
+  --text-scale: 1.15;
+}
+
+/*
+ * The game board has to fit its screen with every control in reach, so Large
+ * gives way as the height shrinks. (Measured with 16-letter root words, the
+ * tallest, at 360x640, 375x667 and landscape phones; rem here is the browser's
+ * own 16px, so these are 672px, 656px and 544px.)
+ */
+@media (max-height: 42rem) {
+  html[data-text='large'] {
+    --text-scale: 1.1;
+  }
+}
+
+@media (max-height: 41rem) {
+  html[data-text='large'] {
+    --text-scale: 1.05;
+  }
+}
+
+@media (max-height: 34rem) and (orientation: landscape) {
+  html[data-text='large'] {
+    --text-scale: 1;
+  }
 }
 
 body {
@@ -114,13 +147,26 @@ textarea {
   white-space: nowrap;
 }
 
+/*
+ * Reduced motion: when the device asks for it (unless Settings says Full), or
+ * when Settings says Reduced. The two rules are the same.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  :root:not([data-motion='full']) *,
+  :root:not([data-motion='full']) *::before,
+  :root:not([data-motion='full']) *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }

@@ -102,3 +102,32 @@
   --shadow-md: 0 10px 28px -10px rgb(0 0 0 / 0.65);
   --shadow-lg: 0 28px 56px -12px rgb(0 0 0 / 0.75);
 }
+
+/*
+ * High contrast (Settings): stronger secondary text, borders and accents. Text
+ * colours reach 7:1 against the page and card colours in each theme, borders
+ * 3:1. The dark block must stay below the light one, and sets the same tokens.
+ */
+:root[data-contrast='high'] {
+  --text-2: #34303d;
+  --text-3: #4d4958;
+  --line: #76727f;
+  --line-strong: #4d4958;
+  --accent: #9e0f25;
+  --primary: #a50f26;
+  --primary-hover: #8a0c20;
+  --good: #095430;
+  --warn: #7a3600;
+}
+
+:root[data-theme='dark'][data-contrast='high'] {
+  --text-2: #d9d6e2;
+  --text-3: #b9b5c5;
+  --line: #8f8b9c;
+  --line-strong: #b9b5c5;
+  --accent: #ff8a98;
+  --primary: #b3122a;
+  --primary-hover: #c4102b;
+  --good: #86efac;
+  --warn: #fcd34d;
+}

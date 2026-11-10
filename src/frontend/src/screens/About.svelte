@@ -1,7 +1,6 @@
 <script lang="ts">
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Play from '@lucide/svelte/icons/play'
-  import { prefersReducedMotion } from 'svelte/motion'
   import architecture from '../assets/about/diagram-architecture.svg'
   import architectureDark from '../assets/about/diagram-architecture-dark.svg'
   import dataModel from '../assets/about/diagram-data-model.svg'
@@ -16,6 +15,7 @@
   import IconButton from '../components/IconButton.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
+  import { reducedMotion } from '../lib/motion'
   import { theme } from '../lib/theme.svelte'
   import { appVersion } from '../lib/version'
 
@@ -44,7 +44,7 @@
   let features = $state<HTMLElement>()
   let project = $state<HTMLElement>()
   const jump = (target?: HTMLElement) =>
-    target?.scrollIntoView({ behavior: prefersReducedMotion.current ? 'auto' : 'smooth', block: 'start' })
+    target?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' })
 </script>
 
 {#snippet picture(name: string, alt: string)}

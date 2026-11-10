@@ -10,7 +10,6 @@
   import { onMount } from 'svelte'
   import { flip } from 'svelte/animate'
   import { cubicInOut } from 'svelte/easing'
-  import { prefersReducedMotion } from 'svelte/motion'
   import logo from '../assets/logo.png'
   import Button from '../components/Button.svelte'
   import Dialog from '../components/Dialog.svelte'
@@ -19,6 +18,7 @@
   import type { GameState } from '../lib/api'
   import { network } from '../lib/network.svelte'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
+  import { reducedMotion } from '../lib/motion'
   import { player } from '../lib/player.svelte'
 
   interface Props {
@@ -84,7 +84,7 @@
   const order = $derived(ORDERS[step % ORDERS.length])
   onMount(() => {
     const timer = setInterval(() => {
-      if (!prefersReducedMotion.current) step++
+      if (!reducedMotion()) step++
     }, 2800)
     return () => clearInterval(timer)
   })
@@ -226,12 +226,19 @@
     }
   }
 
+  /* Reduced motion, from the device or from Settings: a still dotted ring. */
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
+    :global(:root:not([data-motion='full'])) .spinner {
       animation: none;
       border-top-color: var(--surface-2);
       border-style: dotted;
     }
+  }
+
+  :global(:root[data-motion='reduced']) .spinner {
+    animation: none;
+    border-top-color: var(--surface-2);
+    border-style: dotted;
   }
 
   .bar {

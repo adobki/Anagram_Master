@@ -2,17 +2,19 @@
   import Clock from '@lucide/svelte/icons/clock'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
   import { onDestroy } from 'svelte'
+  import { prefersReducedMotion } from 'svelte/motion'
   import { sparkle } from '../lib/confetti'
   import { canKeepAwake, canVibrate } from '../lib/device'
   import type { GameController } from '../lib/game'
   import { buzzTest } from '../lib/haptics'
   import { MAX_NAME_LENGTH, MIN_NAME_LENGTH, player } from '../lib/player.svelte'
-  import { settings } from '../lib/settings.svelte'
+  import { settings, type Motion, type TextSize } from '../lib/settings.svelte'
   import { theme } from '../lib/theme.svelte'
   import { ui } from '../lib/ui.svelte'
   import { appVersion } from '../lib/version'
   import Button from './Button.svelte'
   import Dialog from './Dialog.svelte'
+  import Segmented from './Segmented.svelte'
   import SoundSection from './SoundSection.svelte'
   import Switch from './Switch.svelte'
   import TextField from './TextField.svelte'
@@ -27,6 +29,17 @@
 
   let { game, inGame }: Props = $props()
   const uid = $props.id()
+
+  const TEXT_SIZES: { value: TextSize; label: string }[] = [
+    { value: 'small', label: 'Small' },
+    { value: 'default', label: 'Default' },
+    { value: 'large', label: 'Large' },
+  ]
+  const MOTIONS: { value: Motion; label: string }[] = [
+    { value: 'auto', label: 'Auto' },
+    { value: 'reduced', label: 'Reduced' },
+    { value: 'full', label: 'Full' },
+  ]
 
   const clock = $derived.by(() => {
     const time = game?.timeLeft ?? 0
@@ -87,6 +100,21 @@
   <section aria-labelledby="{uid}-appearance">
     <h3 id="{uid}-appearance">Appearance</h3>
     <ThemeChoice />
+    <div class="stack">
+      <Switch label="High contrast" hint="Stronger text and borders, for low vision." bind:checked={settings.highContrast} />
+      <Segmented
+        label="Text size"
+        options={TEXT_SIZES}
+        bind:value={settings.textSize}
+        hint="On short screens, Large is trimmed so the game still fits."
+      />
+      <Segmented
+        label="Animations"
+        options={MOTIONS}
+        bind:value={settings.motion}
+        hint="Auto follows your device, which is set to {prefersReducedMotion.current ? 'reduced' : 'full'} motion."
+      />
+    </div>
   </section>
 
   <section aria-labelledby="{uid}-sound">
@@ -185,6 +213,12 @@
 
   .clock :global(svg) {
     margin-top: 0.15rem;
+  }
+
+  .stack {
+    display: grid;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
   }
 
   section + section,

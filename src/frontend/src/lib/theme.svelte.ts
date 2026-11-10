@@ -4,6 +4,8 @@
  * first paint, so keep KEY and the data-theme attribute in sync with it.
  */
 
+import { reducedMotion } from './motion'
+
 export type Theme = 'light' | 'dark'
 /** What the player picked: a theme, or "system" to follow the device. */
 export type ThemeChoice = Theme | 'system'
@@ -36,7 +38,7 @@ function apply(theme: Theme) {
     const bg = getComputedStyle(root).getPropertyValue('--bg').trim()
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg)
   }
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reduced = reducedMotion()
   // Cross-fade where the browser supports view transitions.
   if (document.startViewTransition && !reduced) document.startViewTransition(swap)
   else swap()

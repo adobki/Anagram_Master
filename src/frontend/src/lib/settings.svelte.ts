@@ -8,8 +8,13 @@
  */
 
 import { touchFirst } from './device'
+import { rem } from './rem.svelte'
 
 const KEY = 'am-settings'
+
+export type TextSize = 'small' | 'default' | 'large'
+/** Animations: follow the device, or force them reduced or full. */
+export type Motion = 'auto' | 'reduced' | 'full'
 
 /** The sound effects that can each be switched on or off. */
 export type Effect = 'word' | 'wrong' | 'cleared' | 'countdown' | 'over'
@@ -40,6 +45,16 @@ interface Choices {
   keepAwake: boolean
   /** Open straight into a game in progress, skipping Home. */
   autoResume: boolean
+  textSize: TextSize
+  motion: Motion
+  /** Stronger text and border colours. */
+  highContrast: boolean
+}
+
+/** Settings that are one of a few words: anything else in storage is ignored. */
+const CHOICES: Partial<Record<keyof Choices, readonly string[]>> = {
+  textSize: ['small', 'default', 'large'],
+  motion: ['auto', 'reduced', 'full'],
 }
 
 const SFX_KEY = {
@@ -68,6 +83,9 @@ const DEFAULTS: { [K in keyof Choices]: () => Choices[K] } = {
   confirmSkip: () => true,
   keepAwake: () => true,
   autoResume: () => false,
+  textSize: () => 'default',
+  motion: () => 'auto',
+  highContrast: () => matchMedia('(prefers-contrast: more)').matches,
 }
 
 const KEYS = Object.keys(DEFAULTS) as (keyof Choices)[]
@@ -80,7 +98,9 @@ function load(): Stored {
       for (const key of KEYS) {
         const value = (raw as Record<string, unknown>)[key]
         // Ignore anything of the wrong type (an old or hand-edited entry).
-        if (typeof value === typeof DEFAULTS[key]()) (stored as Record<string, unknown>)[key] = value
+        if (typeof value !== typeof DEFAULTS[key]()) continue
+        if (CHOICES[key] && !CHOICES[key].includes(value as string)) continue
+        ;(stored as Record<string, unknown>)[key] = value
       }
     }
   } catch {
@@ -105,8 +125,27 @@ class SettingsState {
   constructor() {
     // Another tab or window of the app changed them.
     addEventListener('storage', (event) => {
-      if (event.key === KEY || event.key === null) this.#stored = load()
+      if (event.key === KEY || event.key === null) {
+        this.#stored = load()
+        this.#apply()
+      }
     })
+    matchMedia('(prefers-contrast: more)').addEventListener('change', () => this.#apply())
+    this.#apply()
+  }
+
+  /**
+   * The text size, motion and contrast choices reach the stylesheet as
+   * attributes on <html> (styles/base.css, styles/tokens.css). index.html sets
+   * the same ones before first paint, so keep the two in step.
+   */
+  #apply() {
+    const root = document.documentElement
+    const set = (name: string, value: string | null) => (value ? (root.dataset[name] = value) : delete root.dataset[name])
+    set('text', this.textSize === 'default' ? null : this.textSize)
+    set('motion', this.motion === 'auto' ? null : this.motion)
+    set('contrast', this.highContrast ? 'high' : null)
+    rem.refresh() // a different text size is a different root font size
   }
 
   #get<K extends keyof Choices>(key: K): Choices[K] {
@@ -116,6 +155,7 @@ class SettingsState {
   #set<K extends keyof Choices>(key: K, value: Choices[K]) {
     this.#stored[key] = value
     save(this.#stored)
+    this.#apply()
   }
 
   get keepLetters() {
@@ -197,10 +237,32 @@ class SettingsState {
     this.#set('autoResume', value)
   }
 
+  get textSize(): TextSize {
+    return this.#get('textSize')
+  }
+  set textSize(value: TextSize) {
+    this.#set('textSize', value)
+  }
+
+  get motion(): Motion {
+    return this.#get('motion')
+  }
+  set motion(value: Motion) {
+    this.#set('motion', value)
+  }
+
+  get highContrast() {
+    return this.#get('highContrast')
+  }
+  set highContrast(value: boolean) {
+    this.#set('highContrast', value)
+  }
+
   /** Back to the defaults. (The theme is reset separately, in lib/theme.svelte.ts.) */
   reset() {
     for (const key of KEYS) this.#stored[key] = null
     save(this.#stored)
+    this.#apply()
   }
 }
 
