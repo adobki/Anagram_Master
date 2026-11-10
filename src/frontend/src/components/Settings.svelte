@@ -25,9 +25,13 @@
   import ThemeChoice from './ThemeChoice.svelte'
 
   interface Props {
-    /** The game in progress, if any. Its clock keeps running while Settings is open, so it is shown. */
+    /** The game in progress, if any. */
     game: GameController | null
-    /** The game screen is showing. The name can't change then, because the API only takes it when a game starts. */
+    /**
+     * The game screen is showing. Then the round's clock is shown here (it keeps
+     * running while Settings is open), and the name can't change, because the
+     * API only takes a name when a game starts.
+     */
     inGame: boolean
   }
 
@@ -75,7 +79,7 @@
 
 <Dialog bind:open={ui.settingsOpen} title="Settings" placement="right">
   {#snippet top()}
-    {#if game?.state.status}
+    {#if inGame && game?.state.status}
       <p class="clock" role="timer">
         <Clock size="1rem" />
         <span><strong>{clock}</strong> left in round {game.state.round}. The clock keeps running.</span>
