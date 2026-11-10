@@ -14,6 +14,7 @@
   import Button from '../components/Button.svelte'
   import Dialog from '../components/Dialog.svelte'
   import TextField from '../components/TextField.svelte'
+  import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
   import type { GameState } from '../lib/api'
   import { network } from '../lib/network.svelte'
@@ -91,10 +92,10 @@
 </script>
 
 <div class="screen">
-  <header class="bar">
+  <ScreenBar>
     <span></span>
     <SettingsButton />
-  </header>
+  </ScreenBar>
 
   <main>
     <section class="hero">
@@ -241,11 +242,6 @@
     border-style: dotted;
   }
 
-  .bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
 
   main {
     flex: 1;

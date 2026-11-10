@@ -8,6 +8,7 @@
   import Trophy from '@lucide/svelte/icons/trophy'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
+  import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
   import { touchFirst } from '../lib/device'
   import { MIN_LEADERBOARD_SCORE, MIN_WORD_LENGTH } from '../lib/game'
@@ -22,11 +23,11 @@
 </script>
 
 <div class="screen">
-  <header class="bar">
+  <ScreenBar>
     <IconButton label="Back" onclick={onback}><ArrowLeft size="1.25rem" /></IconButton>
     <h1>How to play</h1>
     <SettingsButton />
-  </header>
+  </ScreenBar>
 
   <main>
     <section>
@@ -104,15 +105,7 @@
 </div>
 
 <style>
-  .bar {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-  }
 
-  .bar > :global(:last-child) {
-    justify-self: end;
-  }
 
   h1 {
     font-size: var(--text-lg);

@@ -10,6 +10,7 @@
   import { slide } from 'svelte/transition'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
+  import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
   import type { GameState } from '../lib/api'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
@@ -68,10 +69,10 @@
 </script>
 
 <div class="screen">
-  <header class="bar">
+  <ScreenBar>
     <IconButton label="Home" onclick={onhome}><House size="1.25rem" /></IconButton>
     <SettingsButton />
-  </header>
+  </ScreenBar>
 
   <main>
     <section class="hero">
@@ -162,11 +163,6 @@
 </div>
 
 <style>
-  .bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
 
   main,
   footer {

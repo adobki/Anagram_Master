@@ -5,6 +5,7 @@
   import { fly } from 'svelte/transition'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
+  import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
   import { api, type ScoreEntry } from '../lib/api'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
@@ -33,11 +34,11 @@
 </script>
 
 <div class="screen">
-  <header class="bar">
+  <ScreenBar>
     <IconButton label="Back" onclick={onback}><ArrowLeft size="1.25rem" /></IconButton>
     <h1>Leaderboard</h1>
     <SettingsButton />
-  </header>
+  </ScreenBar>
 
   <main>
     {#await request}
@@ -85,15 +86,7 @@
 </div>
 
 <style>
-  .bar {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-  }
 
-  .bar > :global(:last-child) {
-    justify-self: end;
-  }
 
   h1 {
     font-size: var(--text-lg);

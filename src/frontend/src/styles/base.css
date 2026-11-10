@@ -130,11 +130,15 @@ textarea {
 
 /* Full-height screen with room for notches and home indicators. */
 .screen {
+  /* Kept as variables so a screen's top bar can reach out over the padding (components/ScreenBar.svelte). */
+  --pad-top: max(env(safe-area-inset-top), var(--space-3));
+  --pad-end: max(env(safe-area-inset-right), var(--space-4));
+  --pad-bottom: max(env(safe-area-inset-bottom), var(--space-4));
+  --pad-start: max(env(safe-area-inset-left), var(--space-4));
   min-height: var(--view-h, 100dvh);
   display: flex;
   flex-direction: column;
-  padding: max(env(safe-area-inset-top), var(--space-3)) max(env(safe-area-inset-right), var(--space-4))
-    max(env(safe-area-inset-bottom), var(--space-4)) max(env(safe-area-inset-left), var(--space-4));
+  padding: var(--pad-top) var(--pad-end) var(--pad-bottom) var(--pad-start);
 }
 
 .visually-hidden {
