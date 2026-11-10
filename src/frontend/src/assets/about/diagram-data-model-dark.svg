@@ -2,7 +2,6 @@
   <defs>
     <filter id="s" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity=".3"/></filter>
   </defs>
-  <rect width="760" height="520" rx="14" fill="#17171c"/>
   <g font-family="'Segoe UI', system-ui, Arial, sans-serif" font-size="17">
     <!-- Session -->
     <g filter="url(#s)">
@@ -46,17 +45,17 @@
     <g fill="#e8e8ee"><text x="26" y="453">name, score</text><text x="26" y="483">date</text></g>
     <path d="M10 462h270" stroke="#3a3a46"/>
 
-    <!-- Links -->
+    <!-- Links: the lines stop short of their labels -->
     <g stroke="#aaa" stroke-width="1.5" fill="none">
-      <path d="M280 305h100V65h100"/>
+      <path d="M280 305h100V202M380 170V65h100"/>
       <path d="M615 120v70"/>
       <path d="M145 328v62" stroke-dasharray="6 5"/>
     </g>
-    <g fill="#aaa" font-size="16" text-anchor="middle" stroke="#17171c" stroke-width="6" paint-order="stroke">
-            <text x="380" y="190" fill="#aaa">has</text>
-      <text x="637" y="160">has many</text>
-      <text x="205" y="365">saved at the end</text>
-      <text x="205" y="383" font-size="14">(10+ points)</text>
+    <g fill="#aaa" font-size="16">
+      <text x="380" y="190" text-anchor="middle">has</text>
+      <text x="627" y="160">has many</text>
+      <text x="157" y="365">saved at the end</text>
+      <text x="157" y="383" font-size="14">(10+ points)</text>
     </g>
   </g>
 </svg>

@@ -332,11 +332,10 @@
     color: var(--text-2);
   }
 
+  /* The diagrams are transparent, so they sit straight on the page. */
   .diagrams img {
     width: 100%;
     height: auto;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
   }
 
   .contact {

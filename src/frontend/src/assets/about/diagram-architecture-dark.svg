@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1016 276" role="img" aria-label="Anagram Master's architecture: the web app in the player's browser talks to the Flask server, which stores games and scores in MongoDB.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 0 1032 276" role="img" aria-label="Anagram Master's architecture: the web app in the player's browser talks to the Flask server, which stores games and scores in MongoDB.">
   <defs>
     <filter id="s" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".3"/></filter>
   </defs>
-  <rect width="1016" height="276" rx="14" fill="#17171c"/>
   <g font-family="Consolas, 'Courier New', ui-monospace, monospace" text-anchor="middle">
     <!-- Client -->
     <rect x="2" y="2" width="282" height="262" rx="18" fill="#0050ef" filter="url(#s)"/>

@@ -1,7 +1,7 @@
 {
   "name": "anagram-master-frontend",
   "private": true,
-  "version": "2.261110.1546",
+  "version": "2.261110.2212",
   "type": "module",
   "scripts": {
     "dev": "vite",
