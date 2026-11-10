@@ -59,10 +59,12 @@ It is stored in `package.json` and `package-lock.json`, because that is where np
 
 ## Settings
 
-The gear in every screen's header opens one Settings fly-out (`components/Settings.svelte`, mounted once in `App.svelte`). It has the player name (not shown during a game, because the API only takes a name when a game starts), theme, text size, motion and contrast, sound effects, vibration, play options, install and update controls, and two reset buttons.
+The gear in every screen's header opens one Settings fly-out (`components/Settings.svelte`, mounted once in `App.svelte`). It has the player name (not shown on the game screen, because the API only takes a name when a game starts), theme, text size, motion, contrast and full screen, sound effects, vibration, play options, install and update controls, and two reset buttons. On the game screen it also shows the round's clock, which keeps running while Settings is open.
 
 - **Storing.** `lib/settings.svelte.ts` keeps one `am-settings` entry in localStorage, holding only what the player chose. A default can therefore depend on the device (the keyboard setting starts on for touch-first devices), and "Reset settings" just deletes the entry. The theme (`am-theme`) is separate because `index.html` reads it before first paint. `index.html` also applies the text size, motion and contrast choices before first paint, and the store keeps the same `data-*` attributes on `<html>` up to date. Keep the two in step.
 - **Adding a setting.** List it in `Choices` and `DEFAULTS` in `settings.svelte.ts`, add its getter and setter, then put a `Switch` or `Segmented` in `Settings.svelte`. If something else saves to localStorage, add its key to `lib/data.ts`.
+- **Top bar.** Every scrollable screen puts its back button, title and gear in `components/ScreenBar.svelte`. It goes away with the page when scrolling down and comes back as soon as the page scrolls up. It is a sticky bar whose `top` is 0 (shown) or minus its own height (away), so the browser does the moving.
+- **Full screen** (`lib/fullscreen.svelte.ts`) is the Settings switch kept true to what is on screen. Browsers only start it from a tap or key press, so when the app opens with it on, it starts on the first one. Leaving it yourself (Esc, the back gesture) switches the setting off; a reload or the page going to the background doesn't.
 - **Reduced motion** is decided in one place, `reducedMotion()` in `lib/motion.ts`, which honours the player's choice before the device's. CSS uses `[data-motion]` the same way (`styles/base.css`).
 - **Sound** is made with Web Audio, with no audio files. `lib/sound-voices.ts` has the notes: soft sine tones from one pentatonic scale, nothing above about 1.3 kHz, a short attack so nothing clicks, and peaks under half scale after the master volume. Keep new sounds to that. They can be checked by rendering them in an `OfflineAudioContext` and measuring the peak and spectrum.
 
@@ -86,7 +88,7 @@ Re-run it whenever a screen it shows changes. The diagrams on that screen are ha
 | `src/main.ts` | Mounts the app |
 | `src/App.svelte` | The root component; switches between screens |
 | `src/screens/` | Full screens: home, game, game over, leaderboard, help, about |
-| `src/components/` | Reusable pieces: buttons, letter tiles, rack, tray, timer, score, word list, dialog, toasts |
+| `src/components/` | Reusable pieces: buttons, letter tiles, rack, tray, timer, score, word list, dialog, toasts, the screens' top bar |
 | `src/styles/tokens.css` | Design tokens: light and dark colours, type, spacing, radii, motion |
 | `src/styles/base.css` | Global styles, including the root font size that scales the UI up on big screens |
 | `src/lib/drag.svelte.ts` | Drag and drop for tiles (pointer events, so touch and mouse both work) |
@@ -101,6 +103,7 @@ Re-run it whenever a screen it shows changes. The diagrams on that screen are ha
 | `src/lib/device.ts` | What the device can do (touch-first, vibration, wake lock) |
 | `src/lib/update.svelte.ts`, `install.svelte.ts` | The service worker's updates, and installing the app |
 | `src/lib/data.ts` | The localStorage keys "Clear my data" removes |
+| `src/lib/fullscreen.svelte.ts` | Full screen, kept true to the Settings switch |
 | `src/assets/` | Images imported by components (fingerprinted on build) |
 | `public/` | Files copied as-is: the favicon and the PWA icons (made from the logo's helix) |
 | `vite.config.ts` | Svelte and PWA plugins, and the API proxy |
