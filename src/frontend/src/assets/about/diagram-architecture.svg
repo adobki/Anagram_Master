@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1016 276" role="img" aria-label="Anagram Master's architecture: the web app in the player's browser talks to the Flask server, which stores games and scores in MongoDB.">
+  <defs>
+    <filter id="s" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".3"/></filter>
+  </defs>
+  <rect width="1016" height="276" rx="14" fill="#fff"/>
+  <g font-family="Consolas, 'Courier New', ui-monospace, monospace" text-anchor="middle">
+    <!-- Client -->
+    <rect x="2" y="2" width="282" height="262" rx="18" fill="#0050ef" filter="url(#s)"/>
+    <text x="143" y="46" font-size="28" fill="#fff">CLIENT</text>
+    <rect x="14" y="68" width="258" height="184" rx="10" fill="#fff"/>
+    <text x="143" y="96" font-size="16" fill="#111">Player's device</text>
+    <rect x="26" y="108" width="234" height="62" rx="8" fill="#6a00ff"/>
+    <text x="143" y="134" font-size="15" font-weight="700" fill="#fff">Web app (PWA)</text>
+    <text x="143" y="154" font-size="13" fill="#fff">Svelte + TypeScript</text>
+    <rect x="26" y="180" width="234" height="62" rx="8" fill="#6a00ff"/>
+    <text x="143" y="206" font-size="15" font-weight="700" fill="#fff">Service worker</text>
+    <text x="143" y="226" font-size="13" fill="#fff">offline app shell</text>
+
+    <!-- Server -->
+    <rect x="368" y="2" width="282" height="262" rx="18" fill="#d80073" filter="url(#s)"/>
+    <text x="509" y="46" font-size="28" fill="#fff">SERVER</text>
+    <rect x="380" y="68" width="258" height="184" rx="10" fill="#fff"/>
+    <text x="509" y="96" font-size="16" fill="#111">Web App Server</text>
+    <rect x="392" y="108" width="234" height="62" rx="8" fill="#a20025"/>
+    <text x="509" y="134" font-size="15" font-weight="700" fill="#fff">Flask API</text>
+    <text x="509" y="154" font-size="13" fill="#fff">served by waitress</text>
+    <rect x="392" y="180" width="234" height="62" rx="8" fill="#a20025"/>
+    <text x="509" y="206" font-size="15" font-weight="700" fill="#fff">Game engine</text>
+    <text x="509" y="226" font-size="13" fill="#fff">rules, score and clock</text>
+
+    <!-- Data layer -->
+    <rect x="734" y="2" width="282" height="262" rx="18" fill="#000" filter="url(#s)"/>
+    <text x="875" y="46" font-size="28" fill="#fff">DATA LAYER</text>
+    <rect x="746" y="68" width="258" height="184" rx="10" fill="#fff"/>
+    <text x="875" y="96" font-size="16" fill="#111">Database</text>
+    <rect x="758" y="108" width="234" height="62" rx="8" fill="#1ba1e2"/>
+    <text x="875" y="134" font-size="15" font-weight="700" fill="#fff">MongoDB Atlas</text>
+    <text x="875" y="154" font-size="13" fill="#fff">cloud database</text>
+    <rect x="758" y="180" width="234" height="62" rx="8" fill="#1ba1e2"/>
+    <text x="875" y="206" font-size="15" font-weight="700" fill="#fff">Collections</text>
+    <text x="875" y="226" font-size="13" fill="#fff">sessions, scores</text>
+
+    <!-- Arrows: request goes right, reply goes left -->
+    <g stroke-width="8" stroke-linecap="butt">
+      <path d="M296 190h46" stroke="#0050ef"/><path d="M338 172l26 18-26 18z" fill="#0050ef" stroke="none"/>
+      <path d="M356 100h-46" stroke="#d80073"/><path d="M314 82l-26 18 26 18z" fill="#d80073" stroke="none"/>
+      <path d="M662 190h46" stroke="#d80073"/><path d="M704 172l26 18-26 18z" fill="#d80073" stroke="none"/>
+      <path d="M722 100h-46" stroke="#111"/><path d="M680 82l-26 18 26 18z" fill="#111" stroke="none"/>
+    </g>
+  </g>
+</svg>

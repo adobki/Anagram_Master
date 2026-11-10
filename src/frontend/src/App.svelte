@@ -10,19 +10,20 @@
   import { MIN_LEADERBOARD_SCORE, type GameController } from './lib/game'
   import { ms } from './lib/motion'
   import { toasts } from './lib/toast.svelte'
+  import About from './screens/About.svelte'
   import Game from './screens/Game.svelte'
   import GameOver from './screens/GameOver.svelte'
   import Help from './screens/Help.svelte'
   import Home from './screens/Home.svelte'
   import Leaderboard from './screens/Leaderboard.svelte'
 
-  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help'
+  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about'
 
   // Each screen has a URL hash, so the browser's (and Android's) back button
   // moves between screens. #scores and #help can be linked to directly.
   const fromHash = (): Screen => {
     const hash = location.hash.slice(1) as Screen
-    return hash === 'scores' || hash === 'help' ? hash : 'home'
+    return hash === 'scores' || hash === 'help' || hash === 'about' ? hash : 'home'
   }
 
   let screen = $state<Screen>(fromHash())
@@ -74,7 +75,7 @@
     leaving = false
     menu = 'closed'
     const hash = location.hash.slice(1) as Screen
-    const restorable = hash === 'scores' || hash === 'help' || (hash === 'over' && result)
+    const restorable = hash === 'scores' || hash === 'help' || hash === 'about' || (hash === 'over' && result)
     screen = restorable ? hash : 'home'
     scroller?.scrollTo(0, 0)
   }
@@ -176,6 +177,8 @@
       />
     {:else if screen === 'help'}
       <Help onback={back} onplay={play} />
+    {:else if screen === 'about'}
+      <About onback={back} onplay={play} />
     {:else}
       <Home
         saved={game?.state.status ? game.state : null}
@@ -186,6 +189,7 @@
         oncontinue={() => go('game')}
         onleaderboard={() => go('scores')}
         onhelp={() => go('help')}
+        onabout={() => go('about')}
       />
     {/if}
   </div>

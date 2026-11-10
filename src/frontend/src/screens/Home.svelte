@@ -2,6 +2,7 @@
   import ArrowRight from '@lucide/svelte/icons/arrow-right'
   import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark'
   import Clock from '@lucide/svelte/icons/clock'
+  import Info from '@lucide/svelte/icons/info'
   import Play from '@lucide/svelte/icons/play'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
   import Trophy from '@lucide/svelte/icons/trophy'
@@ -31,9 +32,10 @@
     oncontinue: () => void
     onleaderboard: () => void
     onhelp: () => void
+    onabout: () => void
   }
 
-  let { saved, best = 0, timeLeft = 0, onstart, onabandon, oncontinue, onleaderboard, onhelp }: Props = $props()
+  let { saved, best = 0, timeLeft = 0, onstart, onabandon, oncontinue, onleaderboard, onhelp, onabout }: Props = $props()
 
   const clock = $derived(`${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`)
 
@@ -161,6 +163,7 @@
   <footer>
     <Button variant="ghost" onclick={onleaderboard}><Trophy size="1.125rem" /> Leaderboard</Button>
     <Button variant="ghost" onclick={onhelp}><CircleQuestionMark size="1.125rem" /> How to play</Button>
+    <Button variant="ghost" onclick={onabout}><Info size="1.125rem" /> About</Button>
   </footer>
 </div>
 

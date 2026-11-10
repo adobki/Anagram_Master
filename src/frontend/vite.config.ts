@@ -54,6 +54,15 @@ export default defineConfig({
         // The API and the classic (v1) pages must always reach the server,
         // never the cached app shell.
         navigateFallbackDenylist: [/^\/api\//, /^\/v1(\/|$)/, /^\/static\//],
+        // The About page's pictures (webp) are too many to precache. Keep each
+        // one the first time it's seen, so the page also works offline.
+        runtimeCaching: [
+          {
+            urlPattern: /\.webp$/,
+            handler: 'CacheFirst',
+            options: { cacheName: 'about-images', expiration: { maxEntries: 40 } },
+          },
+        ],
       },
     }),
   ],
