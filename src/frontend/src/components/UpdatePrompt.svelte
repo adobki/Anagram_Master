@@ -1,8 +1,8 @@
 <script lang="ts">
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
-  import { useRegisterSW } from 'virtual:pwa-register/svelte'
   import { fly } from 'svelte/transition'
   import { ms } from '../lib/motion'
+  import { update } from '../lib/update.svelte'
   import Button from './Button.svelte'
 
   interface Props {
@@ -11,35 +11,15 @@
   }
 
   let { hidden = false }: Props = $props()
-
-  const HOUR = 60 * 60 * 1000
-
-  // Registers the service worker. A new version installs in the background
-  // and waits; the player chooses when to switch to it.
-  const { needRefresh, updateServiceWorker } = useRegisterSW({
-    onRegisteredSW(_url, registration) {
-      if (registration) setInterval(() => registration.update(), HOUR)
-    },
-  })
-
-  // The waiting version's number, read from the server (dist/version.json).
-  let waiting = $state<string | null>(null)
-  $effect(() => {
-    if (!$needRefresh) return
-    fetch('/version.json', { cache: 'no-store' })
-      .then((reply) => reply.json())
-      .then((data) => (waiting = typeof data.version === 'string' ? data.version : null))
-      .catch(() => {}) // keep the plain message
-  })
 </script>
 
-{#if $needRefresh && !hidden}
+{#if update.ready && !hidden}
   <div class="update" role="status" in:fly={{ y: 24, duration: ms(260) }}>
     <RefreshCw size="1.25rem" />
-    <p>{waiting ? `Version ${waiting} is ready.` : 'A new version of Anagram Master is ready.'}</p>
+    <p>{update.waiting ? `Version ${update.waiting} is ready.` : 'A new version of Anagram Master is ready.'}</p>
     <div class="actions">
-      <Button variant="ghost" size="sm" onclick={() => needRefresh.set(false)}>Later</Button>
-      <Button size="sm" onclick={() => updateServiceWorker(true)}>Update</Button>
+      <Button variant="ghost" size="sm" onclick={() => update.dismiss()}>Later</Button>
+      <Button size="sm" onclick={() => update.apply()}>Update</Button>
     </div>
   </div>
 {/if}

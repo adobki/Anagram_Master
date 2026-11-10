@@ -1,16 +1,20 @@
 <script lang="ts">
   import Clock from '@lucide/svelte/icons/clock'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
   import { onDestroy } from 'svelte'
   import { prefersReducedMotion } from 'svelte/motion'
   import { sparkle } from '../lib/confetti'
   import { canKeepAwake, canVibrate } from '../lib/device'
   import type { GameController } from '../lib/game'
   import { buzzTest } from '../lib/haptics'
+  import { clearMyData } from '../lib/data'
+  import { install } from '../lib/install.svelte'
   import { MAX_NAME_LENGTH, MIN_NAME_LENGTH, player } from '../lib/player.svelte'
   import { settings, type Motion, type TextSize } from '../lib/settings.svelte'
   import { theme } from '../lib/theme.svelte'
   import { ui } from '../lib/ui.svelte'
+  import { update } from '../lib/update.svelte'
   import { appVersion } from '../lib/version'
   import Button from './Button.svelte'
   import Dialog from './Dialog.svelte'
@@ -49,6 +53,8 @@
   // The name is saved as it's typed, as long as it is a valid one.
   let touched = $state(false)
   const nameError = $derived(touched && !player.valid ? `Use at least ${MIN_NAME_LENGTH} characters.` : undefined)
+
+  let clearing = $state(false)
 
   // "Reset settings" takes two taps, like Skip does.
   let armed = $state(false)
@@ -177,8 +183,48 @@
     />
   </section>
 
+  <section aria-labelledby="{uid}-app">
+    <h3 id="{uid}-app">App</h3>
+    {#if install.available}
+      <div class="action">
+        <span class="text">
+          <span class="label">Install app</span>
+          <span class="hint">Adds Anagram Master to your home screen or desktop, so it opens like any app.</span>
+        </span>
+        <Button size="sm" onclick={() => install.prompt()}>Install</Button>
+      </div>
+    {:else if install.needsShareMenu}
+      <p class="note">To install on an iPhone or iPad: tap Share, then Add to Home Screen.</p>
+    {/if}
+    <div class="action">
+      <span class="text">
+        <span class="label">Updates</span>
+        <span class="hint" role="status">
+          {#if update.ready}
+            {update.waiting ? `Version ${update.waiting} is ready.` : 'A new version is ready.'}
+          {:else if update.busy}
+            Checking…
+          {:else if update.outcome === 'current'}
+            You're up to date.
+          {:else if update.outcome === 'failed'}
+            Couldn't check. Are you online?
+          {:else}
+            You have {appVersion}.
+          {/if}
+        </span>
+      </span>
+      {#if update.ready}
+        <Button size="sm" onclick={() => update.apply()}>Update now</Button>
+      {:else}
+        <Button variant="secondary" size="sm" disabled={update.busy} onclick={() => update.check(true)}>
+          Check
+        </Button>
+      {/if}
+    </div>
+  </section>
+
   <section aria-labelledby="{uid}-data">
-    <h3 id="{uid}-data">Defaults</h3>
+    <h3 id="{uid}-data">Reset</h3>
     <div class="reset" class:armed>
       <Button variant="secondary" size="sm" block onclick={reset}>
         <RotateCcw size="1rem" />
@@ -186,12 +232,32 @@
       </Button>
     </div>
     <p class="note">Puts every setting back to its default. Your name, best score and saved game stay.</p>
+    <!-- Not mid-game: it reloads the page. -->
+    {#if !inGame}
+      <div class="clear">
+        <Button variant="ghost" size="sm" block onclick={() => (clearing = true)}>
+          <Trash2 size="1rem" /> Clear my data
+        </Button>
+      </div>
+      <p class="note">Removes your name, best score and settings from this device.</p>
+    {/if}
   </section>
 
   <footer>
     <p>Anagram Master {appVersion}</p>
     <p>Settings are saved on this device.</p>
   </footer>
+</Dialog>
+
+<Dialog bind:open={clearing} title="Clear my data?">
+  <p>
+    This removes your name, best score and settings from this device. Your saved game and the leaderboard aren't
+    affected.
+  </p>
+  {#snippet actions()}
+    <Button variant="secondary" onclick={() => (clearing = false)}>Cancel</Button>
+    <Button onclick={clearMyData}>Clear data</Button>
+  {/snippet}
 </Dialog>
 
 <style>
@@ -239,6 +305,42 @@
     margin-top: var(--space-2);
     font-size: var(--text-sm);
     color: var(--text-2);
+  }
+
+  .action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-height: var(--tap);
+  }
+
+  .action + .action,
+  .note + .action {
+    margin-top: var(--space-3);
+  }
+
+  .text {
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  .label {
+    font-weight: 600;
+  }
+
+  .hint {
+    font-size: var(--text-sm);
+    line-height: 1.35;
+    color: var(--text-2);
+  }
+
+  .clear {
+    margin-top: var(--space-4);
+  }
+
+  .clear :global(.btn) {
+    color: var(--warn);
   }
 
   .reset.armed :global(.btn) {

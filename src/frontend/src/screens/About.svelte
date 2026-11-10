@@ -1,6 +1,7 @@
 <script lang="ts">
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Play from '@lucide/svelte/icons/play'
+  import { onMount } from 'svelte'
   import architecture from '../assets/about/diagram-architecture.svg'
   import architectureDark from '../assets/about/diagram-architecture-dark.svg'
   import dataModel from '../assets/about/diagram-data-model.svg'
@@ -17,6 +18,7 @@
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { reducedMotion } from '../lib/motion'
   import { theme } from '../lib/theme.svelte'
+  import { update } from '../lib/update.svelte'
   import { appVersion } from '../lib/version'
 
   interface Props {
@@ -25,6 +27,10 @@
   }
 
   let { onback, onplay }: Props = $props()
+
+  // This page shows the version, so look for a newer one while it's open. It's quiet:
+  // nothing shows unless one is found, and then the usual banner does.
+  onMount(() => void update.check())
 
   // Screenshots are made by scripts/screenshots.mjs, one per screen, device and theme.
   const shots = import.meta.glob<string>('../assets/about/shot-*.webp', {
