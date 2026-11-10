@@ -45,6 +45,15 @@ It is stored in `package.json` and `package-lock.json`, because that is where np
 
 **Run `npm run stamp` before every commit that changes the front end, and commit both files with it.** The script compares today with the version stored in the last commit, so running it twice before one commit gives the same date part.
 
+## Settings
+
+The gear in every screen's header opens one Settings fly-out (`components/Settings.svelte`, mounted once in `App.svelte`). It has the player name (not shown during a game, because the API only takes a name when a game starts), theme, text size, motion and contrast, sound effects, vibration, play options, install and update controls, and two reset buttons.
+
+- **Storing.** `lib/settings.svelte.ts` keeps one `am-settings` entry in localStorage, holding only what the player chose. A default can therefore depend on the device (the keyboard setting starts on for touch-first devices), and "Reset settings" just deletes the entry. The theme (`am-theme`) is separate because `index.html` reads it before first paint. `index.html` also applies the text size, motion and contrast choices before first paint, and the store keeps the same `data-*` attributes on `<html>` up to date. Keep the two in step.
+- **Adding a setting.** List it in `Choices` and `DEFAULTS` in `settings.svelte.ts`, add its getter and setter, then put a `Switch` or `Segmented` in `Settings.svelte`. If something else saves to localStorage, add its key to `lib/data.ts`.
+- **Reduced motion** is decided in one place, `reducedMotion()` in `lib/motion.ts`, which honours the player's choice before the device's. CSS uses `[data-motion]` the same way (`styles/base.css`).
+- **Sound** is made with Web Audio, with no audio files. `lib/sound-voices.ts` has the notes: soft sine tones from one pentatonic scale, nothing above about 1.3 kHz, a short attack so nothing clicks, and peaks under half scale after the master volume. Keep new sounds to that. They can be checked by rendering them in an `OfflineAudioContext` and measuring the peak and spectrum.
+
 ## About screen screenshots
 
 The About screen's pictures (`src/assets/about/shot-*.webp`) are 16 screenshots: four screens, each for phones and for desktop, in light and dark. `scripts/screenshots.mjs` plays real games in Edge to make them, and takes about two minutes. Start the server against a test database first, because games scoring 10 or more are saved:
@@ -52,7 +61,7 @@ The About screen's pictures (`src/assets/about/shot-*.webp`) are 16 screenshots:
 ```sh
 npm i --no-save playwright-core sharp     # kept out of package.json on purpose
 cd ../backend && am_database_name=AM_FE_tests PORT=5555 python -m server
-node scripts/screenshots.mjs              # from src/frontend
+node scripts/screenshots.mjs              # from src/frontend (add a base URL if the server isn't on port 5555)
 ```
 
 Re-run it whenever a screen it shows changes. The diagrams on that screen are hand-drawn SVGs in `src/assets/about/`.
@@ -73,7 +82,13 @@ Re-run it whenever a screen it shows changes. The diagrams on that screen are ha
 | `src/lib/game.ts` | `GameController`, the interface the game screen plays through |
 | `src/lib/api-game.svelte.ts` | `GameController` on the API: local clock, game-over handling, reply messages |
 | `src/lib/letters.ts` | Turns a root word into tiles (letters only; `-` and `'` are dropped) |
-| `src/lib/theme.svelte.ts` | Light/dark theme: follows the system until toggled, then remembered |
+| `src/lib/theme.svelte.ts` | Light/dark theme: follows the device until the player picks Light or Dark in Settings, then remembered |
+| `src/lib/settings.svelte.ts` | The player's preferences, saved on the device (see Settings) |
+| `src/lib/player.svelte.ts` | The remembered player name, shared by Home and Settings |
+| `src/lib/sound.ts`, `sound-voices.ts` | Sound effects: the player, and the notes themselves |
+| `src/lib/device.ts` | What the device can do (touch-first, vibration, wake lock) |
+| `src/lib/update.svelte.ts`, `install.svelte.ts` | The service worker's updates, and installing the app |
+| `src/lib/data.ts` | The localStorage keys "Clear my data" removes |
 | `src/assets/` | Images imported by components (fingerprinted on build) |
 | `public/` | Files copied as-is: the favicon and the PWA icons (made from the logo's helix) |
 | `vite.config.ts` | Svelte and PWA plugins, and the API proxy |

@@ -113,7 +113,12 @@ async function save(page, name, device, theme) {
 
 async function shoot(browser, device, theme) {
   const context = await browser.newContext({ ...DEVICES[device], colorScheme: theme })
-  await context.addInitScript((t) => localStorage.setItem('am-theme', t), theme)
+  // The pictures are made by typing, which the keyboard setting would ignore on a phone, and a
+  // headless browser has no speakers to play the sound effects through.
+  await context.addInitScript((t) => {
+    localStorage.setItem('am-theme', t)
+    localStorage.setItem('am-settings', JSON.stringify({ keyboardOff: false, sound: false }))
+  }, theme)
   const page = await context.newPage()
   const tag = `${device}/${theme}`
   const status = () => page.evaluate(() => fetch('/api/v1/status').then((r) => r.json()))
@@ -127,7 +132,7 @@ async function shoot(browser, device, theme) {
   }
 
   await page.goto(BASE)
-  await page.getByLabel('Your name').fill(NAME)
+  await page.locator('form input').fill(NAME)
   await page.getByRole('button', { name: /Start game/ }).click()
   await page.locator('.round').waitFor()
   await sleep(1500)
