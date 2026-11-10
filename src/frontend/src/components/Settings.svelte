@@ -10,6 +10,7 @@
   import { appVersion } from '../lib/version'
   import Button from './Button.svelte'
   import Dialog from './Dialog.svelte'
+  import SoundSection from './SoundSection.svelte'
   import Switch from './Switch.svelte'
   import TextField from './TextField.svelte'
   import ThemeChoice from './ThemeChoice.svelte'
@@ -83,6 +84,11 @@
   <section aria-labelledby="{uid}-appearance">
     <h3 id="{uid}-appearance">Appearance</h3>
     <ThemeChoice />
+  </section>
+
+  <section aria-labelledby="{uid}-sound">
+    <h3 id="{uid}-sound">Sound</h3>
+    <SoundSection />
   </section>
 
   <section aria-labelledby="{uid}-play">

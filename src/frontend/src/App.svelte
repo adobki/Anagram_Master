@@ -12,6 +12,7 @@
   import { ms } from './lib/motion'
   import { network } from './lib/network.svelte'
   import { player } from './lib/player.svelte'
+  import { sound } from './lib/sound'
   import { toasts } from './lib/toast.svelte'
   import { ui } from './lib/ui.svelte'
   import About from './screens/About.svelte'
@@ -190,6 +191,7 @@
     if (game) {
       result = $state.snapshot(game.state)
       ;({ best, beaten } = recordScore(result.score))
+      sound.over(beaten !== null)
       game.destroy()
       game = null
     }

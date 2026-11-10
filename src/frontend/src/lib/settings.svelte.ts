@@ -9,16 +9,42 @@
 
 const KEY = 'am-settings'
 
+/** The sound effects that can each be switched on or off. */
+export type Effect = 'word' | 'wrong' | 'cleared' | 'countdown' | 'over'
+
 /** Every setting and its type. To add one: list it here, give it a default, then add its accessor below. */
 interface Choices {
   /** Keep the tray's letters after submitting a word. */
   keepLetters: boolean
+  /** Sound effects: the master switch, the volume (0 to 100) and one switch per effect. */
+  sound: boolean
+  volume: number
+  sfxWord: boolean
+  sfxWrong: boolean
+  sfxCleared: boolean
+  sfxCountdown: boolean
+  sfxOver: boolean
 }
+
+const SFX_KEY = {
+  word: 'sfxWord',
+  wrong: 'sfxWrong',
+  cleared: 'sfxCleared',
+  countdown: 'sfxCountdown',
+  over: 'sfxOver',
+} as const satisfies Record<Effect, keyof Choices>
 
 type Stored = { [K in keyof Choices]: Choices[K] | null }
 
 const DEFAULTS: { [K in keyof Choices]: () => Choices[K] } = {
   keepLetters: () => false,
+  sound: () => true,
+  volume: () => 70,
+  sfxWord: () => true,
+  sfxWrong: () => true,
+  sfxCleared: () => true,
+  sfxCountdown: () => true,
+  sfxOver: () => true,
 }
 
 const KEYS = Object.keys(DEFAULTS) as (keyof Choices)[]
@@ -74,6 +100,29 @@ class SettingsState {
   }
   set keepLetters(value: boolean) {
     this.#set('keepLetters', value)
+  }
+
+  get sound() {
+    return this.#get('sound')
+  }
+  set sound(value: boolean) {
+    this.#set('sound', value)
+  }
+
+  /** 0 to 100. */
+  get volume() {
+    return Math.min(100, Math.max(0, this.#get('volume')))
+  }
+  set volume(value: number) {
+    this.#set('volume', Math.round(Math.min(100, Math.max(0, value))))
+  }
+
+  /** Whether one effect is switched on (the master `sound` switch is separate). */
+  sfx(effect: Effect): boolean {
+    return this.#get(SFX_KEY[effect])
+  }
+  setSfx(effect: Effect, on: boolean) {
+    this.#set(SFX_KEY[effect], on)
   }
 
   /** Back to the defaults. (The theme is reset separately, in lib/theme.svelte.ts.) */

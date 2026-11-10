@@ -28,6 +28,7 @@
   import { buzzBad, buzzCleared } from '../lib/haptics'
   import { shuffled, tilesOf, type Tile as TileData } from '../lib/letters'
   import { ms } from '../lib/motion'
+  import { sound } from '../lib/sound'
   import { settings } from '../lib/settings.svelte'
   import { ui } from '../lib/ui.svelte'
 
@@ -140,6 +141,20 @@
     seenRound = round
   })
 
+  // Countdown: a beep for each of the last ten seconds. It remembers the last
+  // second it beeped for, so a clock resync can't beep twice.
+  let beeped = 0
+  $effect(() => {
+    const time = game.timeLeft
+    untrack(() => {
+      if (time > 10 || time < 1) beeped = 0
+      else if (time !== beeped && s.status) {
+        beeped = time
+        sound.countdown(time)
+      }
+    })
+  })
+
   $effect(() => {
     if (!s.status) onend()
   })
@@ -227,10 +242,12 @@
       if (result.tone === 'great') {
         celebrate()
         buzzCleared()
-      }
+        sound.cleared()
+      } else sound.word(sent.length)
     } else {
       shake++
       buzzBad()
+      if (result.tone === 'bad') sound.wrong() // a message like "already played" stays quiet
     }
   }
 
