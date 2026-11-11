@@ -149,9 +149,13 @@ class Game:
             else:
                 score -= 2  # Penalise player for invalid input
                 error = f'ERROR: Invalid word! Try another'
-            # Add new word to player's used words
-            self.__words['used'][root_word].append([word, valid])
-            updates['words'] = self.__words
+            # Add new word to a copy of the player's used words. A copy, so
+            # the database layer can see that the words changed (it skips a
+            # value that equals what it already holds, which an in-place
+            # change would, and a word played at a score of 0 went unsaved).
+            words = deepcopy(self.__words)
+            words['used'][root_word].append([word, valid])
+            updates['words'] = words
 
         # Fix negative score and check if score has changed
         score = 0 if score < 0 else score
@@ -159,12 +163,18 @@ class Game:
             updates['score'] = score
 
         # Update and save game session if scores or used words was updated
-        if new_round:
+        if new_round and self.words:  # Rounds remain: move on to the next one
+            self.__words = updates['words']
             self.__score = score
             error = self.new_round()
         elif updates:
             payload = self.__save(**updates)
             self.__update(payload)
+            # The last round's word limit ends the game (its words and score
+            # were saved first, so the leaderboard gets the score shown)
+            if new_round:
+                self.end()
+                error = None
 
         # Sort player's submitted words for the current root word
         # self.__words['used'][root_word].sort()
