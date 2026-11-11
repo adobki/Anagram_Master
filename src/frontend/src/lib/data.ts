@@ -3,7 +3,7 @@
  * something new in localStorage, add its key here, so "Clear my data" removes it.
  * (The saved game is not here: it lives on the server, behind a cookie.)
  */
-const KEYS = ['am-name', 'am-best', 'am-settings', 'am-theme', 'am-scores']
+const KEYS = ['am-name', 'am-best', 'am-settings', 'am-theme', 'am-scores', 'am-games']
 
 /** Forgets the name, best score and settings, then reloads so every screen starts fresh. */
 export function clearMyData() {

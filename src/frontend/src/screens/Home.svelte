@@ -1,11 +1,13 @@
 <script lang="ts">
   import ArrowRight from '@lucide/svelte/icons/arrow-right'
   import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark'
+  import CircleStop from '@lucide/svelte/icons/circle-stop'
   import Clock from '@lucide/svelte/icons/clock'
+  import HistoryIcon from '@lucide/svelte/icons/rotate-ccw-clock'
   import Info from '@lucide/svelte/icons/info'
   import Play from '@lucide/svelte/icons/play'
+  import Plus from '@lucide/svelte/icons/plus'
   import WifiOff from '@lucide/svelte/icons/wifi-off'
-  import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
   import Trophy from '@lucide/svelte/icons/trophy'
   import { onMount } from 'svelte'
   import { flip } from 'svelte/animate'
@@ -32,16 +34,36 @@
     best?: number
     /** Seconds left in the saved game's round. Its clock keeps running. */
     timeLeft?: number
+    /** Games have been played on this device, so History has something to show. */
+    hasHistory?: boolean
+    /** The saved game can be come back to once another is started (it has a resume token). */
+    canReturn?: boolean
     onstart: (name: string) => void
-    /** Ends the saved game (saving its score if it's 10+). */
+    /** Ends the saved game (saving its score if it's 10+) and shows how it went. */
     onabandon: () => Promise<void>
     oncontinue: () => void
+    onhistory: () => void
     onleaderboard: () => void
     onhelp: () => void
     onabout: () => void
   }
 
-  let { saved, lookup = 'ready', onretry, best = 0, timeLeft = 0, onstart, onabandon, oncontinue, onleaderboard, onhelp, onabout }: Props = $props()
+  let {
+    saved,
+    lookup = 'ready',
+    onretry,
+    best = 0,
+    timeLeft = 0,
+    hasHistory = false,
+    canReturn = true,
+    onstart,
+    onabandon,
+    oncontinue,
+    onhistory,
+    onleaderboard,
+    onhelp,
+    onabout,
+  }: Props = $props()
 
   const clock = $derived(`${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`)
 
@@ -54,6 +76,8 @@
     return () => clearTimeout(timer)
   })
 
+  /** The New game dialog, shown over a game in progress. */
+  let creating = $state(false)
   let confirming = $state(false)
   let ending = $state(false)
   async function abandon() {
@@ -71,6 +95,14 @@
     event.preventDefault()
     tried = true
     if (!player.valid) return
+    onstart(player.trimmed)
+  }
+
+  /** Start a new game while another is running (it stays resumable from History). */
+  function startAnyway() {
+    tried = true
+    if (!player.valid) return
+    creating = false
     onstart(player.trimmed)
   }
 
@@ -142,9 +174,13 @@
             <span>This round's time is up. The next round starts when you continue.</span>
           {/if}
         </p>
-        <Button variant="ghost" size="sm" block onclick={() => (confirming = true)}>
-          <RotateCcw size="1rem" /> End this game and start over
-        </Button>
+        <div class="tools">
+          <Button variant="ghost" size="sm" onclick={() => (confirming = true)}><CircleStop size="1rem" /> End game</Button>
+          <Button variant="secondary" size="sm" onclick={() => (creating = true)}><Plus size="1rem" /> New</Button>
+          <Button variant="secondary" size="sm" disabled={!hasHistory} onclick={onhistory}>
+            <HistoryIcon size="1rem" /> History
+          </Button>
+        </div>
       </section>
     {:else}
     <form class="card" onsubmit={start} novalidate>
@@ -164,6 +200,9 @@
         <Play size="1.25rem" />
         Start game
       </Button>
+      <Button variant="ghost" block disabled={!hasHistory} onclick={onhistory}>
+        <HistoryIcon size="1.125rem" /> History
+      </Button>
     </form>
     {/if}
   </main>
@@ -182,6 +221,34 @@
       {#snippet actions()}
         <Button variant="secondary" onclick={() => (confirming = false)}>Keep playing</Button>
         <Button disabled={ending} onclick={abandon}>End game</Button>
+      {/snippet}
+    </Dialog>
+
+    <Dialog bind:open={creating} title="Start a new game?">
+      <p class="advice">
+        You still have a game in progress: round {saved.round} of {saved.rounds_limit}, {saved.score}
+        {saved.score === 1 ? 'point' : 'points'}. Finish it first, so its score can reach the leaderboard.
+        {#if canReturn}
+          If you start another, you can come back to it from History.
+        {:else}
+          It was started before History existed, so it can't be resumed once you start another.
+        {/if}
+      </p>
+      <TextField
+        label="Your name"
+        maxlength={15}
+        autocomplete="nickname"
+        autocapitalize="words"
+        enterkeyhint="go"
+        spellcheck="false"
+        bind:value={player.name}
+        {error}
+        hint="3–15 characters. It appears on the leaderboard."
+        onkeydown={(event) => event.key === 'Enter' && startAnyway()}
+      />
+      {#snippet actions()}
+        <Button variant="secondary" onclick={() => (creating = false)}>Keep my game</Button>
+        <Button onclick={startAnyway}>Start anyway</Button>
       {/snippet}
     </Dialog>
   {/if}
@@ -209,6 +276,21 @@
   }
 
   .sub {
+    font-size: var(--text-sm);
+  }
+
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .advice {
+    margin-bottom: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--warn-soft);
     font-size: var(--text-sm);
   }
 

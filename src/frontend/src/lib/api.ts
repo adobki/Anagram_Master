@@ -71,7 +71,7 @@ export function isGameState(reply: GameState | ErrorReply): reply is GameState {
   return 'status' in reply
 }
 
-async function request<T>(path: string, method = 'GET', body?: object): Promise<T> {
+async function send<T>(path: string, method = 'GET', body?: object): Promise<{ data: T; res: Response }> {
   const res = await fetch(BASE + path, {
     method,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
@@ -79,8 +79,10 @@ async function request<T>(path: string, method = 'GET', body?: object): Promise<
   })
   const data = await res.json().catch(() => null)
   if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText)
-  return data as T
+  return { data: data as T, res }
 }
+
+const request = <T>(path: string, method = 'GET', body?: object) => send<T>(path, method, body).then((r) => r.data)
 
 export const api = {
   /** Is the API up, and are its database and word list available? */
@@ -88,6 +90,18 @@ export const api = {
 
   /** Start a new game. The name needs 3+ characters; the server keeps the first 15. */
   start: (name: string) => request<GameState>('/init', 'POST', { name }),
+
+  /**
+   * Start a new game and also return its token. The cookie that keeps the game is HttpOnly, so the page can't
+   * read it; /init sends the same value once, in an X-Session header, for the page to keep. /resume takes it back.
+   */
+  begin: async (name: string): Promise<{ state: GameState; token: string | null }> => {
+    const { data, res } = await send<GameState>('/init', 'POST', { name })
+    return { state: data, token: res.headers.get('X-Session') }
+  },
+
+  /** Make a saved game the current one again (sets the cookie) from its token. 401 means it is over or gone. */
+  resume: (token: string) => request<GameState>('/resume', 'POST', { token }),
 
   /**
    * The saved game, if there is one. A game that has already ended comes back

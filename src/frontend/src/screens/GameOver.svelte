@@ -24,12 +24,16 @@
     best?: number
     /** The earlier best this game beat, or null if it didn't beat one. */
     beaten?: number | null
+    /** A finished game opened from History, not one that just ended. */
+    past?: boolean
+    /** Something to say about it, such as that it ended while the player was away. */
+    note?: string
     onplay: () => void
     onhome: () => void
     onleaderboard: () => void
   }
 
-  let { result, best = 0, beaten = null, onplay, onhome, onleaderboard }: Props = $props()
+  let { result, best = 0, beaten = null, past = false, note = '', onplay, onhome, onleaderboard }: Props = $props()
 
   const rounds = $derived(
     Object.entries(result.words).map(([root, answers], i) => ({
@@ -76,8 +80,9 @@
 
   <main>
     <section class="hero">
-      <p class="eyebrow">Game over</p>
-      <h1>Well played, {result.name}</h1>
+      <p class="eyebrow">{past ? 'Past game' : 'Game over'}</p>
+      <h1>{past ? result.name : `Well played, ${result.name}`}</h1>
+      {#if note}<p class="note">{note}</p>{/if}
       <p class="final">
         <span class="number">{Math.round(shown.current)}</span>
         <span class="unit">points</span>
@@ -157,12 +162,17 @@
   </main>
 
   <footer>
-    <Button size="lg" block onclick={onplay}><RotateCcw size="1.25rem" /> Play again</Button>
+    <Button size="lg" block onclick={onplay}><RotateCcw size="1.25rem" /> {past ? 'New game' : 'Play again'}</Button>
     <Button variant="secondary" size="lg" block onclick={onleaderboard}><Trophy size="1.25rem" /> Leaderboard</Button>
   </footer>
 </div>
 
 <style>
+
+  .note {
+    font-size: var(--text-sm);
+    color: var(--text-2);
+  }
 
   main,
   footer {

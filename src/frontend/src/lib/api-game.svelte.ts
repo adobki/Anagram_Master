@@ -10,13 +10,13 @@
  */
 
 import { api, ApiError, isGameState, type ErrorReply, type GameState } from './api'
+import { games } from './history.svelte'
 import { praise, type Feedback, type GameController, type RoundSummary } from './game'
 import { tilesOf } from './letters'
 import { toasts } from './toast.svelte'
 
 const OFFLINE = "Couldn't reach the server. Check your connection and try again."
 
-/** The saved game behind the player's cookie, if it's still running. */
 /**
  * The player's saved game, or null when there is none (no cookie, no game, or
  * its last round just timed out). Throws when the server can't be reached or
@@ -34,8 +34,10 @@ export async function findSavedGame(): Promise<GameState | null> {
   return null
 }
 
-export function createApiGame(initial: GameState): GameController {
+/** `token` is the game's /resume token, when known (a game started on this device); it is filed in History. */
+export function createApiGame(initial: GameState, token?: string | null): GameController {
   const g = $state({ state: initial, timeLeft: initial.time, busy: false, lastRound: null as RoundSummary | null })
+  games.record(initial, token)
   // The score when the current round began; unknown for a game resumed after round 1.
   let roundStart: number | null = initial.round === 1 ? 0 : null
   // Paused until the game screen shows (see GameController.pause).
@@ -52,6 +54,7 @@ export function createApiGame(initial: GameState): GameController {
     clearInterval(clock)
     g.state = { ...g.state, status: false, word: null, time: 0 }
     g.timeLeft = 0
+    games.record(g.state)
   }
 
   function apply(reply: GameState | ErrorReply) {
@@ -68,6 +71,7 @@ export function createApiGame(initial: GameState): GameController {
     }
     g.state = reply
     g.timeLeft = reply.time
+    games.record(reply)
     if (!reply.status) clearInterval(clock)
   }
 
@@ -129,7 +133,14 @@ export function createApiGame(initial: GameState): GameController {
         return failed(error)
       }
       apply(reply)
-      if (!isGameState(reply) || !reply.status) return { tone: 'info', text: "Time's up! Game over." }
+      if (!isGameState(reply) || !reply.status) {
+        // The reply ended the game: with the last round's final word, that is the game complete.
+        const root = before.word ?? ''
+        const complete = isGameState(reply) && (reply.words[root] ?? []).some(([played, valid]) => valid && played === word.toLowerCase())
+        return complete
+          ? { tone: 'great', text: `That's all ${before.rounds_limit} words! Game complete.` }
+          : { tone: 'info', text: "Time's up! Game over." }
+      }
 
       const error = reply.error ?? ''
       if (error.includes('Invalid word')) return { tone: 'bad', text: `“${word}” isn't in the word list · −2` }

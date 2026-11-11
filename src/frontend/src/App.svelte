@@ -9,6 +9,7 @@
   import { createApiGame, findSavedGame } from './lib/api-game.svelte'
   import { loadBest, recordScore } from './lib/best'
   import { MIN_LEADERBOARD_SCORE, type GameController } from './lib/game'
+  import { games } from './lib/history.svelte'
   import { ms } from './lib/motion'
   import { network } from './lib/network.svelte'
   import { player } from './lib/player.svelte'
@@ -21,16 +22,18 @@
   import Game from './screens/Game.svelte'
   import GameOver from './screens/GameOver.svelte'
   import Help from './screens/Help.svelte'
+  import History from './screens/History.svelte'
   import Home from './screens/Home.svelte'
   import Leaderboard from './screens/Leaderboard.svelte'
+  import PastGame from './screens/PastGame.svelte'
 
-  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about'
+  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about' | 'history' | 'past'
 
   // Each screen has a URL hash, so the browser's (and Android's) back button
   // moves between screens. #scores and #help can be linked to directly.
   const fromHash = (): Screen => {
     const hash = location.hash.slice(1) as Screen
-    return hash === 'scores' || hash === 'help' || hash === 'about' ? hash : 'home'
+    return hash === 'scores' || hash === 'help' || hash === 'about' || hash === 'history' ? hash : 'home'
   }
 
   let screen = $state<Screen>(fromHash())
@@ -40,6 +43,11 @@
   let best = $state(loadBest())
   let beaten = $state<number | null>(null)
   let starting = false
+  /** The History game on show (screen 'past'), a note about it, and whether a resume or end is under way. */
+  let viewing = $state<string | null>(null)
+  let pastNote = $state('')
+  let working = $state(false)
+  const viewed = $derived(viewing ? games.get(viewing) : undefined)
 
   // A game saved behind the player's cookie shows up as "Continue" on the home
   // screen. Until the server answers, Home shows a loading card instead of the
@@ -125,7 +133,8 @@
     menu = 'closed'
     ui.closeSettings()
     const hash = location.hash.slice(1) as Screen
-    const restorable = hash === 'scores' || hash === 'help' || hash === 'about' || (hash === 'over' && result)
+    const restorable =
+      hash === 'scores' || hash === 'help' || hash === 'about' || hash === 'history' || (hash === 'over' && result) || (hash === 'past' && viewed)
     screen = restorable ? hash : 'home'
     scroller?.scrollTo(0, 0)
   }
@@ -170,13 +179,10 @@
     if (starting) return
     starting = true
     try {
-      // Starting over ends the current game first (saving its score if it's 10+).
-      if (game?.state.status) {
-        await game.quit()
-        best = recordScore(game.state.score).best
-      }
+      // A game in progress isn't ended: it stays in History, and can be resumed from there.
+      const { state, token } = await api.begin(name)
       game?.destroy()
-      game = createApiGame(await api.start(name))
+      game = createApiGame(state, token)
       player.name = name
       go('game', screen === 'over')
     } catch (error) {
@@ -190,14 +196,67 @@
   async function abandon() {
     if (!game) return
     await game.quit() // shows its own message if offline, and the game stays
-    if (!game.state.status) {
-      best = recordScore(game.state.score).best
-      game.destroy()
-      game = null
+    if (!game.state.status) finish(false) // shows how it went
+  }
+
+  /** Open a game from History: its results, or its stats with a Resume button. */
+  function openPast(id: string, note = '') {
+    viewing = id
+    pastNote = note
+    go('past', screen === 'past')
+  }
+
+  /** The server says a game is over (or gone): keep what we know, and say so. */
+  function endedAway(id: string) {
+    games.markOver(id)
+    openPast(id, 'This game ended while you were away.')
+  }
+
+  const isGone = (error: unknown) => error instanceof ApiError && [400, 401, 403].includes(error.status)
+
+  /** Make a game from History the current game again, and go to it. */
+  async function resumePast(id: string) {
+    const entry = games.get(id)
+    if (!entry || working) return
+    if (game?.state.session_id === id && game.state.status) return go('game')
+    if (!entry.token) return
+    working = true
+    try {
+      const state = await api.resume(entry.token)
+      game?.destroy() // the game it replaces stays in History
+      game = createApiGame(state, entry.token)
+      go('game')
+    } catch (error) {
+      if (isGone(error)) endedAway(id)
+      else toasts.show("Couldn't reach the server. Try again.")
+    } finally {
+      working = false
     }
   }
 
-  function finish() {
+  /** End a game from History (resuming it first, so the server knows which one), then show how it went. */
+  async function endPast(id: string) {
+    const entry = games.get(id)
+    if (!entry || working) return
+    working = true
+    try {
+      if (!(game?.state.session_id === id && game.state.status)) {
+        if (!entry.token) return
+        const state = await api.resume(entry.token)
+        game?.destroy()
+        game = createApiGame(state, entry.token)
+      }
+      await game!.quit()
+      if (!game!.state.status) finish(false)
+    } catch (error) {
+      if (isGone(error)) endedAway(id)
+      else toasts.show("Couldn't reach the server. Try again.")
+    } finally {
+      working = false
+    }
+  }
+
+  function finish(replace = true) {
     if (game) {
       result = $state.snapshot(game.state)
       ;({ best, beaten } = recordScore(result.score))
@@ -205,7 +264,7 @@
       game.destroy()
       game = null
     }
-    go('over', true) // back from the results shouldn't reopen the finished game
+    go('over', replace) // back from the results shouldn't reopen the finished game
   }
 </script>
 
@@ -233,6 +292,28 @@
         onback={back}
         onplay={play}
       />
+    {:else if screen === 'history'}
+      <History onopen={openPast} onresume={resumePast} onback={back} onplay={play} />
+    {:else if screen === 'past' && viewed}
+      {#if viewed.over}
+        <GameOver
+          result={viewed.state}
+          past
+          note={pastNote}
+          onplay={() => newGame(player.valid ? player.trimmed : viewed.state.name)}
+          onhome={() => go('home')}
+          onleaderboard={() => go('scores')}
+        />
+      {:else}
+        <PastGame
+          game={viewed}
+          canResume={!!viewed.token || game?.state.session_id === viewed.id}
+          busy={working}
+          onresume={() => resumePast(viewed.id)}
+          onend={() => endPast(viewed.id)}
+          onhome={() => go('home')}
+        />
+      {/if}
     {:else if screen === 'help'}
       <Help onback={back} onplay={play} />
     {:else if screen === 'about'}
@@ -244,6 +325,9 @@
         onretry={check}
         {best}
         timeLeft={game?.timeLeft ?? 0}
+        hasHistory={games.any}
+        canReturn={!!game && !!games.get(game.state.session_id)?.token}
+        onhistory={() => go('history')}
         onstart={newGame}
         onabandon={abandon}
         oncontinue={() => go('game')}
