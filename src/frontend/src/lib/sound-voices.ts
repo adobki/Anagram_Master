@@ -57,12 +57,15 @@ const LADDER = [C5, D5, E5, G5, A5, C6, D6] // 2, 3, 4... letters; the longest w
 /** A valid word: one short pluck. The more letters, the higher it sits. */
 export const word: Voice<[letters: number]> = (ctx, out, at, letters) => {
   const rung = Math.min(Math.max(letters, 2) - 2, LADDER.length - 1)
-  note(ctx, out, at, LADDER[rung], { length: 0.2 })
+  note(ctx, out, at, LADDER[rung], { length: 0.28, peak: 0.58 })
 }
 
-/** A word that doesn't count: a low, soft "bloop" gliding down. It is not a buzzer. */
+/**
+ * A word that doesn't count: a soft "bloop" gliding down. It is not a buzzer. It
+ * starts at 330 Hz, because phone speakers barely play anything lower.
+ */
 export const wrong: Voice = (ctx, out, at) => {
-  note(ctx, out, at, 220, { length: 0.2, peak: 0.42, glideTo: 165 })
+  note(ctx, out, at, 330, { length: 0.24, peak: 0.5, glideTo: 247 })
 }
 
 /** A cleared round: four rising notes. */

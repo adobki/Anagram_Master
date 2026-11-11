@@ -29,7 +29,7 @@
   import { buzzBad, buzzCleared, buzzWarn } from '../lib/haptics'
   import { shuffled, tilesOf, type Tile as TileData } from '../lib/letters'
   import { ms } from '../lib/motion'
-  import { sound } from '../lib/sound'
+  import { sound } from '../lib/sound.svelte'
   import { settings } from '../lib/settings.svelte'
   import { ui } from '../lib/ui.svelte'
 
@@ -156,6 +156,11 @@
         sound.countdown(time)
       }
     })
+  })
+
+  // Keep the phone's audio output awake, so the start of a word sound isn't lost.
+  $effect(() => {
+    if (settings.sound) return sound.hold()
   })
 
   // Keep the screen from sleeping while this screen is showing (if the player wants that).

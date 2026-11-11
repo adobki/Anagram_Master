@@ -5,7 +5,7 @@
   import { slide } from 'svelte/transition'
   import { ms } from '../lib/motion'
   import { settings } from '../lib/settings.svelte'
-  import { EFFECTS, preview } from '../lib/sound'
+  import { audio, EFFECTS, preview } from '../lib/sound.svelte'
   import IconButton from './IconButton.svelte'
   import Switch from './Switch.svelte'
 
@@ -73,6 +73,7 @@
         {/each}
       </ul>
 
+      {#if !audio.running}<p class="note">Sound starts after your next tap, which your browser needs first.</p>{/if}
       <p class="note">Your device's own volume and silent switch still apply.</p>
     </div>
   {/if}

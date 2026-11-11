@@ -13,7 +13,7 @@
   import { network } from './lib/network.svelte'
   import { player } from './lib/player.svelte'
   import { settings } from './lib/settings.svelte'
-  import { sound } from './lib/sound'
+  import { sound } from './lib/sound.svelte'
   import { toasts } from './lib/toast.svelte'
   import { ui } from './lib/ui.svelte'
   import About from './screens/About.svelte'
