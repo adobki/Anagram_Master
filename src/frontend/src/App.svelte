@@ -117,7 +117,7 @@
     }
     leaving = false
     menu = 'closed'
-    ui.settingsOpen = false
+    ui.closeSettings()
     const hash = location.hash.slice(1) as Screen
     const restorable = hash === 'scores' || hash === 'help' || hash === 'about' || (hash === 'over' && result)
     screen = restorable ? hash : 'home'
@@ -131,8 +131,8 @@
    */
   function gameBack() {
     if (ui.settingsOpen) {
-      // Back closes Settings and nothing else: the game's entry goes back and the menu stays shut.
-      ui.settingsOpen = false
+      // Back closes Settings and nothing else (or asks about an unsaved name): the game's entry goes back and the menu stays shut.
+      ui.closeSettings()
       history.pushState(gameEntry, '', location.pathname)
       return
     }

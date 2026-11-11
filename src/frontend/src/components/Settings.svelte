@@ -1,8 +1,10 @@
 <script lang="ts">
+  import Check from '@lucide/svelte/icons/check'
   import Clock from '@lucide/svelte/icons/clock'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
   import Trash2 from '@lucide/svelte/icons/trash-2'
-  import { onDestroy } from 'svelte'
+  import Undo2 from '@lucide/svelte/icons/undo-2'
+  import { onDestroy, untrack } from 'svelte'
   import { prefersReducedMotion } from 'svelte/motion'
   import { sparkle } from '../lib/confetti'
   import { canKeepAwake, canVibrate } from '../lib/device'
@@ -55,9 +57,64 @@
     return `${Math.floor(time / 60)}:${String(time % 60).padStart(2, '0')}`
   })
 
-  // The name is saved as it's typed, as long as it is a valid one.
+  // The name is edited here as a draft, and only saved by Apply, so a stray keystroke can't rename the player.
+  let draft = $state(player.name)
   let touched = $state(false)
-  const nameError = $derived(touched && !player.valid ? `Use at least ${MIN_NAME_LENGTH} characters.` : undefined)
+  let saved = $state(false)
+  let savedTimer: ReturnType<typeof setTimeout> | undefined
+  const trimmedDraft = $derived(draft.trim())
+  const draftValid = $derived(trimmedDraft.length >= MIN_NAME_LENGTH)
+  const dirty = $derived(trimmedDraft !== player.trimmed)
+  const nameError = $derived(touched && dirty && !draftValid ? `Use at least ${MIN_NAME_LENGTH} characters.` : undefined)
+  let warning = $state(false)
+
+  // Each time Settings opens, start from the saved name.
+  $effect(() => {
+    if (ui.settingsOpen) {
+      untrack(() => {
+        draft = player.name
+        touched = false
+        saved = false
+      })
+    }
+  })
+
+  function apply() {
+    if (!draftValid) return
+    player.name = trimmedDraft
+    draft = trimmedDraft
+    saved = true
+    clearTimeout(savedTimer)
+    savedTimer = setTimeout(() => (saved = false), 2500)
+  }
+
+  function revert() {
+    draft = player.name
+    touched = false
+  }
+
+  /** Asked before Settings closes. With an unapplied name, warn first. */
+  function canClose() {
+    if (inGame || !dirty) return true
+    warning = true
+    return false
+  }
+  $effect(() => {
+    ui.settingsGuard = canClose
+    return () => (ui.settingsGuard = null)
+  })
+
+  function discardAndClose() {
+    revert()
+    warning = false
+    ui.settingsOpen = false
+  }
+
+  function saveAndClose() {
+    apply()
+    warning = false
+    ui.settingsOpen = false
+  }
 
   let clearing = $state(false)
 
@@ -75,10 +132,13 @@
     settings.reset()
     theme.set('system')
   }
-  onDestroy(() => clearTimeout(disarm))
+  onDestroy(() => {
+    clearTimeout(disarm)
+    clearTimeout(savedTimer)
+  })
 </script>
 
-<Dialog bind:open={ui.settingsOpen} title="Settings" placement="right">
+<Dialog bind:open={ui.settingsOpen} title="Settings" placement="right" {canClose}>
   {#snippet top()}
     {#if inGame && game?.state.status}
       <p class="clock" role="timer">
@@ -99,12 +159,36 @@
         autocapitalize="words"
         enterkeyhint="done"
         spellcheck="false"
-        bind:value={player.name}
+        bind:value={draft}
         error={nameError}
-        hint="Used when you start a game. {MIN_NAME_LENGTH}–{MAX_NAME_LENGTH} characters, shown on the leaderboard."
-        oninput={() => (touched = true)}
-        onkeydown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
-      />
+        hint={saved
+          ? 'Saved. Your next game uses this name.'
+          : dirty && draftValid
+            ? 'Tap the tick to save this name.'
+            : `Used when you start a game. ${MIN_NAME_LENGTH}–${MAX_NAME_LENGTH} characters, shown on the leaderboard.`}
+        oninput={() => {
+          touched = true
+          saved = false
+        }}
+        onkeydown={(event) => {
+          if (event.key !== 'Enter') return
+          if (draftValid && dirty) apply()
+          event.currentTarget.blur()
+        }}
+      >
+        {#snippet action()}
+          {#if dirty}
+            <button type="button" class="mini" aria-label="Undo the change" title="Undo the change" onclick={revert}>
+              <Undo2 size="1rem" />
+            </button>
+            {#if draftValid}
+              <button type="button" class="mini apply" aria-label="Apply name" title="Apply name" onclick={apply}>
+                <Check size="1.125rem" />
+              </button>
+            {/if}
+          {/if}
+        {/snippet}
+      </TextField>
     </section>
   {/if}
 
@@ -266,6 +350,15 @@
   </footer>
 </Dialog>
 
+<Dialog bind:open={warning} title="Save your name?">
+  <p>You changed your name to “{trimmedDraft}” but haven't applied it. Closing Settings will discard it.</p>
+  {#snippet actions()}
+    <Button variant="secondary" onclick={() => (warning = false)}>Go back</Button>
+    <Button variant="ghost" onclick={discardAndClose}>Discard</Button>
+    {#if draftValid}<Button class="span" onclick={saveAndClose}>Save and close</Button>{/if}
+  {/snippet}
+</Dialog>
+
 <Dialog bind:open={clearing} title="Clear my data?">
   <p>
     This removes your name, best score and settings from this device. Your saved game and the leaderboard aren't
@@ -278,6 +371,29 @@
 </Dialog>
 
 <style>
+  .mini {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .mini:active {
+    background: var(--surface-2);
+  }
+
+  .mini.apply {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
   .clock {
     display: grid;
     grid-template-columns: auto 1fr;

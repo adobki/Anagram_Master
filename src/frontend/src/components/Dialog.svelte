@@ -10,6 +10,11 @@
     placement?: 'center' | 'right'
     /** Esc or the device's back button asked to dismiss (not the backdrop or your own buttons). */
     oncancel?: () => void
+    /**
+     * Asked before the close button, the backdrop, Esc or the back button close it. Return false to keep it
+     * open (typically after showing a warning of your own).
+     */
+    canClose?: () => boolean
     /** Right placement only: stays fixed under the title, outside the scrolling body. */
     top?: Snippet
     children: Snippet
@@ -17,7 +22,12 @@
     actions?: Snippet
   }
 
-  let { open = $bindable(), title, placement = 'center', oncancel, top, children, actions }: Props = $props()
+  let { open = $bindable(), title, placement = 'center', oncancel, canClose, top, children, actions }: Props = $props()
+
+  /** A close the player asked for (not one the code made): ask the guard first. */
+  function ask() {
+    if (!canClose || canClose()) open = false
+  }
 
   let dialog = $state<HTMLDialogElement>()
   let scroll = $state<HTMLElement>()
@@ -39,10 +49,13 @@
   class={placement}
   bind:this={dialog}
   aria-labelledby={id}
-  oncancel={() => oncancel?.()}
+  oncancel={(event) => {
+    if (canClose && !canClose()) event.preventDefault()
+    else oncancel?.()
+  }}
   onclose={() => (open = false)}
   onclick={(event) => {
-    if (event.target === dialog) open = false
+    if (event.target === dialog) ask()
   }}
 >
   {#if placement === 'right'}
@@ -50,7 +63,7 @@
       <!-- The close button is the first thing that can take focus, so opening the sheet never raises a phone keyboard. -->
       <header>
         <h2 {id}>{title}</h2>
-        <IconButton label="Close" onclick={() => (open = false)}><X size="1.25rem" /></IconButton>
+        <IconButton label="Close" onclick={ask}><X size="1.25rem" /></IconButton>
       </header>
       {#if top}<div class="top">{@render top()}</div>{/if}
       <div class="scroll" bind:this={scroll}>{@render children()}</div>
