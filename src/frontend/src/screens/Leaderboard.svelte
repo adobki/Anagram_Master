@@ -2,14 +2,18 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import RotateCw from '@lucide/svelte/icons/rotate-cw'
   import Trophy from '@lucide/svelte/icons/trophy'
+  import WifiOff from '@lucide/svelte/icons/wifi-off'
+  import { onMount } from 'svelte'
   import { fly } from 'svelte/transition'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
   import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
-  import { api, type ScoreEntry } from '../lib/api'
+  import type { ScoreEntry } from '../lib/api'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { ms } from '../lib/motion'
+  import { network } from '../lib/network.svelte'
+  import { scores } from '../lib/scores.svelte'
 
   interface Props {
     /** A just-finished game to highlight, if it made the board. */
@@ -20,17 +24,28 @@
 
   let { mine = null, onback, onplay }: Props = $props()
 
-  let request = $state(api.scores())
-  const reload = () => (request = api.scores())
+  // Show what was kept from last time at once, and refresh it.
+  onMount(() => void scores.refresh())
+  // Back online after a failed refresh: try again by itself.
+  let wasOnline = network.online
+  $effect(() => {
+    const online = network.online
+    if (online && !wasOnline && scores.status === 'failed') void scores.refresh()
+    wasOnline = online
+  })
 
   const day = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
   const when = (date: string) => {
     const parsed = new Date(date)
     return Number.isNaN(parsed.getTime()) ? '' : day.format(parsed)
   }
+  const stamp = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+  const kept = $derived(scores.savedAt ? stamp.format(scores.savedAt) : '')
+  const problem = $derived(network.online ? "Couldn't refresh the leaderboard." : "You're offline.")
+
   // Highlight only the first entry that matches the player's game.
-  const mineIndex = (scores: ScoreEntry[]) =>
-    mine ? scores.findIndex(([score, name]) => score === mine.score && name === mine.name) : -1
+  const mineIndex = (list: ScoreEntry[]) =>
+    mine ? list.findIndex(([score, name]) => score === mine.score && name === mine.name) : -1
 </script>
 
 <div class="screen">
@@ -41,15 +56,20 @@
   </ScreenBar>
 
   <main>
-    {#await request}
-      <ol class="board loading" aria-label="Loading scores">
-        {#each { length: 8 } as _, i (i)}<li class="skeleton"></li>{/each}
-      </ol>
-    {:then scores}
-      {#if scores.length}
-        {@const highlight = mineIndex(scores)}
+    {#if scores.list}
+      {#if scores.status === 'refreshing'}
+        <p class="note" role="status"><span class="spinner" aria-hidden="true"></span> Refreshing…</p>
+      {:else if scores.status === 'failed'}
+        <div class="note warn" role="status">
+          <WifiOff size="1rem" />
+          <span>{problem} Showing scores from {kept}.</span>
+          <button type="button" class="retry" onclick={() => scores.refresh()}>Try again</button>
+        </div>
+      {/if}
+      {#if scores.list.length}
+        {@const highlight = mineIndex(scores.list)}
         <ol class="board">
-          {#each scores as [score, name, date], i (i)}
+          {#each scores.list as [score, name, date], i (i)}
             <li
               class:gold={i === 0}
               class:silver={i === 1}
@@ -72,12 +92,18 @@
           <p>No scores yet. Score {MIN_LEADERBOARD_SCORE} or more in a game to be the first.</p>
         </div>
       {/if}
-    {:catch}
+    {:else if scores.status === 'failed'}
       <div class="empty">
-        <p>Couldn't load the leaderboard.</p>
-        <Button variant="secondary" onclick={reload}><RotateCw size="1.125rem" /> Try again</Button>
+        <WifiOff size="2.5rem" />
+        <p>{problem} The leaderboard hasn't been loaded on this device yet.</p>
+        <Button variant="secondary" onclick={() => scores.refresh()}><RotateCw size="1.125rem" /> Try again</Button>
       </div>
-    {/await}
+    {:else}
+      <div class="empty" role="status" aria-live="polite">
+        <span class="spinner big" aria-hidden="true"></span>
+        <p><strong>Loading the leaderboard…</strong></p>
+      </div>
+    {/if}
   </main>
 
   <footer>
@@ -86,8 +112,6 @@
 </div>
 
 <style>
-
-
   h1 {
     font-size: var(--text-lg);
     font-weight: 700;
@@ -188,14 +212,56 @@
     font-weight: 700;
   }
 
-  .skeleton {
-    height: 3.75rem;
-    animation: pulse 1.2s ease-in-out infinite;
+  .note {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-2);
   }
 
-  @keyframes pulse {
-    50% {
-      opacity: 0.45;
+  .note.warn {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--warn-soft);
+    color: var(--text);
+  }
+
+  .note.warn :global(svg) {
+    flex: none;
+    color: var(--warn);
+  }
+
+  .retry {
+    margin-left: auto;
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  .spinner {
+    width: 0.875rem;
+    height: 0.875rem;
+    border: 2px solid var(--surface-2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+
+  .spinner.big {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-width: 3px;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
   }
 
