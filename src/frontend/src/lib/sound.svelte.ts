@@ -22,7 +22,7 @@ import * as voices from './sound-voices'
 /** The loudest the master volume lets a note get, as a fraction of full scale. */
 const CEILING = 0.8
 /** Seconds between asking for a note and it starting, so a waking output has time to be ready. */
-const LEAD_IN = 0.03
+const LEAD_IN = 0.05
 
 export const EFFECTS: { id: Effect; label: string; hint: string }[] = [
   { id: 'word', label: 'Correct word', hint: 'A soft note. Longer words sound higher.' },
@@ -110,7 +110,7 @@ function hold(): () => void {
   if (!ctx) return () => {}
   const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate)
   const data = buffer.getChannelData(0)
-  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.00002
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.0004
   const source = ctx.createBufferSource()
   source.buffer = buffer
   source.loop = true

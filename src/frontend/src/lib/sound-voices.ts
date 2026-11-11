@@ -25,13 +25,16 @@ interface NoteOptions {
   peak?: number
   /** Slide to this pitch over the note's length. */
   glideTo?: number
+  /** Seconds to stay at the peak before fading. A plain decay from the peak is gone in a few tens of milliseconds. */
+  hold?: number
 }
 
 /** One soft note: a sine with a quiet octave above it, an 8 ms attack and an exponential decay. */
-function note(ctx: BaseAudioContext, out: AudioNode, at: number, freq: number, { length = 0.22, peak = 0.5, glideTo }: NoteOptions = {}) {
+function note(ctx: BaseAudioContext, out: AudioNode, at: number, freq: number, { length = 0.22, peak = 0.5, glideTo, hold = 0 }: NoteOptions = {}) {
   const envelope = ctx.createGain()
   envelope.gain.setValueAtTime(0.0001, at)
   envelope.gain.exponentialRampToValueAtTime(peak, at + 0.008)
+  if (hold) envelope.gain.setValueAtTime(peak, at + 0.008 + hold)
   envelope.gain.exponentialRampToValueAtTime(0.0001, at + length)
   envelope.connect(out)
   for (const [multiple, level] of [
@@ -57,15 +60,17 @@ const LADDER = [C5, D5, E5, G5, A5, C6, D6] // 2, 3, 4... letters; the longest w
 /** A valid word: one short pluck. The more letters, the higher it sits. */
 export const word: Voice<[letters: number]> = (ctx, out, at, letters) => {
   const rung = Math.min(Math.max(letters, 2) - 2, LADDER.length - 1)
-  note(ctx, out, at, LADDER[rung], { length: 0.28, peak: 0.58 })
+  note(ctx, out, at, LADDER[rung], { length: 0.34, peak: 0.5, hold: 0.07 })
 }
 
 /**
- * A word that doesn't count: a soft "bloop" gliding down. It is not a buzzer. It
- * starts at 330 Hz, because phone speakers barely play anything lower.
+ * A word that doesn't count: two soft notes stepping down ("uh-oh"). It is not
+ * a buzzer. Nothing is below about 230 Hz, because small speakers barely play
+ * it, and each note holds its level a moment so it isn't over before it's heard.
  */
 export const wrong: Voice = (ctx, out, at) => {
-  note(ctx, out, at, 330, { length: 0.24, peak: 0.5, glideTo: 247 })
+  note(ctx, out, at, 392, { length: 0.2, peak: 0.38, glideTo: 330, hold: 0.06 })
+  note(ctx, out, at + 0.13, 294, { length: 0.26, peak: 0.38, glideTo: 233, hold: 0.07 })
 }
 
 /** A cleared round: four rising notes. */
