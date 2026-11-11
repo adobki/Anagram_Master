@@ -3,6 +3,7 @@
   import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark'
   import CircleStop from '@lucide/svelte/icons/circle-stop'
   import Clock from '@lucide/svelte/icons/clock'
+  import LogOut from '@lucide/svelte/icons/log-out'
   import HistoryIcon from '@lucide/svelte/icons/rotate-ccw-clock'
   import Info from '@lucide/svelte/icons/info'
   import Play from '@lucide/svelte/icons/play'
@@ -14,15 +15,19 @@
   import { cubicInOut } from 'svelte/easing'
   import logo from '../assets/logo.png'
   import Button from '../components/Button.svelte'
+  import IconButton from '../components/IconButton.svelte'
   import Dialog from '../components/Dialog.svelte'
   import TextField from '../components/TextField.svelte'
   import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
   import type { GameState } from '../lib/api'
+  import { fullscreen } from '../lib/fullscreen.svelte'
+  import { MAX_ACTIVE } from '../lib/history.svelte'
   import { network } from '../lib/network.svelte'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { reducedMotion } from '../lib/motion'
   import { player } from '../lib/player.svelte'
+  import { toasts } from '../lib/toast.svelte'
 
   interface Props {
     /** A game in progress that can be resumed, if any. */
@@ -98,6 +103,16 @@
     onstart(player.trimmed)
   }
 
+  /**
+   * Exit: leave full screen and close the window. A page can only close a window it opened (an installed app's
+   * window usually counts); otherwise the browser refuses, and the player is told they can close it themselves.
+   */
+  async function exit() {
+    await fullscreen.leave()
+    window.close()
+    setTimeout(() => toasts.show('You can close this window now.', 4000), 400)
+  }
+
   /** Start a new game while another is running (it stays resumable from History). */
   function startAnyway() {
     tried = true
@@ -125,7 +140,7 @@
 
 <div class="screen">
   <ScreenBar>
-    <span></span>
+    <IconButton label="Exit" onclick={exit}><LogOut size="1.25rem" /></IconButton>
     <SettingsButton />
   </ScreenBar>
 
@@ -229,7 +244,7 @@
         You still have a game in progress: round {saved.round} of {saved.rounds_limit}, {saved.score}
         {saved.score === 1 ? 'point' : 'points'}. Finish it first, so its score can reach the leaderboard.
         {#if canReturn}
-          If you start another, you can come back to it from History.
+          If you start another, you can come back to it from History (up to {MAX_ACTIVE} games at a time).
         {:else}
           It was started before History existed, so it can't be resumed once you start another.
         {/if}

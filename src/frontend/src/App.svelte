@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { fade } from 'svelte/transition'
+  import Button from './components/Button.svelte'
+  import Dialog from './components/Dialog.svelte'
   import OfflineBanner from './components/OfflineBanner.svelte'
   import Toaster from './components/Toaster.svelte'
   import Settings from './components/Settings.svelte'
@@ -9,7 +11,7 @@
   import { createApiGame, findSavedGame } from './lib/api-game.svelte'
   import { loadBest, recordScore } from './lib/best'
   import { MIN_LEADERBOARD_SCORE, type GameController } from './lib/game'
-  import { games } from './lib/history.svelte'
+  import { games, MAX_ACTIVE } from './lib/history.svelte'
   import { ms } from './lib/motion'
   import { network } from './lib/network.svelte'
   import { player } from './lib/player.svelte'
@@ -175,8 +177,15 @@
   /** In-app back: the browser's back if we came from another screen, else home (e.g. opened via a #scores link). */
   const back = () => (history.state?.inApp ? history.back() : go('home', true))
 
+  /** Shown when starting a game would go over MAX_ACTIVE games in progress. */
+  let capped = $state(false)
+
   async function newGame(name: string) {
     if (starting) return
+    if (games.activeCount(game?.state.status ? game.state.session_id : null) >= MAX_ACTIVE) {
+      capped = true
+      return
+    }
     starting = true
     try {
       // A game in progress isn't ended: it stays in History, and can be resumed from there.
@@ -340,6 +349,24 @@
 {/key}
   </div>
 </div>
+
+<Dialog bind:open={capped} title="Too many games in progress">
+  <p>
+    You have {MAX_ACTIVE} games in progress, which is the most at once. End one of them, then start a new game. History
+    lists them all.
+  </p>
+  {#snippet actions()}
+    <Button variant="secondary" onclick={() => (capped = false)}>Not now</Button>
+    <Button
+      onclick={() => {
+        capped = false
+        go('history', screen === 'history')
+      }}
+    >
+      Open History
+    </Button>
+  {/snippet}
+</Dialog>
 
 <Settings {game} inGame={screen === 'game'} />
 <Toaster />

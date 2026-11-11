@@ -4,9 +4,11 @@
     options: { value: T; label: string }[]
     value: T
     hint?: string
+    /** Keep the label for screen readers only (the choices explain themselves). */
+    hideLabel?: boolean
   }
 
-  let { label, options, value = $bindable(), hint }: Props = $props()
+  let { label, options, value = $bindable(), hint, hideLabel = false }: Props = $props()
   const id = $props.id()
 
   let group: HTMLElement
@@ -24,7 +26,7 @@
 </script>
 
 <div class="field">
-  <span class="label" id="{id}-label">{label}</span>
+  <span class="label" class:sr={hideLabel} id="{id}-label">{label}</span>
   <div class="group" role="radiogroup" aria-labelledby="{id}-label" bind:this={group}>
     {#each options as option (option.value)}
       {@const chosen = value === option.value}
@@ -52,6 +54,15 @@
 
   .label {
     font-weight: 600;
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .group {

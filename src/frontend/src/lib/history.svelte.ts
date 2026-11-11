@@ -16,6 +16,8 @@ import type { GameState } from './api'
 const KEY = 'am-games'
 /** How many finished games to keep. */
 const KEEP_FINISHED = 30
+/** How many games may be in progress at once. Starting another has to wait until one is ended. */
+export const MAX_ACTIVE = 3
 
 export interface SavedGame {
   /** The server's session id, unique per game. */
@@ -45,6 +47,14 @@ class History {
 
   get any() {
     return this.list.length > 0
+  }
+
+  /**
+   * Games in progress that count against MAX_ACTIVE: the ones that can be ended from History (they have a
+   * token), plus the one that is current right now.
+   */
+  activeCount(currentId?: string | null) {
+    return this.list.filter((g) => !g.over && (g.token || g.id === currentId)).length
   }
 
   get(id: string): SavedGame | undefined {

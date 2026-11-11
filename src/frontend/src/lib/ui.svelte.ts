@@ -11,6 +11,7 @@ class Ui {
 
   /** Close Settings, unless it has unsaved changes it wants to warn about. Returns whether it closed. */
   closeSettings() {
+    if (!this.settingsOpen) return true // nothing to close, so nothing to warn about
     if (this.settingsGuard && !this.settingsGuard()) return false
     this.settingsOpen = false
     return true

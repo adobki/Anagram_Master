@@ -34,6 +34,8 @@ class FullscreenState {
   active = $state(isActive())
 
   #unloading = false
+  /** The player is exiting the app: leaving full screen isn't a reason to ask for it back. */
+  #quitting = false
   #waiting = false
 
   constructor() {
@@ -43,7 +45,7 @@ class FullscreenState {
       const was = this.active
       this.active = isActive()
       // It ended (Esc, the back gesture, another app). The switch is still on, so go back in on the next tap.
-      if (was && !this.active && !this.#unloading && settings.fullscreen) this.#startOnNextTap()
+      if (was && !this.active && !this.#unloading && !this.#quitting && settings.fullscreen) this.#startOnNextTap()
     }
     doc.addEventListener('fullscreenchange', changed)
     doc.addEventListener('webkitfullscreenchange', changed)
@@ -90,6 +92,13 @@ class FullscreenState {
     } catch {
       // Not allowed just now (no tap before it, or the browser said no).
     }
+  }
+
+  /** Leave full screen because the player is exiting the app (the preference is kept for the next time it opens). */
+  async leave() {
+    this.#quitting = true
+    setTimeout(() => (this.#quitting = false), 2000)
+    await this.exit()
   }
 
   async exit() {
