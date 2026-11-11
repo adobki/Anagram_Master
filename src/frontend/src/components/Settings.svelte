@@ -128,7 +128,7 @@
       {#if fullscreen.supported}
         <Switch
           label="Full screen"
-          hint="Hides the browser's bars. Browsers only allow it after a tap, so it starts on your first tap each time you open the app."
+          hint="Hides the browser's bars. It stays on until you turn it off. Browsers only allow it after a tap, so it returns on your next tap after you leave it."
           bind:checked={settings.fullscreen}
           onchange={(on) => on && fullscreen.enter()}
         />

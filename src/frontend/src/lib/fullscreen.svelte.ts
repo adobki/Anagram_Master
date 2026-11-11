@@ -2,16 +2,18 @@
  * Full screen, for the browsers that allow it: computers, Android, iPads. (Not
  * iPhones, which only do it for video; the switch is left out there.)
  *
- * The Settings switch is the player's preference, and this keeps it true to
- * what is on screen:
+ * The Settings switch is a standing preference: it stays on until the player
+ * turns it off. A browser only starts full screen from a tap or key press, so:
  *   - switching it on starts full screen at once (from the tap on the switch);
- *   - a browser only starts full screen from a tap or key press, so when the
- *     app opens with it on, it starts on the first tap or key press;
- *   - leaving full screen yourself (Esc, the back gesture) switches it off,
- *     so the app doesn't keep pulling you back in;
+ *   - whenever the page isn't full screen and the switch is on (the app just
+ *     opened, Esc or the back gesture left it, another app was in front), the
+ *     next tap or key press goes back in, which is how it follows the player
+ *     from screen to screen and into a game;
+ *   - taps inside Settings don't, so the switch can still be turned off;
  *   - switching it off, or resetting settings, leaves full screen.
  */
 import { settings } from './settings.svelte'
+import { ui } from './ui.svelte'
 
 type FullscreenDocument = Document & {
   webkitFullscreenEnabled?: boolean
@@ -40,11 +42,8 @@ class FullscreenState {
     const changed = () => {
       const was = this.active
       this.active = isActive()
-      if (!was || this.active || this.#unloading) return
-      // It ended. If the player did it (Esc, the back gesture), take that as "off". If the page just went
-      // to the background, which some phones treat as leaving full screen, it's still wanted: go back in on the next tap.
-      if (document.visibilityState === 'visible') settings.fullscreen = false
-      else this.#startOnNextTap()
+      // It ended (Esc, the back gesture, another app). The switch is still on, so go back in on the next tap.
+      if (was && !this.active && !this.#unloading && settings.fullscreen) this.#startOnNextTap()
     }
     doc.addEventListener('fullscreenchange', changed)
     doc.addEventListener('webkitfullscreenchange', changed)
@@ -76,6 +75,7 @@ class FullscreenState {
     }
     const attempt = async () => {
       if (!settings.fullscreen || this.active) return stop()
+      if (ui.settingsOpen) return // someone is in Settings, maybe about to switch it off
       await this.enter() // asked for synchronously, while the tap still counts
       if (this.active) stop()
     }
