@@ -300,7 +300,9 @@
           {#if update.ready}
             {update.elsewhere
               ? 'Updated in another window. Reload to use it.'
-              : update.waiting
+              : update.critical
+                ? 'An important update is ready. It installs by itself soon.'
+                : update.waiting
                 ? `Version ${update.waiting} is ready.`
                 : 'A new version is ready.'}
           {:else if update.busy}

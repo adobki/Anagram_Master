@@ -15,6 +15,7 @@
   import { settings } from './lib/settings.svelte'
   import { sound } from './lib/sound.svelte'
   import { toasts } from './lib/toast.svelte'
+  import { update } from './lib/update.svelte'
   import { ui } from './lib/ui.svelte'
   import About from './screens/About.svelte'
   import Game from './screens/Game.svelte'
@@ -80,6 +81,11 @@
     const online = network.online
     if (online && !wasOnline && lookup === 'failed') void check()
     wasOnline = online
+  })
+
+  // A critical update installs itself once the player is on a screen that isn't a game.
+  $effect(() => {
+    update.applyIfCritical(screen, ui.settingsOpen)
   })
 
   let scroller: HTMLElement

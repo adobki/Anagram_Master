@@ -19,6 +19,8 @@
     <p>
       {#if update.elsewhere}
         Anagram Master was updated in another window. Reload to use it.
+      {:else if update.critical}
+        An important update{update.waiting ? ` (${update.waiting})` : ''} is ready. It installs the next time you leave a game.
       {:else if update.waiting}
         Version {update.waiting} is ready.
       {:else}

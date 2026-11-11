@@ -10,10 +10,17 @@
  *     and `public/sw-claim.js` for a page loaded without it), because a new
  *     version only waits while a page is using the current one;
  *   - this window reloads only after Update was pressed in it.
+ * The one exception is a critical update (a security fix, say): the version
+ * list in /version.json says from which version on an update is critical.
+ * The banner still appears, but if it is dismissed, or the player moves on to
+ * another screen, the update installs by itself the next time the app is on a
+ * screen that isn't a game (`applyIfCritical`).
  * One thing remains by design: with every window closed, nothing is left to
  * wait for, so the next open starts the version that was already downloaded.
  */
 import { useRegisterSW } from 'virtual:pwa-register/svelte'
+import { appVersion } from './version'
+import { compareVersions } from './version-format'
 
 const HOUR = 60 * 60 * 1000
 /** How soon a quiet check may repeat. About runs one every time it opens. */
@@ -30,6 +37,10 @@ class UpdateState {
   elsewhere = $state(false)
   /** The waiting version's number, once known. */
   waiting = $state<string | null>(null)
+  /** The oldest version that may keep running, from /version.json: anything older must update. */
+  criticalSince = $state<string | null>(null)
+  /** The waiting update is a critical one for this device. */
+  critical = $derived(!!this.criticalSince && compareVersions(appVersion, this.criticalSince) < 0)
   /** A check is running, or a version it found is still installing. */
   busy = $state(false)
   /** What the last button-press check found. */
@@ -41,6 +52,11 @@ class UpdateState {
   #lastCheck = 0
   /** The player pressed Update in this window. */
   #applying = false
+  /** "Later" was pressed for a critical update. */
+  #dismissed = false
+  /** The screen the player was on when a critical update was found (or dismissed): it installs once they leave it. */
+  #foundOn: string | null = null
+  #lastScreen: string | null = null
 
   constructor() {
     const { needRefresh, updateServiceWorker } = useRegisterSW({
@@ -58,6 +74,7 @@ class UpdateState {
       this.ready = value
       if (value) {
         this.elsewhere = false // a version is waiting, which is a fresh update
+        this.#dismissed = false
         void this.#readVersion()
       }
     })
@@ -90,6 +107,7 @@ class UpdateState {
       const reply = await fetch('/version.json', { cache: 'no-store' })
       const data = await reply.json()
       this.waiting = typeof data.version === 'string' ? data.version : null
+      this.criticalSince = typeof data.criticalSince === 'string' ? data.criticalSince : null
     } catch {
       // Keep the plain message.
     }
@@ -146,8 +164,24 @@ class UpdateState {
     setTimeout(() => location.reload(), TAKEOVER_WAIT)
   }
 
+  /**
+   * A critical update installs by itself, but never in the middle of a game (or on the results right after
+   * one). Called as the player moves between screens: it applies as soon as they are on a different screen
+   * than the one they were on when the update arrived (or when they pressed Later), so pressing Later never
+   * reloads the page under them, but the next screen they open does.
+   */
+  applyIfCritical(screen: string, busy = false) {
+    this.#lastScreen = screen
+    if (!(this.ready || this.#dismissed) || !this.critical || this.#applying) return
+    this.#foundOn ??= screen
+    if (screen === 'game' || screen === 'over' || busy) return
+    if (screen !== this.#foundOn) this.apply()
+  }
+
   /** "Later": hide the banner until the next version is found. */
   dismiss() {
+    this.#dismissed = true
+    this.#foundOn = this.#lastScreen
     this.#needRefresh.set(false)
     this.ready = false
   }

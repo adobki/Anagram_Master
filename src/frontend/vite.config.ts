@@ -11,6 +11,8 @@ import { displayVersion } from './src/lib/version-format.ts'
 const API = 'http://127.0.0.1:5555'
 
 // https://vite.dev/config/
+const criticalSince = (pkg as { criticalSince?: string }).criticalSince
+
 export default defineConfig({
   plugins: [
     svelte(),
@@ -22,7 +24,11 @@ export default defineConfig({
         this.emitFile({
           type: 'asset',
           fileName: 'version.json',
-          source: JSON.stringify({ version: displayVersion(pkg.version) }),
+          // criticalSince: devices older than this must update (see scripts/stamp-version.mjs).
+          source: JSON.stringify({
+            version: displayVersion(pkg.version),
+            ...(criticalSince ? { criticalSince: displayVersion(criticalSince) } : {}),
+          }),
         })
       },
     },

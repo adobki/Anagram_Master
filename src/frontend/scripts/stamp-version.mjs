@@ -8,6 +8,13 @@
 // (09:05 is stored as 905). src/lib/version-format.ts turns that back into the
 // text people see.
 //
+// `npm run stamp -- --critical` also marks this version as a critical update:
+// it writes "criticalSince" (this version) into package.json. Every device
+// running something older then installs the update by itself, the next time it
+// is on a screen that isn't a game. Ordinary stamps leave the mark alone, so a
+// later normal version still carries it, and a device that skipped the
+// critical one is still caught.
+//
 // "Earlier version" means the one stored in the last commit (HEAD), so running
 // this twice before one commit gives the same date part both times.
 
@@ -60,6 +67,18 @@ replaceVersion(path.join(root, 'package.json'), /^(\s*"version":\s*")[^"]*(")/m,
 const lock = path.join(root, 'package-lock.json')
 replaceVersion(lock, /^(\s*"version":\s*")[^"]*(")/m, version)
 replaceVersion(lock, /("packages":\s*\{\s*"":\s*\{[^}]*?"version":\s*")[^"]*(")/s, version)
+
+if (process.argv.includes('--critical')) {
+  const file = path.join(root, 'package.json')
+  const text = readFileSync(file, 'utf8')
+  const mark = /^(\s*"criticalSince":\s*")[^"]*(")/m
+  writeFileSync(
+    file,
+    mark.test(text)
+      ? text.replace(mark, `$1${version}$2`)
+      : text.replace(/^(\s*"version":\s*"[^"]*",?)(\r?\n)/m, `$1$2  "criticalSince": "${version}",$2`),
+  )
+}
 
 for (const file of ['package.json', 'package-lock.json']) {
   const data = JSON.parse(readFileSync(path.join(root, file), 'utf8'))
