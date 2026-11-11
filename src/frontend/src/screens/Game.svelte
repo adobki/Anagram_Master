@@ -659,7 +659,6 @@
   }
 
   .hints {
-    display: none;
     margin-top: var(--space-1);
     font-size: var(--text-xs);
     line-height: 2;
@@ -674,12 +673,6 @@
     background: var(--surface);
     font: inherit;
     font-weight: 600;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .hints {
-      display: block;
-    }
   }
 
   .floating {
