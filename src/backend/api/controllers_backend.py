@@ -3,7 +3,7 @@
 from api.controllers_auxiliary import delete_player_id, get_player_id, \
                                       signed_response, error_handler
 from flask import jsonify, request
-from models import Game, highscores
+from models import Cypher, Game, highscores
 from utils import health
 
 
@@ -27,7 +27,8 @@ def init():
 
     try:
         game = Game(name=name)
-        return signed_response(jsonify(game.status), game.id)
+        return signed_response(jsonify(game.status), game.id,
+                               share_token=True)
     except (SyntaxError, ValueError) as err:
         print({'error': err})
         return jsonify({'error': 'Invalid name'}), 400
@@ -54,6 +55,32 @@ def status():
             print({'error': err})
             return error_handler(500)
     return jsonify({'error': 'You have no saved game'}), 403
+
+
+def resume():
+    """Sets the cookie again for a saved game, from the token the app kept
+    when the game was created (the X-Session header of /init). Returns the
+    game's status, or 401 if the token is bad or the game is already over."""
+    data = request.get_json(force=True, silent=True)
+    token = data.get('token') if isinstance(data, dict) else None
+    if not token or not isinstance(token, str):
+        return jsonify({'error': 'Expected a token'}), 400
+    try:
+        player_id = Cypher.decrypt(token)
+    except Exception:
+        return jsonify({'error': 'You have no saved game'}), 401
+    try:
+        game = Game(_id=player_id)
+        session = game.status
+        if session.get('error') or not session.get('status'):
+            return jsonify({'error': 'You have no saved game'}), 401
+        return signed_response(jsonify(session), player_id)
+    except (SyntaxError, ValueError) as err:
+        print({'error': err})
+        return jsonify({'error': 'You have no saved game'}), 401
+    except Exception as err:
+        print({'error': err})
+        return error_handler(500)
 
 
 def play():

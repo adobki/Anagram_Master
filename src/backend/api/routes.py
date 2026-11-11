@@ -4,7 +4,8 @@ from api.controllers_app import app_file, app_index
 from api.controllers_auxiliary import favicon
 from api.controllers_frontend import about, home, gameplay, onboarding, \
                                      html_scores, redirect_internal
-from api.controllers_backend import init, status, play, close, scores, api_status
+from api.controllers_backend import init, status, resume, play, close, \
+                                    scores, api_status
 
 # General/shared routes
 general_routes = [
@@ -24,6 +25,9 @@ api_routes = [
      'strict_slashes': False},
     # status route: Returns gameplay info
     {'rule': '/api/v1/status', 'view_func': status, 'methods': ['GET'],
+     'strict_slashes': False},
+    # resume route: Sets the session cookie again for a saved game's token
+    {'rule': '/api/v1/resume', 'view_func': resume, 'methods': ['POST'],
      'strict_slashes': False},
     # play route: Returns gameplay info or triggers player's actions
     {'rule': '/api/v1/play', 'view_func': play, 'methods': ['GET', 'POST'],

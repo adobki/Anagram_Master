@@ -14,13 +14,21 @@ def get_player_id(req) -> str | None:
         pass
 
 
-def signed_response(payload, player_id: str):
-    """HTTP response object with payload and encrypted player_id cookie"""
+def signed_response(payload, player_id: str, share_token: bool = False):
+    """HTTP response object with payload and encrypted player_id cookie.
+
+    The cookie is HttpOnly, so the page can't read it. With share_token the
+    same encrypted value is also sent once in an X-Session header, so the app
+    can keep it and later ask /resume to set the cookie again for that game.
+    Only the response that creates a game does this."""
     try:
         resp = make_response(payload)
         week = 60 * 60 * 24 * 7
-        resp.set_cookie(key='session', value=Cypher.encrypt(player_id),
+        token = Cypher.encrypt(player_id)
+        resp.set_cookie(key='session', value=token,
                         max_age=week, path='/', httponly=True)
+        if share_token:
+            resp.headers['X-Session'] = token
         return resp
     except Exception as err:
         return error_handler(500)
