@@ -28,8 +28,9 @@
   import Home from './screens/Home.svelte'
   import Leaderboard from './screens/Leaderboard.svelte'
   import PastGame from './screens/PastGame.svelte'
+  import Tutorial from './screens/Tutorial.svelte'
 
-  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about' | 'history' | 'past'
+  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about' | 'history' | 'past' | 'tutorial'
 
   // Each screen has a URL hash, so the browser's (and Android's) back button
   // moves between screens. #scores and #help can be linked to directly.
@@ -329,7 +330,9 @@
         />
       {/if}
     {:else if screen === 'help'}
-      <Help onback={back} onplay={play} />
+      <Help onback={back} onplay={play} ontutorial={() => go('tutorial')} />
+    {:else if screen === 'tutorial'}
+      <Tutorial onleave={back} onfinish={() => go('home', true)} onhelp={() => go('help', true)} />
     {:else if screen === 'about'}
       <About onback={back} onplay={play} />
     {:else}
@@ -342,6 +345,7 @@
         hasHistory={games.any}
         canReturn={!!game && !!games.get(game.state.session_id)?.token}
         onhistory={() => go('history')}
+        ontutorial={() => go('tutorial')}
         onstart={newGame}
         onabandon={abandon}
         oncontinue={() => go('game')}
@@ -375,7 +379,7 @@
 
 <Settings {game} inGame={screen === 'game'} />
 <Toaster />
-<UpdatePrompt hidden={screen === 'game'} />
+<UpdatePrompt hidden={screen === 'game' || screen === 'tutorial'} />
 
 <style>
   /*

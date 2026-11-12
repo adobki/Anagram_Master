@@ -174,7 +174,7 @@ class UpdateState {
     this.#lastScreen = screen
     if (!(this.ready || this.#dismissed) || !this.critical || this.#applying) return
     this.#foundOn ??= screen
-    if (screen === 'game' || screen === 'over' || busy) return
+    if (screen === 'game' || screen === 'over' || screen === 'tutorial' || busy) return
     if (screen !== this.#foundOn) this.apply()
   }
 

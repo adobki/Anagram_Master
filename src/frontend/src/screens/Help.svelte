@@ -1,13 +1,16 @@
 <script lang="ts">
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Clock from '@lucide/svelte/icons/clock'
+  import GraduationCap from '@lucide/svelte/icons/graduation-cap'
   import Hand from '@lucide/svelte/icons/hand'
   import Keyboard from '@lucide/svelte/icons/keyboard'
+  import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
   import Sparkles from '@lucide/svelte/icons/sparkles'
   import Target from '@lucide/svelte/icons/target'
   import Trophy from '@lucide/svelte/icons/trophy'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
+  import InterfaceMap from '../components/InterfaceMap.svelte'
   import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
   import { touchFirst } from '../lib/device'
@@ -17,9 +20,11 @@
   interface Props {
     onback: () => void
     onplay: () => void
+    /** Opens the practice game. */
+    ontutorial: () => void
   }
 
-  let { onback, onplay }: Props = $props()
+  let { onback, onplay, ontutorial }: Props = $props()
 </script>
 
 <div class="screen">
@@ -39,6 +44,20 @@
       <p class="example">
         From <strong>MASTER</strong>: stream, tamers, mast, team, art, me…
       </p>
+    </section>
+
+    <section>
+      <h2><LayoutDashboard size="1.25rem" /> The game screen</h2>
+      <InterfaceMap />
+    </section>
+
+    <section class="try">
+      <h2><GraduationCap size="1.25rem" /> Try it first</h2>
+      <p>
+        A short practice game with the real controls: no clock, nothing saved, and a coach beside you. You'll make words,
+        reuse them, meet the bonus for using every letter, and finish by forming the rest on your own.
+      </p>
+      <Button variant="secondary" onclick={ontutorial}>Play the tutorial</Button>
     </section>
 
     <section>

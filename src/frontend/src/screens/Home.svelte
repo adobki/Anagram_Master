@@ -17,6 +17,7 @@
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
   import Dialog from '../components/Dialog.svelte'
+  import QuickGuide from '../components/QuickGuide.svelte'
   import TextField from '../components/TextField.svelte'
   import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
@@ -26,6 +27,7 @@
   import { network } from '../lib/network.svelte'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { reducedMotion } from '../lib/motion'
+  import { guide } from '../lib/guide.svelte'
   import { player } from '../lib/player.svelte'
   import { toasts } from '../lib/toast.svelte'
 
@@ -48,6 +50,7 @@
     onabandon: () => Promise<void>
     oncontinue: () => void
     onhistory: () => void
+    ontutorial: () => void
     onleaderboard: () => void
     onhelp: () => void
     onabout: () => void
@@ -65,6 +68,7 @@
     onabandon,
     oncontinue,
     onhistory,
+    ontutorial,
     onleaderboard,
     onhelp,
     onabout,
@@ -100,7 +104,17 @@
     event.preventDefault()
     tried = true
     if (!player.valid) return
+    // The name is kept as it's typed. First, show the guide (once, or every time if the player wants it).
+    if (guide.due) return void (showGuide = true)
     onstart(player.trimmed)
+  }
+
+  let showGuide = $state(false)
+  /** However the guide is left, it counts as seen. */
+  function leaveGuide(next: () => void) {
+    guide.markSeen()
+    showGuide = false
+    next()
   }
 
   /**
@@ -224,6 +238,13 @@
     </form>
     {/if}
   </main>
+
+  <QuickGuide
+    bind:open={showGuide}
+    onstart={() => leaveGuide(() => onstart(player.trimmed))}
+    ontutorial={() => leaveGuide(ontutorial)}
+    onhelp={() => leaveGuide(onhelp)}
+  />
 
   {#if saved}
     <Dialog bind:open={confirming} title="End this game?">

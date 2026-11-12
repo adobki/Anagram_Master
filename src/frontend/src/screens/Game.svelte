@@ -47,9 +47,11 @@
      * goes home.
      */
     menu: 'closed' | 'button' | 'back'
+    /** The practice game: no skipping, and the menu talks about practice. */
+    tutorial?: boolean
   }
 
-  let { game, onend, onpause, onhelp, menu = $bindable() }: Props = $props()
+  let { game, onend, onpause, onhelp, menu = $bindable(), tutorial = false }: Props = $props()
 
   const FEEDBACK_MS = 3000
   /** Seconds the "time's up" countdown runs before the next round starts by itself. */
@@ -351,6 +353,7 @@
   // ── Skipping and the menu ────────────────────────────────────────────────
   let disarm: ReturnType<typeof setTimeout> | undefined
   async function skip() {
+    if (tutorial) return
     if (lastRound) return say({ tone: 'info', text: 'This is the last round: there is no next word' })
     if (game.busy || roundUp) return
     if (cooling) return say({ tone: 'info', text: `Skip unlocks in ${coolLeft} s` })
@@ -436,7 +439,7 @@
   <div class="board">
     <div class="stats">
       <Timer time={game.timeLeft} limit={s.time_limit} />
-      <Button
+      {#if tutorial}<span></span>{:else}<Button
         variant="secondary"
         size="sm"
         class="skip {skipArmed ? 'armed' : ''}"
@@ -450,7 +453,7 @@
       >
         <SkipForward size="1rem" />
         {skipArmed ? 'Tap again to skip' : 'Skip word'}
-      </Button>
+      </Button>{/if}
       <Score score={s.score} />
     </div>
 
@@ -575,7 +578,9 @@
   >
     <div class="note">
       <Clock size="1.25rem" />
-      {#if roundUp}
+      {#if tutorial}
+        <p><strong>This is practice.</strong> There's no clock and nothing is saved. Leave whenever you like.</p>
+      {:else if roundUp}
         <p>
           <strong>Time's up for this round,</strong> so this is a safe moment for a break. Nothing is lost: the next
           round starts when you come back and tap.
@@ -593,9 +598,11 @@
       <Button variant="ghost" size="sm" onclick={help}><CircleQuestionMark size="1.125rem" /> How to play</Button>
       <Button variant="ghost" size="sm" onclick={openSettings}><SettingsIcon size="1.125rem" /> Settings</Button>
       <div class="span end">
-        <Button variant="ghost" block onclick={end}>End game</Button>
+        <Button variant="ghost" block onclick={end}>{tutorial ? 'Leave the tutorial' : 'End game'}</Button>
         <p>
-          {#if s.score >= MIN_LEADERBOARD_SCORE}
+          {#if tutorial}
+            Practice scores aren't kept.
+          {:else if s.score >= MIN_LEADERBOARD_SCORE}
             Your {s.score} points go on the leaderboard.
           {:else}
             Scores under {MIN_LEADERBOARD_SCORE} aren't saved.
