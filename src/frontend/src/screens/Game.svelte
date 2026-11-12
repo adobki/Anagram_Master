@@ -4,6 +4,7 @@
   import Delete from '@lucide/svelte/icons/delete'
   import Eraser from '@lucide/svelte/icons/eraser'
   import ListRestart from '@lucide/svelte/icons/list-restart'
+  import Eye from '@lucide/svelte/icons/eye'
   import Pause from '@lucide/svelte/icons/pause'
   import Pin from '@lucide/svelte/icons/pin'
   import SettingsIcon from '@lucide/svelte/icons/settings'
@@ -122,6 +123,22 @@
   let sawClock = false
   let upTimer: ReturnType<typeof setInterval> | undefined
   let advancing = false
+  /** The player hid the panel to look back over the round: the board shows, but a tap on the inputs brings it back. */
+  let reviewing = $state(false)
+  const panel = $derived(roundUp && !reviewing)
+  /** The root word, in order, for the tray to show while the round is over. */
+  const rootTiles = $derived(tilesOf(root))
+
+  function review() {
+    stopCountdown()
+    reviewing = true
+  }
+
+  /** A tap outside the panel does what the player chose in Settings. */
+  function tapOutside() {
+    if (settings.roundTap === 'advance') void advance()
+    else review()
+  }
 
   async function advance() {
     if (advancing || !roundUp) return
@@ -156,6 +173,7 @@
     untrack(() => {
       if (!up) {
         stopCountdown()
+        reviewing = false
         if (left > 0) sawClock = true
         return
       }
@@ -305,6 +323,10 @@
 
   /** Tapped a word in the list: put its letters in the tray, replacing what's there. */
   function useWord(word: string) {
+    if (roundUp) {
+      reviewing = false // reviewing: a tap on a word brings the panel back
+      return
+    }
     if (!on('found')) return
     const free = new Set(tiles.map((tile) => tile.id))
     const ids: number[] = []
@@ -431,7 +453,8 @@
     if (roundUp) {
       if (key === 'Enter' || key === ' ') {
         event.preventDefault()
-        void advance()
+        if (reviewing) reviewing = false
+        else void advance()
       }
       return
     }
@@ -491,7 +514,7 @@
       <Score score={s.score} />
     </div>
 
-    <div class="found" class:guide-hot={hot('found')} class:guide-off={!on('found') && !on('tabs')} inert={!on('found') && !on('tabs')}>
+    <div class="found" class:over={panel} class:guide-hot={hot('found')} class:guide-off={!on('found') && !on('tabs')} inert={!on('found') && !on('tabs')}>
       <WordList
         {answers}
         goal={s.rounds_limit}
@@ -517,87 +540,96 @@
         {/if}
         <FeedbackPill {feedback} />
       </div>
-      <div class:guide-hot={hot('tray')} class:guide-off={!on('tray')} inert={!on('tray')}>
-        <Tray
-          tiles={trayTiles}
-          {shake}
-          target={!!dragged && dragged.index >= 0}
-          onremove={remove}
-          ondrag={(event, tile) => startDrag(event, tile, 'tray')}
-          bind:element={trayElement}
-        />
-      </div>
-      <div class:guide-hot={hot('rack')} class:guide-off={!on('rack')} inert={!on('rack')}>
-        <TileRack
-          {tiles}
-          used={emptySlots}
-          onpick={pick}
-          ondrag={(event, tile) => startDrag(event, tile, 'rack')}
-        />
-      </div>
-
-      <div class="controls">
-        <div class="tools">
-          <Button
-            variant="ghost"
-            size="sm"
-            class={hot('shuffle') ? 'guide-hot' : ''}
-            title={`Shuffle the letters${key('Space')}`}
-            disabled={!on('shuffle')}
-            onclick={shuffle}
-          >
-            <Shuffle size="1.125rem" /><span class="label">Shuffle</span>
-          </Button>
-          <Button variant="ghost" size="sm" title="Put the letters back in order" disabled={inOrder || !on('shuffle')} class={hot('shuffle') ? 'guide-hot' : ''} onclick={restore}>
-            <ListRestart size="1.125rem" /><span class="label">Restore</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            class="{settings.keepLetters ? 'on' : ''} {hot('keep') ? 'guide-hot' : ''}"
-            disabled={!on('keep')}
-            aria-pressed={settings.keepLetters}
-            title={`Keep the letters after submitting${key('Caps Lock')}`}
-            onclick={toggleKeep}
-          >
-            <Pin size="1.125rem" /><span class="label">Keep</span>
-          </Button>
+      <div class="inputs">
+        <div class:guide-hot={hot('tray')} class:guide-off={!on('tray')} inert={!on('tray')}>
+          <Tray
+            tiles={roundUp ? rootTiles : trayTiles}
+            {shake}
+            target={!!dragged && dragged.index >= 0}
+            onremove={roundUp ? () => {} : remove}
+            ondrag={(event, tile) => startDrag(event, tile, 'tray')}
+            bind:element={trayElement}
+          />
         </div>
-        <div class="actions" class:guide-hot={hot('actions')} class:guide-off={!on('actions')} inert={!on('actions')}>
-          <IconButton variant="filled" label={`Clear the word${key('Esc')}`} disabled={!picked.length} onclick={clear}>
-            <Eraser size="1.375rem" />
-          </IconButton>
-          <Button size="lg" class="submit" disabled={!word || game.busy} onclick={submit}>Submit</Button>
-          <IconButton variant="filled" label={`Delete the last letter${key('Backspace')}`} disabled={!picked.length} onclick={undo}>
-            <Delete size="1.375rem" />
-          </IconButton>
-        </div>
-      </div>
+        <div class="lower">
+          <div class:guide-hot={hot('rack')} class:guide-off={!on('rack')} inert={!on('rack')}>
+            <TileRack
+              {tiles}
+              used={emptySlots}
+              onpick={pick}
+              ondrag={(event, tile) => startDrag(event, tile, 'rack')}
+            />
+          </div>
 
-      {#if !settings.keyboardOff}
-        <p class="hints">
-          Type letters · <kbd>Enter</kbd> submit · <kbd>⌫</kbd> delete · <kbd>Esc</kbd> clear · <kbd>Space</kbd> shuffle ·
-          <kbd>Tab</kbd> skip · <kbd>Caps Lock</kbd> keep
-        </p>
-      {/if}
+          <div class="controls">
+            <div class="tools">
+              <Button
+                variant="ghost"
+                size="sm"
+                class={hot('shuffle') ? 'guide-hot' : ''}
+                title={`Shuffle the letters${key('Space')}`}
+                disabled={!on('shuffle')}
+                onclick={shuffle}
+              >
+                <Shuffle size="1.125rem" /><span class="label">Shuffle</span>
+              </Button>
+              <Button variant="ghost" size="sm" title="Put the letters back in order" disabled={inOrder || !on('shuffle')} class={hot('shuffle') ? 'guide-hot' : ''} onclick={restore}>
+                <ListRestart size="1.125rem" /><span class="label">Restore</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="{settings.keepLetters ? 'on' : ''} {hot('keep') ? 'guide-hot' : ''}"
+                disabled={!on('keep')}
+                aria-pressed={settings.keepLetters}
+                title={`Keep the letters after submitting${key('Caps Lock')}`}
+                onclick={toggleKeep}
+              >
+                <Pin size="1.125rem" /><span class="label">Keep</span>
+              </Button>
+            </div>
+            <div class="actions" class:guide-hot={hot('actions')} class:guide-off={!on('actions')} inert={!on('actions')}>
+              <IconButton variant="filled" label={`Clear the word${key('Esc')}`} disabled={!picked.length} onclick={clear}>
+                <Eraser size="1.375rem" />
+              </IconButton>
+              <Button size="lg" class="submit" disabled={!word || game.busy} onclick={submit}>Submit</Button>
+              <IconButton variant="filled" label={`Delete the last letter${key('Backspace')}`} disabled={!picked.length} onclick={undo}>
+                <Delete size="1.375rem" />
+              </IconButton>
+            </div>
+          </div>
+
+          {#if !settings.keyboardOff}
+            <p class="hints">
+              Type letters · <kbd>Enter</kbd> submit · <kbd>⌫</kbd> delete · <kbd>Esc</kbd> clear · <kbd>Space</kbd> shuffle ·
+              <kbd>Tab</kbd> skip · <kbd>Caps Lock</kbd> keep
+            </p>
+          {/if}
+
+          {#if panel}
+            <div class="roundup" role="group" aria-label="Round over" transition:fade={{ duration: ms(200) }}>
+              <p class="eyebrow">Time's up · Round {s.round} completed</p>
+              <p class="count" aria-live="polite">
+                {#if upCount !== null}Next round in <strong>{Math.max(upCount, 0)}</strong>{:else}Ready when you are{/if}
+              </p>
+              <Button onclick={advance}>Next round</Button>
+              <div class="up-actions">
+                <Button variant="secondary" size="sm" onclick={takeBreak}>Take a break</Button>
+                <Button variant="secondary" size="sm" onclick={review}><Eye size="1rem" /> Review round</Button>
+              </div>
+            </div>
+          {/if}
+        </div>
+        {#if reviewing}
+          <button type="button" class="shield" aria-label="Round over: show the options to go on" onclick={() => (reviewing = false)}>
+            <span>Round over · tap to continue</span>
+          </button>
+        {/if}
+      </div>
     </div>
 
-    {#if roundUp}
-      <div class="up" role="group" aria-label="Round over" transition:fade={{ duration: ms(200) }}>
-        <button type="button" class="tap" aria-label="Start the next round" onclick={advance}></button>
-        <div class="card">
-          <p class="eyebrow">Time's up</p>
-          <p class="done">Round {s.round} completed</p>
-          <p class="count" aria-live="polite">
-            {#if upCount !== null}Next round in <strong>{Math.max(upCount, 0)}</strong>{:else}Ready when you are{/if}
-          </p>
-          <div class="up-actions">
-            <Button size="lg" onclick={advance}>Next round</Button>
-            <Button variant="secondary" onclick={takeBreak}>Take a break</Button>
-          </div>
-          <p class="tip">Nothing is lost while you wait. Tap anywhere to go on.</p>
-        </div>
-      </div>
+    {#if panel}
+      <button type="button" class="catch" aria-label={settings.roundTap === 'advance' ? 'Start the next round' : 'Hide the panel to review the round'} onclick={tapOutside}></button>
     {/if}
   </div>
 
@@ -768,52 +800,38 @@
     position: relative;
   }
 
-  /* The end-of-round overlay covers the whole board (the grid cells), over a soft veil. */
-  .up {
-    grid-row: 1 / -1;
-    grid-column: 1;
+  .inputs,
+  .lower {
     position: relative;
-    z-index: 20;
-    display: grid;
-    place-items: center;
-    margin-inline: calc(-1 * var(--space-4));
-    background: color-mix(in srgb, var(--bg) 82%, transparent);
-    backdrop-filter: blur(3px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
   }
 
-  .tap {
+  /* The round-end panel sits over the letters, tools and Submit, with the board above it left alone. */
+  .roundup {
     position: absolute;
     inset: 0;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .card {
-    position: relative;
+    z-index: 22;
     display: grid;
+    align-content: center;
     justify-items: center;
     gap: var(--space-2);
-    width: min(22rem, calc(100% - 2rem));
-    padding: var(--space-6) var(--space-5);
+    padding: var(--space-2) var(--space-4);
     border: 1px solid var(--line);
     border-radius: var(--radius-xl);
     background: var(--surface);
     box-shadow: var(--shadow-lg);
     text-align: center;
+    overflow: auto;
   }
 
   .eyebrow {
     font-size: var(--text-xs);
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--accent);
-  }
-
-  .done {
-    font-size: var(--text-xl);
-    font-weight: 700;
   }
 
   .count {
@@ -822,20 +840,55 @@
 
   .count strong {
     color: var(--text);
-    font-size: var(--text-xl);
+    font-size: var(--text-lg);
     font-variant-numeric: tabular-nums;
   }
 
   .up-actions {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: var(--space-2);
-    width: 100%;
-    margin-top: var(--space-2);
   }
 
-  .tip {
-    font-size: var(--text-xs);
-    color: var(--text-3);
+  /* A tap outside the panel (setting): over the board, under the panel and the word list (so its tabs still work). */
+  .catch {
+    grid-area: 1 / 1 / -1 / -1;
+    position: relative;
+    z-index: 20;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .found.over {
+    position: relative;
+    z-index: 21;
+  }
+
+  /* Reviewing: the inputs look normal, but a tap on any of them brings the panel back. */
+  .shield {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .shield span {
+    padding: var(--space-1) var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-2);
   }
 
   /* The new round's number, front and centre above the tray, stacked over

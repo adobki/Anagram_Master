@@ -106,7 +106,7 @@
       <p>
         The clock runs on the server, so it never stops during a round, even when you leave the game. That's to prevent
         cheating. When a round's time runs out, the game waits for you: you get a short countdown (or a tap, if you
-        prefer, in Settings) before the next round starts. That's a safe moment for a break, and the best time to leave.
+        prefer, in Settings) before the next round starts. That's a safe moment for a break, and the best time to leave. Press Review round, or tap outside the panel, to look back over the round's words before going on.
       </p>
     </section>
 

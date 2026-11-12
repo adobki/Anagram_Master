@@ -17,6 +17,8 @@ export type TextSize = 'small' | 'default' | 'large'
 export type Motion = 'auto' | 'reduced' | 'full'
 /** What happens when a round's time runs out: a short countdown, straight on, or wait for the player. */
 export type RoundEnd = 'countdown' | 'instant' | 'manual'
+/** Tapping outside the round-end panel: look back over the round (hides the panel), or start the next round. */
+export type RoundTap = 'review' | 'advance'
 
 /** The sound effects that can each be switched on or off. */
 export type Effect = 'word' | 'wrong' | 'cleared' | 'countdown' | 'roundup' | 'over'
@@ -44,6 +46,7 @@ interface Choices {
   keyboardOff: boolean
   /** When a round's time runs out. */
   roundEnd: RoundEnd
+  roundTap: RoundTap
   /** Skip waits a few seconds into each round, so a stray tap can't throw one away. */
   skipCooldown: boolean
   /** Show the quick guide before every game, not just the first. */
@@ -67,6 +70,7 @@ const CHOICES: Partial<Record<keyof Choices, readonly string[]>> = {
   textSize: ['small', 'default', 'large'],
   motion: ['auto', 'reduced', 'full'],
   roundEnd: ['countdown', 'instant', 'manual'],
+  roundTap: ['review', 'advance'],
 }
 
 const SFX_KEY = {
@@ -95,6 +99,7 @@ const DEFAULTS: { [K in keyof Choices]: () => Choices[K] } = {
   celebrations: () => true,
   keyboardOff: () => touchFirst, // a phone or tablet is used by touch
   roundEnd: () => 'countdown',
+  roundTap: () => 'review',
   skipCooldown: () => true,
   alwaysGuide: () => false,
   confirmSkip: () => true,
@@ -239,6 +244,13 @@ class SettingsState {
   }
   set confirmSkip(value: boolean) {
     this.#set('confirmSkip', value)
+  }
+
+  get roundTap(): RoundTap {
+    return this.#get('roundTap')
+  }
+  set roundTap(value: RoundTap) {
+    this.#set('roundTap', value)
   }
 
   get roundEnd(): RoundEnd {

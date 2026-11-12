@@ -14,7 +14,7 @@
   import { clearMyData } from '../lib/data'
   import { install } from '../lib/install.svelte'
   import { MAX_NAME_LENGTH, MIN_NAME_LENGTH, player } from '../lib/player.svelte'
-  import { settings, type Motion, type RoundEnd, type TextSize } from '../lib/settings.svelte'
+  import { settings, type Motion, type RoundEnd, type RoundTap, type TextSize } from '../lib/settings.svelte'
   import { theme } from '../lib/theme.svelte'
   import { ui } from '../lib/ui.svelte'
   import { update } from '../lib/update.svelte'
@@ -57,6 +57,14 @@
     { value: 'instant', label: 'Straight on' },
     { value: 'manual', label: "I'll tap" },
   ]
+  const ROUND_TAPS = [
+    { value: 'review', label: 'Review the round' },
+    { value: 'advance', label: 'Start the next round' },
+  ]
+  const ROUND_TAP_HINTS: Record<RoundTap, string> = {
+    review: "Tapping outside the Time's up panel hides it, so you can look back over the round's words. Tap the letters to bring it back.",
+    advance: "Tapping outside the Time's up panel starts the next round.",
+  }
   const ROUND_END_HINTS: Record<RoundEnd, string> = {
     countdown: "Time's up shows a five-second countdown to the next round. Tap to go on sooner, or take a break.",
     instant: 'The next round starts the moment time runs out. Fastest.',
@@ -277,6 +285,12 @@
       options={ROUND_ENDS}
       bind:value={settings.roundEnd}
       hint={ROUND_END_HINTS[settings.roundEnd]}
+    />
+    <Segmented
+      label="Tapping outside the round-end panel"
+      options={ROUND_TAPS}
+      bind:value={settings.roundTap}
+      hint={ROUND_TAP_HINTS[settings.roundTap]}
     />
     <Switch
       label="Skip cooldown"
