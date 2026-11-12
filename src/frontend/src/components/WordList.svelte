@@ -13,9 +13,17 @@
     latest?: string | null
     /** A word was tapped: the game puts it in the tray. */
     onuse?: (word: string) => void
+    /** Which list is showing. Bindable, so the tutorial can ask for and set it. */
+    tab?: 'found' | 'missed'
+    /** The words can't be tapped (the tutorial, before it gets to them). */
+    locked?: boolean
+    /** The Found/Missed switch can't be used. */
+    tabsLocked?: boolean
+    /** The tabs flash (the tutorial pointing at them). */
+    flashTabs?: boolean
   }
 
-  let { answers, goal, latest = null, onuse }: Props = $props()
+  let { answers, goal, latest = null, onuse, tab = $bindable('found'), locked = false, tabsLocked = false, flashTabs = false }: Props = $props()
 
   // Longest first: the impressive finds lead.
   const found = $derived(
@@ -34,16 +42,20 @@
 
   // Found words or misses; the choice carries over between rounds. A round
   // with no misses always shows the found words.
-  let chosen = $state<'found' | 'missed'>('found')
-  const view = $derived(missed.length ? chosen : 'found')
+  const view = $derived(missed.length ? tab : 'found')
   const shown = $derived(view === 'found' ? found : missed)
 </script>
 
 <section class="words" aria-labelledby="words-title">
   <header>
     <h2 id="words-title">Words</h2>
-    <div class="tabs" role="group" aria-label="Which words to show">
-      <button type="button" class:on={view === 'found'} aria-pressed={view === 'found'} onclick={() => (chosen = 'found')}>
+    <div
+      class="tabs {flashTabs ? 'guide-hot' : ''} {tabsLocked ? 'guide-off' : ''}"
+      inert={tabsLocked}
+      role="group"
+      aria-label="Which words to show"
+    >
+      <button type="button" class:on={view === 'found'} aria-pressed={view === 'found'} onclick={() => (tab = 'found')}>
         Found <strong>{found.length}</strong>/{goal}
       </button>
       <button
@@ -51,7 +63,7 @@
         class:on={view === 'missed'}
         aria-pressed={view === 'missed'}
         disabled={!missed.length}
-        onclick={() => (chosen = 'missed')}
+        onclick={() => (tab = 'missed')}
       >
         Missed <strong>{missed.length}</strong>
       </button>
@@ -77,6 +89,7 @@
             class:latest={view === 'found' && word === latest}
             class:miss={view === 'missed'}
             title="Add “{word}” to the tray"
+            disabled={locked}
             onclick={() => onuse?.(word)}
           >
             {word}
@@ -218,5 +231,9 @@
     font-size: var(--text-sm);
     text-align: center;
     color: var(--text-3);
+  }
+  li button:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 </style>

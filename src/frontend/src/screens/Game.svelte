@@ -24,7 +24,15 @@
   import WordList from '../components/WordList.svelte'
   import { celebrate } from '../lib/confetti'
   import { createTileDrag, type Origin, type TileDrag } from '../lib/drag.svelte'
-  import { MIN_LEADERBOARD_SCORE, MIN_WORD_LENGTH, recapText, type Feedback, type GameController } from '../lib/game'
+  import {
+    MIN_LEADERBOARD_SCORE,
+    MIN_WORD_LENGTH,
+    recapText,
+    type Feedback,
+    type GameController,
+    type Guide,
+    type GuidePart,
+  } from '../lib/game'
   import { holdScreen } from '../lib/awake'
   import { buzzBad, buzzCleared, buzzWarn } from '../lib/haptics'
   import { shuffled, tilesOf, type Tile as TileData } from '../lib/letters'
@@ -49,9 +57,26 @@
     menu: 'closed' | 'button' | 'back'
     /** The practice game: no skipping, and the menu talks about practice. */
     tutorial?: boolean
+    /** The guided tutorial's restrictions: which parts work, which flash. */
+    guide?: Guide
+    /** The tutorial's "start again" (the menu offers it instead of Go home). */
+    onreset?: () => void
+    /** Which word list shows (Found or Missed); bindable for the tutorial. */
+    wordTab?: 'found' | 'missed'
   }
 
-  let { game, onend, onpause, onhelp, menu = $bindable(), tutorial = false }: Props = $props()
+  let { game, onend, onpause, onhelp, menu = $bindable(), tutorial = false, guide, onreset, wordTab = $bindable('found') }: Props = $props()
+
+  /** A part works (always, outside the guided tutorial). */
+  const on = (part: GuidePart) => !guide?.enabled || guide.enabled.has(part)
+  /** A part is being pointed at. */
+  const hot = (part: GuidePart) => !!guide?.focus.has(part)
+
+  /** Empty the tray and put the letters back in order (the tutorial, when it steps back or starts again). */
+  export function resetBoard() {
+    picked = []
+    tiles = tilesOf(root)
+  }
 
   const FEEDBACK_MS = 3000
   /** Seconds the "time's up" countdown runs before the next round starts by itself. */
@@ -280,6 +305,7 @@
 
   /** Tapped a word in the list: put its letters in the tray, replacing what's there. */
   function useWord(word: string) {
+    if (!on('found')) return
     const free = new Set(tiles.map((tile) => tile.id))
     const ids: number[] = []
     for (const letter of word) {
@@ -289,12 +315,19 @@
       ids.push(tile.id)
     }
     picked = ids
+    guide?.onuse?.()
   }
 
   const undo = () => (picked = picked.slice(0, -1))
   const clear = () => (picked = [])
-  const shuffle = () => (tiles = shuffled(tiles))
-  const restore = () => (tiles = [...tiles].sort((a, b) => a.id - b.id))
+  const shuffle = () => {
+    tiles = shuffled(tiles)
+    guide?.onshuffle?.()
+  }
+  const restore = () => {
+    tiles = [...tiles].sort((a, b) => a.id - b.id)
+    guide?.onshuffle?.()
+  }
 
   function toggleKeep() {
     settings.keepLetters = !settings.keepLetters
@@ -323,7 +356,7 @@
   }
 
   async function submit() {
-    if (!word || game.busy || roundUp) return
+    if (!word || game.busy || roundUp || !on('actions')) return
     const sent = word
     const blocked = precheck(sent)
     if (blocked) {
@@ -402,24 +435,25 @@
       }
       return
     }
+    // In the guided tutorial a key only works where its on-screen control does.
     if (key === 'Enter') {
       event.preventDefault()
-      submit()
+      if (on('actions')) submit()
     } else if (key === 'Backspace') {
       event.preventDefault()
-      undo()
+      if (on('tray')) undo()
     } else if (key === 'Escape') {
-      clear()
+      if (on('tray')) clear()
     } else if (key === ' ') {
       event.preventDefault()
-      shuffle()
+      if (on('shuffle')) shuffle()
     } else if (key === 'Tab' && !event.shiftKey) {
       event.preventDefault()
       skip()
     } else if (key === 'CapsLock') {
-      toggleKeep()
+      if (on('keep')) toggleKeep()
     } else if (key.length === 1 && /\p{L}/u.test(key)) {
-      pickLetter(key.toLowerCase())
+      if (on('rack')) pickLetter(key.toLowerCase())
     }
   }
 </script>
@@ -457,8 +491,17 @@
       <Score score={s.score} />
     </div>
 
-    <div class="found">
-      <WordList {answers} goal={s.rounds_limit} {latest} onuse={useWord} />
+    <div class="found" class:guide-hot={hot('found')} class:guide-off={!on('found') && !on('tabs')} inert={!on('found') && !on('tabs')}>
+      <WordList
+        {answers}
+        goal={s.rounds_limit}
+        {latest}
+        onuse={useWord}
+        bind:tab={wordTab}
+        locked={!on('found')}
+        tabsLocked={!on('tabs')}
+        flashTabs={hot('tabs')}
+      />
     </div>
 
     <div class="play">
@@ -474,7 +517,8 @@
         {/if}
         <FeedbackPill {feedback} />
       </div>
-      <Tray
+      <div class:guide-hot={hot('tray')} class:guide-off={!on('tray')} inert={!on('tray')}>
+        <Tray
           tiles={trayTiles}
           {shake}
           target={!!dragged && dragged.index >= 0}
@@ -482,25 +526,36 @@
           ondrag={(event, tile) => startDrag(event, tile, 'tray')}
           bind:element={trayElement}
         />
-      <TileRack
-        {tiles}
-        used={emptySlots}
-        onpick={pick}
-        ondrag={(event, tile) => startDrag(event, tile, 'rack')}
-      />
+      </div>
+      <div class:guide-hot={hot('rack')} class:guide-off={!on('rack')} inert={!on('rack')}>
+        <TileRack
+          {tiles}
+          used={emptySlots}
+          onpick={pick}
+          ondrag={(event, tile) => startDrag(event, tile, 'rack')}
+        />
+      </div>
 
       <div class="controls">
         <div class="tools">
-          <Button variant="ghost" size="sm" title={`Shuffle the letters${key('Space')}`} onclick={shuffle}>
+          <Button
+            variant="ghost"
+            size="sm"
+            class={hot('shuffle') ? 'guide-hot' : ''}
+            title={`Shuffle the letters${key('Space')}`}
+            disabled={!on('shuffle')}
+            onclick={shuffle}
+          >
             <Shuffle size="1.125rem" /><span class="label">Shuffle</span>
           </Button>
-          <Button variant="ghost" size="sm" title="Put the letters back in order" disabled={inOrder} onclick={restore}>
+          <Button variant="ghost" size="sm" title="Put the letters back in order" disabled={inOrder || !on('shuffle')} class={hot('shuffle') ? 'guide-hot' : ''} onclick={restore}>
             <ListRestart size="1.125rem" /><span class="label">Restore</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            class={settings.keepLetters ? 'on' : ''}
+            class="{settings.keepLetters ? 'on' : ''} {hot('keep') ? 'guide-hot' : ''}"
+            disabled={!on('keep')}
             aria-pressed={settings.keepLetters}
             title={`Keep the letters after submitting${key('Caps Lock')}`}
             onclick={toggleKeep}
@@ -508,7 +563,7 @@
             <Pin size="1.125rem" /><span class="label">Keep</span>
           </Button>
         </div>
-        <div class="actions">
+        <div class="actions" class:guide-hot={hot('actions')} class:guide-off={!on('actions')} inert={!on('actions')}>
           <IconButton variant="filled" label={`Clear the word${key('Esc')}`} disabled={!picked.length} onclick={clear}>
             <Eraser size="1.375rem" />
           </IconButton>
@@ -579,7 +634,10 @@
     <div class="note">
       <Clock size="1.25rem" />
       {#if tutorial}
-        <p><strong>This is practice.</strong> There's no clock and nothing is saved. Leave whenever you like.</p>
+        <p>
+          <strong>This is practice.</strong> There's no clock and nothing is saved. Restart goes back to the first step of
+          the guide, and you can leave whenever you like.
+        </p>
       {:else if roundUp}
         <p>
           <strong>Time's up for this round,</strong> so this is a safe moment for a break. Nothing is lost: the next
@@ -594,7 +652,11 @@
     </div>
     {#snippet actions()}
       <Button variant="secondary" onclick={() => (menu = 'closed')}>Keep playing</Button>
-      <Button onclick={leave}>Go home</Button>
+      {#if tutorial}
+        <Button onclick={() => ((menu = 'closed'), onreset?.())}>Restart the tutorial</Button>
+      {:else}
+        <Button onclick={leave}>Go home</Button>
+      {/if}
       <Button variant="ghost" size="sm" onclick={help}><CircleQuestionMark size="1.125rem" /> How to play</Button>
       <Button variant="ghost" size="sm" onclick={openSettings}><SettingsIcon size="1.125rem" /> Settings</Button>
       <div class="span end">

@@ -75,3 +75,18 @@ export function praise(length: number, rootLength: number): string {
   if (length >= 4) return 'Nice!'
   return 'Good'
 }
+
+/** The parts of the game screen the guided tutorial can switch on and off. */
+export type GuidePart = 'found' | 'tabs' | 'tray' | 'rack' | 'actions' | 'shuffle' | 'keep'
+
+/** What the guided tutorial asks of the game screen. Without one, everything works. */
+export interface Guide {
+  /** The parts that work; the rest are greyed out. Null: all of them. */
+  enabled: ReadonlySet<GuidePart> | null
+  /** The parts that flash, pointing the player at them. */
+  focus: ReadonlySet<GuidePart>
+  /** A word in the Found list was tapped (it is in the tray now). */
+  onuse?: () => void
+  /** Shuffle or Restore was pressed. */
+  onshuffle?: () => void
+}

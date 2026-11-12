@@ -21,11 +21,36 @@ const readable = (word: string) => /[aeiou]/.test(word)
 /** A random item, or undefined when there is none. */
 const pick = <T>(items: T[]): T | undefined => items[Math.floor(Math.random() * items.length)]
 
+/** A step's refusal of a word: shown as the wrong-word message. It costs the usual 2 points unless `penalty` is false. */
+export interface Rejection {
+  text: string
+  penalty?: boolean
+}
+
+/** What a step may restore: the score and every word played so far. */
+export interface Snapshot {
+  score: number
+  answers: Answer[]
+}
+
 export type TutorialGame = GameController & {
   /** Valid words found so far, in order. */
   readonly found: string[]
   /** Words tried that were not valid. */
   readonly missed: string[]
+  /**
+   * The current step's check on a submitted word. When it returns a rejection the word counts as a wrong one (and
+   * isn't recorded as played, so it can still be used later). Null means anything goes.
+   */
+  gate: ((word: string) => Rejection | null) | null
+  /** The last word that reached Submit (accepted or not), lower case; empty at the start. */
+  readonly lastWord: string
+  /** Record a word and score it as a submit would, without feedback or sound (used when the coach skips a step). */
+  inject(word: string, valid: boolean): void
+  snapshot(): Snapshot
+  restore(snap: Snapshot): void
+  /** Back to the empty start. */
+  reset(): void
   /** A random valid word nobody has played yet, optionally of these lengths, or null if none is left. */
   suggest(lengths?: number[]): string | null
   /** A made-up word (not in the list) made from the letters, for showing what a miss costs. */
@@ -51,6 +76,7 @@ export function createTutorialGame(): TutorialGame {
     } as GameState,
   })
 
+  let lastWord = $state('')
   const answers = () => g.state.words[TUTORIAL_ROOT]
   const found = () => answers().filter(([, valid]) => valid).map(([word]) => word)
   const missed = () => answers().filter(([, valid]) => !valid).map(([word]) => word)
@@ -64,7 +90,14 @@ export function createTutorialGame(): TutorialGame {
     }
   }
 
-  return {
+  const pointsFor = (word: string) =>
+    Math.ceil((10 * word.length) / TUTORIAL_ROOT.length) + (word.length === TUTORIAL_ROOT.length ? 10 : 0)
+
+  const controller: TutorialGame = {
+    gate: null,
+    get lastWord() {
+      return lastWord
+    },
     get state() {
       return g.state
     },
@@ -83,6 +116,12 @@ export function createTutorialGame(): TutorialGame {
 
     async submit(raw): Promise<Feedback> {
       const word = raw.toLowerCase()
+      lastWord = word
+      const refusal = controller.gate?.(word)
+      if (refusal) {
+        if (refusal.penalty !== false) g.state = { ...g.state, score: Math.max(0, g.state.score - 2) }
+        return { tone: 'bad', text: refusal.penalty === false ? refusal.text : `${refusal.text} · −2` }
+      }
       if (answers().some(([played]) => played === word)) {
         record(word, false, Math.max(0, g.state.score - 2))
         return { tone: 'bad', text: `“${word}” was already played · −2` }
@@ -91,7 +130,7 @@ export function createTutorialGame(): TutorialGame {
         record(word, false, Math.max(0, g.state.score - 2))
         return { tone: 'bad', text: `“${word}” isn't in the word list · −2` }
       }
-      const points = Math.ceil((10 * word.length) / TUTORIAL_ROOT.length) + (word.length === TUTORIAL_ROOT.length ? 10 : 0)
+      const points = pointsFor(word)
       if (found().length + 1 >= TUTORIAL_GOAL) {
         record(word, true, g.state.score + points + 50, true)
         return { tone: 'great', text: 'Round cleared! +50 bonus' }
@@ -110,6 +149,25 @@ export function createTutorialGame(): TutorialGame {
     },
     destroy() {},
 
+    inject(word, valid) {
+      record(word, valid, valid ? g.state.score + pointsFor(word) : Math.max(0, g.state.score - 2))
+    },
+    snapshot() {
+      return { score: g.state.score, answers: answers().map(([w, v]) => [w, v] as Answer) }
+    },
+    restore(snap) {
+      g.state = {
+        ...g.state,
+        status: true,
+        score: snap.score,
+        words: { [TUTORIAL_ROOT]: snap.answers.map(([w, v]) => [w, v] as Answer) },
+      }
+      lastWord = ''
+    },
+    reset() {
+      controller.restore({ score: 0, answers: [] })
+    },
+
     suggest(lengths) {
       const played = new Set(answers().map(([word]) => word))
       const pool = TUTORIAL_WORDS.filter(
@@ -121,12 +179,14 @@ export function createTutorialGame(): TutorialGame {
 
     nonsense() {
       const letters = TUTORIAL_ROOT.split('')
+      const played = new Set(answers().map(([word]) => word))
       for (let tries = 0; tries < 50; tries++) {
         const size = 3 + Math.floor(Math.random() * 2)
         const word = [...letters].sort(() => Math.random() - 0.5).slice(0, size).join('')
-        if (!VALID.has(word)) return word
+        if (!VALID.has(word) && !played.has(word)) return word
       }
       return 'mmm'
     },
   }
+  return controller
 }

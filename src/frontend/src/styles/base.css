@@ -174,3 +174,35 @@ textarea {
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+/*
+ * The guided tutorial: parts the player can't use yet are greyed out, and the part to use flashes a red outline
+ * (red, then black, or white on the dark theme, every half second). With reduced motion it stays a steady red.
+ */
+.guide-off {
+  opacity: 0.4;
+  filter: grayscale(1);
+  pointer-events: none;
+  user-select: none;
+}
+
+.guide-hot {
+  --flash-alt: #000;
+  outline: 3px solid #e5242d;
+  outline-offset: 3px;
+  border-radius: var(--radius-lg);
+  animation: guide-flash 1s step-end infinite;
+}
+
+:root[data-theme='dark'] .guide-hot {
+  --flash-alt: #fff;
+}
+
+@keyframes guide-flash {
+  0% {
+    outline-color: #e5242d;
+  }
+  50% {
+    outline-color: var(--flash-alt);
+  }
+}
