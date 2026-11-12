@@ -14,7 +14,7 @@
   import { clearMyData } from '../lib/data'
   import { install } from '../lib/install.svelte'
   import { MAX_NAME_LENGTH, MIN_NAME_LENGTH, player } from '../lib/player.svelte'
-  import { settings, type Motion, type TextSize } from '../lib/settings.svelte'
+  import { settings, type Motion, type RoundEnd, type TextSize } from '../lib/settings.svelte'
   import { theme } from '../lib/theme.svelte'
   import { ui } from '../lib/ui.svelte'
   import { update } from '../lib/update.svelte'
@@ -51,6 +51,17 @@
     { value: 'reduced', label: 'Reduced' },
     { value: 'full', label: 'Full' },
   ]
+
+  const ROUND_ENDS: { value: RoundEnd; label: string }[] = [
+    { value: 'countdown', label: 'Countdown' },
+    { value: 'instant', label: 'Straight on' },
+    { value: 'manual', label: "I'll tap" },
+  ]
+  const ROUND_END_HINTS: Record<RoundEnd, string> = {
+    countdown: "Time's up shows a five-second countdown to the next round. Tap to go on sooner, or take a break.",
+    instant: 'The next round starts the moment time runs out. Fastest.',
+    manual: "Time's up waits for you to tap before the next round. No countdown.",
+  }
 
   const clock = $derived.by(() => {
     const time = game?.timeLeft ?? 0
@@ -261,6 +272,17 @@
       hint="Leaves your letters in the tray, to build on a word."
       bind:checked={settings.keepLetters}
     />
+    <Segmented
+      label="When a round ends"
+      options={ROUND_ENDS}
+      bind:value={settings.roundEnd}
+      hint={ROUND_END_HINTS[settings.roundEnd]}
+    />
+    <Switch
+      label="Skip cooldown"
+      hint="Skip waits five seconds into each round, so a stray tap can't throw one away."
+      bind:checked={settings.skipCooldown}
+    />
     <Switch
       label="Skip needs a second tap"
       hint="Skipping costs the round, so it asks you to tap twice."
@@ -273,6 +295,11 @@
         bind:checked={settings.keepAwake}
       />
     {/if}
+    <Switch
+      label="Quick guide before every game"
+      hint="Shows the interface guide each time you start a game. It always shows once for new players."
+      bind:checked={settings.alwaysGuide}
+    />
     <Switch
       label="Open straight into my game"
       hint="Skips Home when you open the app with a game in progress."

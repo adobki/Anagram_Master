@@ -48,17 +48,18 @@ export interface GameController {
   /** The round that just ended, set at the moment `state` moves to the next one. */
   readonly lastRound: RoundSummary | null
   submit(word: string): Promise<Feedback>
+  /** Moves on to the next round (for the round that is current now, so a repeat does nothing). */
   skip(): Promise<void>
   quit(): Promise<void>
   /**
    * The game screen is closing. The round clock keeps running (it lives on
-   * the server, so players can't stop it to think), but the game won't move
-   * on to the next round when it runs out until resume() is called.
+   * the server, so players can't stop it to think). A round that runs out
+   * waits for the player; the game never moves on by itself.
    */
   pause(): void
   /**
-   * The game screen is showing again. If the round ran out of time meanwhile,
-   * the game moves on, and the returned message says so.
+   * The game screen is showing again: refreshes the state from the server. A round that ran out meanwhile
+   * stays waiting for the player to go on.
    */
   resume(): Promise<Feedback | null>
   /** Stops timers. Call it when the controller is no longer needed. */

@@ -52,6 +52,10 @@
   let { game, onend, onpause, onhelp, menu = $bindable() }: Props = $props()
 
   const FEEDBACK_MS = 3000
+  /** Seconds the "time's up" countdown runs before the next round starts by itself. */
+  const COUNTDOWN_S = 5
+  /** Seconds into a round before Skip unlocks (unless the player turned that off). */
+  const SKIP_COOLDOWN_S = 5
   const BANNER_MS = 1600
   const RECAP_MS = 2600 // longer when the banner also carries the last round's recap
 
@@ -79,6 +83,76 @@
   let latest = $state<string | null>(null)
   let shake = $state(0)
   let skipArmed = $state(false)
+
+  // ── The end of a round ───────────────────────────────────────────────────
+  // When a round's time runs out, the game waits (the server doesn't move on by itself). Depending on the
+  // setting it counts down to the next round, starts it straight away, or waits for a tap. Nothing is lost
+  // while it waits, so it is also a safe moment for a break.
+  const roundUp = $derived(s.status && game.timeLeft <= 0 && !lastRound)
+  /** Seconds left in the countdown, or null when it isn't running (waiting for a tap). */
+  let upCount = $state<number | null>(null)
+  /** The clock was seen running in this round, so it ran out while the player was here (not while they were away). */
+  let sawClock = false
+  let upTimer: ReturnType<typeof setInterval> | undefined
+  let advancing = false
+
+  async function advance() {
+    if (advancing || !roundUp) return
+    advancing = true
+    stopCountdown()
+    try {
+      await game.skip()
+    } finally {
+      advancing = false
+    }
+  }
+
+  function stopCountdown() {
+    clearInterval(upTimer)
+    upTimer = undefined
+    upCount = null
+  }
+
+  function startCountdown() {
+    upCount = COUNTDOWN_S
+    upTimer = setInterval(() => {
+      // The countdown waits while a menu or Settings is open on top of it.
+      if (menu !== 'closed' || ui.settingsOpen || upCount === null) return
+      upCount -= 1
+      if (upCount <= 0) void advance()
+    }, 1000)
+  }
+
+  $effect(() => {
+    const up = roundUp
+    const left = game.timeLeft
+    untrack(() => {
+      if (!up) {
+        stopCountdown()
+        if (left > 0) sawClock = true
+        return
+      }
+      if (upTimer || advancing) return
+      sound.roundup()
+      if (settings.roundEnd === 'instant') void advance()
+      else if (settings.roundEnd === 'countdown' && sawClock) startCountdown()
+    })
+  })
+  // A new round starts a new clock.
+  $effect(() => {
+    void s.round
+    untrack(() => (sawClock = game.timeLeft > 0))
+  })
+
+  /** "Take a break": the countdown stops, and the overlay waits for a tap. */
+  function takeBreak() {
+    stopCountdown()
+    menu = 'button'
+  }
+
+  /** The first seconds of a round, when Skip is locked (if the player kept that on). */
+  const cooling = $derived(settings.skipCooldown && game.timeLeft > 0 && s.time_limit - game.timeLeft < SKIP_COOLDOWN_S)
+  const coolLeft = $derived(Math.ceil(SKIP_COOLDOWN_S - (s.time_limit - game.timeLeft)))
   let banner = $state<number | null>(null)
   let recap = $state<string | null>(null)
 
@@ -247,7 +321,7 @@
   }
 
   async function submit() {
-    if (!word || game.busy) return
+    if (!word || game.busy || roundUp) return
     const sent = word
     const blocked = precheck(sent)
     if (blocked) {
@@ -278,7 +352,8 @@
   let disarm: ReturnType<typeof setTimeout> | undefined
   async function skip() {
     if (lastRound) return say({ tone: 'info', text: 'This is the last round: there is no next word' })
-    if (game.busy) return
+    if (game.busy || roundUp) return
+    if (cooling) return say({ tone: 'info', text: `Skip unlocks in ${coolLeft} s` })
     // A skip costs the round, so it takes a second press to confirm.
     if (settings.confirmSkip && !skipArmed) {
       skipArmed = true
@@ -316,6 +391,14 @@
     if (event.metaKey || event.ctrlKey || event.altKey || settings.keyboardOff || document.querySelector('dialog[open]')) return
     if (event.target instanceof HTMLInputElement) return
     const { key } = event
+    // A round that ran out waits for Enter or Space; nothing else does anything meanwhile.
+    if (roundUp) {
+      if (key === 'Enter' || key === ' ') {
+        event.preventDefault()
+        void advance()
+      }
+      return
+    }
     if (key === 'Enter') {
       event.preventDefault()
       submit()
@@ -357,8 +440,12 @@
         variant="secondary"
         size="sm"
         class="skip {skipArmed ? 'armed' : ''}"
-        disabled={lastRound || game.busy}
-        title={lastRound ? 'This is the last round' : `Skip to the next word${key('Tab')}`}
+        disabled={lastRound || game.busy || roundUp || cooling}
+        title={lastRound
+          ? 'This is the last round'
+          : cooling
+            ? `Skip unlocks in ${coolLeft} s`
+            : `Skip to the next word${key('Tab')}`}
         onclick={skip}
       >
         <SkipForward size="1rem" />
@@ -436,6 +523,24 @@
         </p>
       {/if}
     </div>
+
+    {#if roundUp}
+      <div class="up" role="group" aria-label="Round over" transition:fade={{ duration: ms(200) }}>
+        <button type="button" class="tap" aria-label="Start the next round" onclick={advance}></button>
+        <div class="card">
+          <p class="eyebrow">Time's up</p>
+          <p class="done">Round {s.round} completed</p>
+          <p class="count" aria-live="polite">
+            {#if upCount !== null}Next round in <strong>{Math.max(upCount, 0)}</strong>{:else}Ready when you are{/if}
+          </p>
+          <div class="up-actions">
+            <Button size="lg" onclick={advance}>Next round</Button>
+            <Button variant="secondary" onclick={takeBreak}>Take a break</Button>
+          </div>
+          <p class="tip">Nothing is lost while you wait. Tap anywhere to go on.</p>
+        </div>
+      </div>
+    {/if}
   </div>
 
   {#if dragged}
@@ -470,10 +575,17 @@
   >
     <div class="note">
       <Clock size="1.25rem" />
-      <p>
-        <strong>The clock keeps running.</strong> Rounds can't be paused, to prevent cheating. If time runs out while
-        you're away, the next round starts when you return.
-      </p>
+      {#if roundUp}
+        <p>
+          <strong>Time's up for this round,</strong> so this is a safe moment for a break. Nothing is lost: the next
+          round starts when you come back and tap.
+        </p>
+      {:else}
+        <p>
+          <strong>The clock keeps running.</strong> Rounds can't be paused, to prevent cheating. It's best to take your
+          break when the round ends. If time runs out while you're away, the next round simply waits for you.
+        </p>
+      {/if}
     </div>
     {#snippet actions()}
       <Button variant="secondary" onclick={() => (menu = 'closed')}>Keep playing</Button>
@@ -585,6 +697,76 @@
 
   .stage {
     position: relative;
+  }
+
+  /* The end-of-round overlay covers the whole board (the grid cells), over a soft veil. */
+  .up {
+    grid-row: 1 / -1;
+    grid-column: 1;
+    position: relative;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    margin-inline: calc(-1 * var(--space-4));
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(3px);
+  }
+
+  .tap {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .card {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
+    width: min(22rem, calc(100% - 2rem));
+    padding: var(--space-6) var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+  }
+
+  .eyebrow {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .done {
+    font-size: var(--text-xl);
+    font-weight: 700;
+  }
+
+  .count {
+    color: var(--text-2);
+  }
+
+  .count strong {
+    color: var(--text);
+    font-size: var(--text-xl);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .up-actions {
+    display: grid;
+    gap: var(--space-2);
+    width: 100%;
+    margin-top: var(--space-2);
+  }
+
+  .tip {
+    font-size: var(--text-xs);
+    color: var(--text-3);
   }
 
   /* The new round's number, front and centre above the tray, stacked over

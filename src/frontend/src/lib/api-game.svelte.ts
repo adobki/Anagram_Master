@@ -47,7 +47,8 @@ export function createApiGame(initial: GameState, token?: string | null): GameCo
   const clock = setInterval(() => {
     if (!g.state.status) return
     if (g.timeLeft > 0) g.timeLeft -= 1
-    else if (!paused && !advancing && !g.busy) void timeUp()
+    // Only the last round ends by itself (there is no next one). Any other round that runs out waits for the player.
+    else if (!paused && !advancing && !g.busy && g.state.round >= g.state.rounds_limit) void timeUp()
   }, 1000)
 
   function end() {
@@ -93,16 +94,11 @@ export function createApiGame(initial: GameState, token?: string | null): GameCo
     return { tone: 'bad', text: OFFLINE }
   }
 
-  /** The round's time is up: move to the next round, or end the game on the last one. */
+  /** The last round's time is up: reading the status ends the game (a 401). */
   async function timeUp() {
     advancing = true
     try {
-      if (g.state.round >= g.state.rounds_limit) {
-        // Reading the status after the last round times out ends the game (401).
-        apply(await call(api.status))
-      } else {
-        apply(await call(api.skip))
-      }
+      apply(await call(api.status))
     } catch (error) {
       failed(error)
     } finally {
@@ -143,6 +139,7 @@ export function createApiGame(initial: GameState, token?: string | null): GameCo
       }
 
       const error = reply.error ?? ''
+      if (error.includes("Time's up")) return { tone: 'info', text: "Time's up for this round" }
       if (error.includes('Invalid word')) return { tone: 'bad', text: `“${word}” isn't in the word list · −2` }
       if (error.includes('Duplicate')) return { tone: 'bad', text: `“${word}” was already played · −2` }
       if (error.includes("can't use")) return { tone: 'info', text: "That's this round's word. Make new ones from it!" }
@@ -160,8 +157,12 @@ export function createApiGame(initial: GameState, token?: string | null): GameCo
     },
 
     async skip() {
+      const round = g.state.round
       try {
-        apply(await call(api.skip))
+        const reply = await call(() => api.skip(round))
+        apply(reply)
+        // A repeated or late request does nothing, and says so.
+        if (isGameState(reply) && reply.error && reply.round === round) toasts.show(reply.error)
       } catch (error) {
         toasts.show(failed(error).text)
       }
@@ -189,13 +190,9 @@ export function createApiGame(initial: GameState, token?: string | null): GameCo
         failed(error) // 401 here: the last round ran out while away, so the game ended
         return null
       }
-      if (!g.state.status || g.timeLeft > 0) return null
-      if (g.state.round >= g.state.rounds_limit) {
-        await timeUp()
-        return null
-      }
-      await timeUp()
-      return { tone: 'info', text: `Time ran out while you were away. On to round ${g.state.round}.` }
+      // The last round that ran out while away ends the game. Any other waits for the player to go on.
+      if (g.state.status && g.timeLeft <= 0 && g.state.round >= g.state.rounds_limit) await timeUp()
+      return null
     },
 
     destroy() {

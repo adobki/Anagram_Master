@@ -15,9 +15,11 @@ const KEY = 'am-settings'
 export type TextSize = 'small' | 'default' | 'large'
 /** Animations: follow the device, or force them reduced or full. */
 export type Motion = 'auto' | 'reduced' | 'full'
+/** What happens when a round's time runs out: a short countdown, straight on, or wait for the player. */
+export type RoundEnd = 'countdown' | 'instant' | 'manual'
 
 /** The sound effects that can each be switched on or off. */
-export type Effect = 'word' | 'wrong' | 'cleared' | 'countdown' | 'over'
+export type Effect = 'word' | 'wrong' | 'cleared' | 'countdown' | 'roundup' | 'over'
 
 /** Every setting and its type. To add one: list it here, give it a default, then add its accessor below. */
 interface Choices {
@@ -30,6 +32,7 @@ interface Choices {
   sfxWrong: boolean
   sfxCleared: boolean
   sfxCountdown: boolean
+  sfxRoundUp: boolean
   sfxOver: boolean
   /** Vibration for rejected words and cleared rounds. */
   haptics: boolean
@@ -39,6 +42,12 @@ interface Choices {
   celebrations: boolean
   /** Games ignore the keyboard, so only the on-screen controls work. */
   keyboardOff: boolean
+  /** When a round's time runs out. */
+  roundEnd: RoundEnd
+  /** Skip waits a few seconds into each round, so a stray tap can't throw one away. */
+  skipCooldown: boolean
+  /** Show the quick guide before every game, not just the first. */
+  alwaysGuide: boolean
   /** Skip asks for a second tap, because it costs the round. */
   confirmSkip: boolean
   /** Keep the screen awake while a game is showing. */
@@ -57,6 +66,7 @@ interface Choices {
 const CHOICES: Partial<Record<keyof Choices, readonly string[]>> = {
   textSize: ['small', 'default', 'large'],
   motion: ['auto', 'reduced', 'full'],
+  roundEnd: ['countdown', 'instant', 'manual'],
 }
 
 const SFX_KEY = {
@@ -64,6 +74,7 @@ const SFX_KEY = {
   wrong: 'sfxWrong',
   cleared: 'sfxCleared',
   countdown: 'sfxCountdown',
+  roundup: 'sfxRoundUp',
   over: 'sfxOver',
 } as const satisfies Record<Effect, keyof Choices>
 
@@ -77,11 +88,15 @@ const DEFAULTS: { [K in keyof Choices]: () => Choices[K] } = {
   sfxWrong: () => true,
   sfxCleared: () => true,
   sfxCountdown: () => true,
+  sfxRoundUp: () => true,
   sfxOver: () => true,
   haptics: () => !matchMedia('(prefers-reduced-motion: reduce)').matches, // off for people who ask for less motion
   lowTimeBuzz: () => true,
   celebrations: () => true,
   keyboardOff: () => touchFirst, // a phone or tablet is used by touch
+  roundEnd: () => 'countdown',
+  skipCooldown: () => true,
+  alwaysGuide: () => false,
   confirmSkip: () => true,
   keepAwake: () => true,
   autoResume: () => false,
@@ -224,6 +239,27 @@ class SettingsState {
   }
   set confirmSkip(value: boolean) {
     this.#set('confirmSkip', value)
+  }
+
+  get roundEnd(): RoundEnd {
+    return this.#get('roundEnd')
+  }
+  set roundEnd(value: RoundEnd) {
+    this.#set('roundEnd', value)
+  }
+
+  get skipCooldown() {
+    return this.#get('skipCooldown')
+  }
+  set skipCooldown(value: boolean) {
+    this.#set('skipCooldown', value)
+  }
+
+  get alwaysGuide() {
+    return this.#get('alwaysGuide')
+  }
+  set alwaysGuide(value: boolean) {
+    this.#set('alwaysGuide', value)
   }
 
   get keepAwake() {

@@ -29,6 +29,7 @@ export const EFFECTS: { id: Effect; label: string; hint: string }[] = [
   { id: 'wrong', label: 'Wrong word', hint: 'A low, gentle bloop.' },
   { id: 'cleared', label: 'Round cleared', hint: 'A little rising tune.' },
   { id: 'countdown', label: 'Countdown', hint: 'A soft beep each second of the last ten.' },
+  { id: 'roundup', label: 'Round over', hint: "A soft two-note ding when a round's time is up." },
   { id: 'over', label: 'Game over', hint: 'A closing chime.' },
 ]
 
@@ -133,6 +134,7 @@ export const sound = {
   cleared: () => effect('cleared', voices.cleared),
   /** One beep, for this many seconds left. */
   countdown: (second: number) => effect('countdown', (c, o, t) => voices.countdown(c, o, t, second)),
+  roundup: () => effect('roundup', voices.roundup),
   over: (newBest: boolean) => effect('over', (c, o, t) => voices.over(c, o, t, newBest)),
   hold,
 }
@@ -144,6 +146,7 @@ export function preview(id: Effect) {
     wrong: voices.wrong,
     cleared: voices.cleared,
     countdown: (c, o, t) => voices.countdown(c, o, t, 2),
+    roundup: voices.roundup,
     over: (c, o, t) => voices.over(c, o, t, false),
   }
   void play(schedules[id])

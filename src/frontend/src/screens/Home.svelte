@@ -184,9 +184,12 @@
         <p class="running" class:out={!timeLeft} role="timer">
           <Clock size="1rem" />
           {#if timeLeft}
-            <span><strong>{clock}</strong> left in this round. The clock keeps running while you're away.</span>
+            <span>
+              <strong>{clock}</strong> left in this round. The clock keeps running while you're away, so it's best to
+              go back and finish the round first.
+            </span>
           {:else}
-            <span>This round's time is up. The next round starts when you continue.</span>
+            <span>Round {saved.round} completed. Continue to start the next round.</span>
           {/if}
         </p>
         <div class="tools">

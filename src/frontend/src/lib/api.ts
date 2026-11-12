@@ -113,8 +113,11 @@ export const api = {
   /** Submit a word for the current round. */
   submit: (word: string) => request<GameState | ErrorReply>('/play', 'POST', { word }),
 
-  /** Skip to the next round. The server ignores this on the last round. */
-  skip: () => request<GameState | ErrorReply>('/play', 'POST', { new_word: true }),
+  /**
+   * Skip to the next round. It says which round it is for, so a repeated or late request (the round already
+   * moved on) does nothing instead of skipping a second one. The server ignores this on the last round.
+   */
+  skip: (round: number) => request<GameState | ErrorReply>('/play', 'POST', { new_word: true, round }),
 
   /** End the game and clear the cookie. Scores of 10+ go on the leaderboard. */
   quit: () => request<GameState>('/close', 'POST'),

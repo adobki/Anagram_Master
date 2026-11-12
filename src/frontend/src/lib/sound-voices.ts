@@ -79,6 +79,12 @@ export const cleared: Voice = (ctx, out, at) => {
   notes.forEach((pitch, i) => note(ctx, out, at + i * 0.09, pitch, { length: i === notes.length - 1 ? 0.55 : 0.2, peak: 0.32 }))
 }
 
+/** A round's time is up: two soft notes, a little "ding-dong" that rises. */
+export const roundup: Voice = (ctx, out, at) => {
+  note(ctx, out, at, E5, { length: 0.3, peak: 0.34, hold: 0.05 })
+  note(ctx, out, at + 0.15, A5, { length: 0.5, peak: 0.34, hold: 0.08 })
+}
+
 /** One beep of the last-ten-seconds countdown. It climbs a little for the final three. */
 export const countdown: Voice<[second: number]> = (ctx, out, at, second) => {
   note(ctx, out, at, second <= 3 ? A5 : E5, { length: 0.09, peak: 0.33 })
