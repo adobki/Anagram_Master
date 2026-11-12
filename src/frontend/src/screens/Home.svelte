@@ -16,6 +16,7 @@
   import logo from '../assets/logo.png'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
+  import GraduationCap from '@lucide/svelte/icons/graduation-cap'
   import Dialog from '../components/Dialog.svelte'
   import QuickGuide from '../components/QuickGuide.svelte'
   import TextField from '../components/TextField.svelte'
@@ -178,12 +179,16 @@
         <p><strong>Checking for a saved game…</strong></p>
         {#if slow}<p class="sub">Still trying. The server may be waking up.</p>{/if}
       </section>
-    {:else if lookup === 'failed'}
+    {:else if lookup === 'failed' && !hasHistory}
       <section class="card wait" role="status" aria-live="polite">
         <WifiOff size="1.75rem" />
         <p><strong>{network.online ? "Can't reach the server" : "You're offline"}</strong></p>
         <p class="sub">We need to check for a saved game before you can start. We'll keep trying.</p>
-        <Button variant="secondary" onclick={onretry}>Try again</Button>
+        <div class="down-actions">
+          <Button variant="secondary" onclick={onretry}>Try again</Button>
+          <Button onclick={ontutorial}><GraduationCap size="1.125rem" /> Play the tutorial</Button>
+        </div>
+        <p class="sub">The tutorial works without a connection.</p>
       </section>
     {:else if saved}
       <section class="card resume" aria-label="Game in progress">
@@ -216,6 +221,20 @@
       </section>
     {:else}
     <form class="card" onsubmit={start} novalidate>
+      {#if lookup === 'failed'}
+        <!-- Past games are stored on this device, so History still works; only starting or resuming needs the server. -->
+        <div class="down" role="status" aria-live="polite">
+          <WifiOff size="1.25rem" />
+          <div>
+            <p><strong>{network.online ? "Can't reach the server" : "You're offline"}</strong></p>
+            <p class="sub">Playing needs a connection, but your History is right here. We'll keep trying.</p>
+            <div class="down-actions">
+              <Button variant="secondary" size="sm" onclick={onretry}>Try again</Button>
+              <Button size="sm" type="button" onclick={ontutorial}><GraduationCap size="1rem" /> Play the tutorial</Button>
+            </div>
+          </div>
+        </div>
+      {/if}
       <TextField
         label="Your name"
         placeholder="e.g. Ada"
@@ -226,9 +245,10 @@
         spellcheck="false"
         bind:value={player.name}
         {error}
+        disabled={lookup === 'failed'}
         hint="3–15 characters. It appears on the leaderboard."
       />
-      <Button type="submit" size="lg" block>
+      <Button type="submit" size="lg" block disabled={lookup === 'failed'}>
         <Play size="1.25rem" />
         Start game
       </Button>
@@ -316,6 +336,38 @@
 
   .sub {
     font-size: var(--text-sm);
+  }
+
+  .down-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+
+  /* The notice inside the (blocked) form, when the server can't be reached but History is still there. */
+  .down {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--warn-soft);
+    color: var(--text-2);
+  }
+
+  .down > :global(svg) {
+    margin-top: 0.15rem;
+    color: var(--warn);
+  }
+
+  .down strong {
+    color: var(--text);
+  }
+
+  .down .down-actions {
+    justify-content: flex-start;
+    margin-top: var(--space-2);
   }
 
   .tools {
