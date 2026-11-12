@@ -9,6 +9,8 @@
  * API share one origin (through Vite's proxy during development).
  */
 
+import { clientInfo } from './client-info'
+
 const BASE = '/api/v1'
 
 /** One submitted answer: the word, and whether it scored. */
@@ -74,7 +76,7 @@ export function isGameState(reply: GameState | ErrorReply): reply is GameState {
 async function send<T>(path: string, method = 'GET', body?: object): Promise<{ data: T; res: Response }> {
   const res = await fetch(BASE + path, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), 'X-Client': clientInfo() },
     body: body ? JSON.stringify(body) : undefined,
   })
   const data = await res.json().catch(() => null)
