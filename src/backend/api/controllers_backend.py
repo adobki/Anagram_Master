@@ -97,15 +97,14 @@ def play():
                 if not isinstance(data, dict):
                     return jsonify({'error': 'Expected a JSON body'}), 400
                 new, word = data.get('new_word'), data.get('word')
+                round_no = data.get('round')  # the round a skip is meant for
             else:
-                new, word = False, None
+                new, word, round_no = False, None, None
             # Process session based on given data
             if word and not new:
                 session = game.play(word)
             else:
-                if new:
-                    game.new_round()
-                session = game.status
+                session = game.skip(round_no) if new else game.status
             return signed_response(jsonify(session), player_id)
         except (SyntaxError, ValueError) as err:
             print({'error': err})

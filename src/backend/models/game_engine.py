@@ -11,6 +11,11 @@ from utils import isAnagram, getRoundWords, dictionary
 class Game:
     """Class used to manage game engine data."""
 
+    # Root words that never start a real (leaderboard) game. "master" is the
+    # word the app's offline tutorial is built on, so players shouldn't meet it
+    # as a real round. Future non-competitive modes may use it.
+    RESERVED_ROOTS = frozenset({'master'})
+
     @staticmethod
     def now():
         """Returns current date and time"""
@@ -76,15 +81,16 @@ class Game:
             error = 'FileStorage I/O Error. Contact admin to fix it'
             raise IOError(error)
 
-        words = getRoundWords(dictionary, self.db.rounds_limit,
-                              self.db.word_len_min, self.db.word_len_max)
+        words = getRoundWords(
+            [word for word in dictionary if word not in self.RESERVED_ROOTS],
+            self.db.rounds_limit, self.db.word_len_min, self.db.word_len_max)
         payload = self.db.new(name, words, host_id)
         self.__id = payload['_id']
         self.__update(payload)
 
         return {'id': payload['_id'], **self.status}
 
-    def new_round(self, forced: bool = False) -> str | None:
+    def new_round(self) -> str | None:
         """Starts a new game round in the current game session"""
         if not self.active:  # Check if current session is active
             return 'Game session is already over'
@@ -92,8 +98,6 @@ class Game:
         words, used = self.words, self.used_words
         # End game session if there are no new round words left
         if not words:
-            if forced:
-                self.end()
             return 'ERROR: This is the last word for the game'
 
         # Update words and return True
@@ -115,9 +119,13 @@ class Game:
         if not dictionary:  # Check words dictionary status
             error = 'FileStorage I/O Error. Contact admin to fix it'
             raise IOError(error)
-        if self.time <= 0:  # Check if time is up for the current round
-            self.__error = self.new_round(forced=True)
-            return self.status
+        if self.time <= 0:  # Time is up for the current round
+            # The server no longer moves on by itself: the player (or the app
+            # for them) asks for the next round with skip(), so a late word
+            # and a skip can't both advance the game. The word isn't scored.
+            return self.__with_error(
+                self.status, "Time's up for this round. "
+                             "Move on to the next one.")
         if not word or not isinstance(word, str):  # Data validation
             return self.status
 
@@ -186,6 +194,29 @@ class Game:
         if error:
             return {**self.status, 'words': words, 'error': error}
         return {**self.status, 'words': words}
+
+    @staticmethod
+    def __with_error(status: dict, error: str) -> dict:
+        """Status with an error message, unless it already is one (the last
+        round timing out ends the game and returns only an error)"""
+        return {**status, 'error': error} if 'status' in status else status
+
+    def skip(self, round: int = None):
+        """Moves on to the next round, if the given round is still the
+        current one. A request for a round that has already ended (a repeated
+        or late one) does nothing, so a round can't be skipped twice. Without
+        a round (older clients) it moves on as it always did."""
+        if not self.active:  # Check if current session is active
+            return self.__with_error(self.status, 'Game session is already over')
+        current = self.__rounds_limit - len(self.words)
+        if round is not None and (isinstance(round, bool) or
+                                  not isinstance(round, int)):
+            return self.__with_error(self.status, 'round must be a number')
+        if round is not None and round != current:
+            return self.__with_error(self.status,
+                                     'That round is already over.')
+        self.new_round()
+        return self.status
 
     def end(self) -> str | None:
         """Ends the current game session"""
