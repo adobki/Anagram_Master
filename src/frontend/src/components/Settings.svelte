@@ -323,16 +323,17 @@
 
   <section aria-labelledby="{uid}-app">
     <h3 id="{uid}-app">App</h3>
-    {#if install.available}
+    {#if !install.installed}
       <div class="action">
         <span class="text">
           <span class="label">Install app</span>
-          <span class="hint">Adds Anagram Master to your home screen or desktop, so it opens like any app.</span>
+          <span class="hint">
+            Adds Anagram Master to your home screen or desktop, so it opens full screen like any app.
+            {#if !install.available}Shows you how for this browser.{/if}
+          </span>
         </span>
-        <Button size="sm" onclick={() => install.prompt()}>Install</Button>
+        <Button size="sm" onclick={() => install.start()}>{install.available ? 'Install' : 'How to'}</Button>
       </div>
-    {:else if install.needsShareMenu}
-      <p class="note">To install on an iPhone or iPad: tap Share, then Add to Home Screen.</p>
     {/if}
     <div class="action">
       <span class="text">
@@ -491,8 +492,7 @@
     min-height: var(--tap);
   }
 
-  .action + .action,
-  .note + .action {
+  .action + .action {
     margin-top: var(--space-3);
   }
 

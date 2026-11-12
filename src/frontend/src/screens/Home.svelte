@@ -16,7 +16,9 @@
   import logo from '../assets/logo.png'
   import Button from '../components/Button.svelte'
   import IconButton from '../components/IconButton.svelte'
+  import Download from '@lucide/svelte/icons/download'
   import GraduationCap from '@lucide/svelte/icons/graduation-cap'
+  import X from '@lucide/svelte/icons/x'
   import Dialog from '../components/Dialog.svelte'
   import QuickGuide from '../components/QuickGuide.svelte'
   import TextField from '../components/TextField.svelte'
@@ -29,6 +31,7 @@
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import { reducedMotion } from '../lib/motion'
   import { guide } from '../lib/guide.svelte'
+  import { install } from '../lib/install.svelte'
   import { player } from '../lib/player.svelte'
   import { toasts } from '../lib/toast.svelte'
 
@@ -256,6 +259,17 @@
         <HistoryIcon size="1.125rem" /> History
       </Button>
     </form>
+    {/if}
+
+    {#if install.nudge}
+      <aside class="install" aria-label="Install the app">
+        <Download size="1.25rem" />
+        <p>
+          <strong>Play it as an app.</strong> Full screen, no browser bars, one tap from your home screen.
+        </p>
+        <Button size="sm" onclick={() => install.start()}>Install</Button>
+        <IconButton label="Not now" onclick={() => install.snooze()}><X size="1.125rem" /></IconButton>
+      </aside>
     {/if}
   </main>
 
@@ -587,5 +601,26 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--space-2);
+  }
+
+  .install {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+    font-size: var(--text-sm);
+    color: var(--text-2);
+  }
+
+  .install > :global(svg) {
+    color: var(--accent);
+  }
+
+  .install strong {
+    color: var(--text);
   }
 </style>

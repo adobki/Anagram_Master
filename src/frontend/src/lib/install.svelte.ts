@@ -1,9 +1,47 @@
 /**
  * Installing the app. Chrome, Edge and Samsung Internet offer a prompt that
  * the page can start from its own button; they announce it with an event that
- * has to be caught early and kept. Safari on iPhone and iPad has no such
- * prompt, so there the player is told which menu to use.
+ * has to be caught early and kept (and only while the browser thinks it
+ * worthwhile). Safari on iPhone and iPad, and Firefox, have no such prompt, so
+ * there the player is shown which menu to use (components/InstallGuide.svelte).
+ * Every place that offers installing calls `install.start()`, which uses the
+ * prompt when there is one and the guide when there isn't.
  */
+
+/** Where the home-screen card was last dismissed (ms since 1970); it comes back after a while. */
+const SNOOZE_KEY = 'am-install'
+const SNOOZE_MS = 14 * 24 * 60 * 60 * 1000
+
+const ua = navigator.userAgent
+export type Platform = 'ios' | 'android' | 'desktop'
+export type Browser = 'safari' | 'chrome' | 'edge' | 'firefox' | 'samsung' | 'other'
+
+export const platform: Platform =
+  /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    ? 'ios'
+    : /Android/.test(ua)
+      ? 'android'
+      : 'desktop'
+
+export const browser: Browser = /SamsungBrowser/.test(ua)
+  ? 'samsung'
+  : /EdgiOS|Edg\//.test(ua)
+    ? 'edge'
+    : /FxiOS|Firefox/.test(ua)
+      ? 'firefox'
+      : /CriOS|Chrome/.test(ua)
+        ? 'chrome'
+        : /Safari/.test(ua)
+          ? 'safari'
+          : 'other'
+
+function snoozedUntil(): number {
+  try {
+    return Number(localStorage.getItem(SNOOZE_KEY)) + SNOOZE_MS
+  } catch {
+    return 0
+  }
+}
 
 interface InstallPromptEvent extends Event {
   prompt(): Promise<void>
@@ -16,6 +54,9 @@ class InstallState {
   #offer = $state.raw<InstallPromptEvent | null>(null)
   /** The app is already running as an installed app. */
   installed = $state(standalone.matches || (navigator as { standalone?: boolean }).standalone === true)
+  /** The how-to-install dialog is open. */
+  guideOpen = $state(false)
+  #snoozed = $state(snoozedUntil() > Date.now())
 
   constructor() {
     addEventListener('beforeinstallprompt', (event) => {
@@ -34,10 +75,25 @@ class InstallState {
     return !!this.#offer && !this.installed
   }
 
-  /** An iPhone or iPad, where installing is done from the Share menu. */
-  get needsShareMenu() {
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-    return ios && !this.installed
+  /** The home screen's reminder is due: not installed, and not dismissed lately. */
+  get nudge() {
+    return !this.installed && !this.#snoozed
+  }
+
+  /** "Not now" on the reminder: it stays away for a couple of weeks. */
+  snooze() {
+    this.#snoozed = true
+    try {
+      localStorage.setItem(SNOOZE_KEY, String(Date.now()))
+    } catch {
+      // Storage is blocked: it will show again next visit.
+    }
+  }
+
+  /** The Install buttons: the browser's own prompt if it offered one, otherwise the step-by-step guide. */
+  start() {
+    if (this.available) void this.prompt()
+    else this.guideOpen = true
   }
 
   async prompt() {

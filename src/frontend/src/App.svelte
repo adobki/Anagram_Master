@@ -5,6 +5,7 @@
   import Dialog from './components/Dialog.svelte'
   import OfflineBanner from './components/OfflineBanner.svelte'
   import Toaster from './components/Toaster.svelte'
+  import InstallGuide from './components/InstallGuide.svelte'
   import Settings from './components/Settings.svelte'
   import UpdatePrompt from './components/UpdatePrompt.svelte'
   import { api, ApiError, type GameState } from './lib/api'
@@ -378,6 +379,7 @@
 </Dialog>
 
 <Settings {game} inGame={screen === 'game'} />
+<InstallGuide />
 <Toaster />
 <UpdatePrompt hidden={screen === 'game' || screen === 'tutorial'} />
 

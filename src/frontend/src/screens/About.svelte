@@ -13,6 +13,7 @@
   import logoText from '../assets/about/logo-text.webp'
   import logoTextWhite from '../assets/about/logo-text-white.webp'
   import Button from '../components/Button.svelte'
+  import InstallSteps from '../components/InstallSteps.svelte'
   import IconButton from '../components/IconButton.svelte'
   import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
@@ -126,12 +127,12 @@
         <h3>Install it as an app</h3>
         <img class="icon" src="/pwa-192.png" alt="The Anagram Master app icon" width="96" height="96" />
         <p>
-          Anagram Master is a progressive web app. Use Install app in Settings, or your browser's menu, to add it to your
-          home screen (or to install it, on a computer) and it opens like any other app, full screen and with its own
-          icon. The app itself loads even without a connection, and you're told when a new version is ready. Games are
+          Anagram Master is a progressive web app, and it is best played installed: it opens like any other app, full
+          screen and with its own icon, with no browser bars in the way. The app itself loads even without a connection, and you're told when a new version is ready. Games are
           timed and scored on the server, so you still need to be online to play. (The server keeps the clock so nobody
           can cheat by pausing it.)
         </p>
+        <InstallSteps />
         <p>
           Settings, the gear at the top of every screen, has the rest: light or dark (it follows your device until you
           choose), larger text, high contrast, sound effects with a volume control, vibration, and more.
