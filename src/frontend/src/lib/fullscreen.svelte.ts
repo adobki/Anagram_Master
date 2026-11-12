@@ -12,6 +12,7 @@
  *   - taps inside Settings don't, so the switch can still be turned off;
  *   - switching it off, or resetting settings, leaves full screen.
  */
+import { canFullscreen } from './device'
 import { settings } from './settings.svelte'
 import { ui } from './ui.svelte'
 
@@ -29,7 +30,7 @@ const isActive = () => !!(doc.fullscreenElement ?? doc.webkitFullscreenElement)
 
 class FullscreenState {
   /** The browser can do it. */
-  supported = !!(doc.fullscreenEnabled || doc.webkitFullscreenEnabled)
+  supported = canFullscreen
   /** The page is full screen right now. */
   active = $state(isActive())
 
@@ -66,31 +67,44 @@ class FullscreenState {
     if (settings.fullscreen) this.#startOnNextTap()
   }
 
-  /** Browsers only allow full screen from a tap or key press, so wait for one. */
+  /**
+   * Browsers only allow full screen from a tap or key press, so wait for one. They disagree about which events
+   * count: Chrome takes `pointerup`, but Safari and Firefox on a touch screen only treat `touchend` and `click` as a
+   * real tap (the Settings switch works everywhere because it is a click). So all of them are tried.
+   */
   #startOnNextTap() {
     if (this.#waiting) return
     this.#waiting = true
-    const events = ['pointerup', 'keydown'] as const
+    const events = ['pointerup', 'touchend', 'click', 'keydown'] as const
     const stop = () => {
       for (const type of events) removeEventListener(type, attempt, true)
       this.#waiting = false
     }
-    const attempt = async () => {
+    let trying = false
+    const attempt = async (event: Event) => {
       if (!settings.fullscreen || this.active) return stop()
       if (ui.settingsOpen) return // someone is in Settings, maybe about to switch it off
-      await this.enter() // asked for synchronously, while the tap still counts
+      if (event instanceof KeyboardEvent && event.key === 'Escape') return // that is how it is left, not a gesture to enter by
+      if (trying) return // one tap sends several events; ask once
+      trying = true
+      try {
+        await this.enter(event.type) // asked for synchronously, while the tap still counts
+      } finally {
+        trying = false
+      }
       if (this.active) stop()
     }
     for (const type of events) addEventListener(type, attempt, true)
   }
 
   /** Must be called from a tap or key press, or the browser refuses. */
-  async enter() {
+  async enter(trigger = 'switch') {
     try {
       if (root.requestFullscreen) await root.requestFullscreen({ navigationUI: 'hide' })
       else await root.webkitRequestFullscreen?.()
-    } catch {
-      // Not allowed just now (no tap before it, or the browser said no).
+    } catch (error) {
+      // Not allowed just now (no tap before it, or the browser said no). Left in the console for remote debugging.
+      console.debug(`Full screen refused after "${trigger}":`, error)
     }
   }
 

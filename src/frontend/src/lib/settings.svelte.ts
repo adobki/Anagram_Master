@@ -7,7 +7,7 @@
  * reads it before first paint.
  */
 
-import { touchFirst } from './device'
+import { touchFirst, canFullscreen } from './device'
 import { rem } from './rem.svelte'
 
 const KEY = 'am-settings'
@@ -103,7 +103,7 @@ const DEFAULTS: { [K in keyof Choices]: () => Choices[K] } = {
   textSize: () => 'default',
   motion: () => 'auto',
   highContrast: () => matchMedia('(prefers-contrast: more)').matches,
-  fullscreen: () => false,
+  fullscreen: () => touchFirst && canFullscreen, // on by default for a phone or tablet that can do it
 }
 
 const KEYS = Object.keys(DEFAULTS) as (keyof Choices)[]

@@ -11,3 +11,11 @@ export const canVibrate = touchFirst && typeof navigator.vibrate === 'function'
 
 /** The Screen Wake Lock API, which keeps the screen from dimming. */
 export const canKeepAwake = 'wakeLock' in navigator
+
+/**
+ * The browser can show a page full screen: computers, Android, iPads. (Not iPhones, where only video can; a page
+ * added to the Home Screen is full screen anyway.)
+ */
+export const canFullscreen = !!(
+  document.fullscreenEnabled || (document as Document & { webkitFullscreenEnabled?: boolean }).webkitFullscreenEnabled
+)
