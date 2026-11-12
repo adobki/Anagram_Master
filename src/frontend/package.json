@@ -1,7 +1,7 @@
 {
   "name": "anagram-master-frontend",
   "private": true,
-  "version": "2.261112.1543",
+  "version": "2.261112.1921",
   "criticalSince": "2.261112.1518",
   "type": "module",
   "scripts": {

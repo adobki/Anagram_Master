@@ -435,6 +435,7 @@
   footer {
     position: sticky;
     bottom: 0;
+    z-index: 5; /* above the page content, below the top bar, toasts and dialogs */
     display: grid;
     gap: var(--space-3);
     padding-top: var(--space-6);

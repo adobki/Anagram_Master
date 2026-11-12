@@ -40,7 +40,7 @@
   const PARTS: { n: number; name: string; text: string }[] = [
     { n: 1, name: 'Pause', text: 'Opens the break menu: go home, read the help, change settings or end the game.' },
     { n: 2, name: 'Round', text: 'Which round you are on. There are 20, and each has its own word.' },
-    { n: 3, name: 'Settings', text: 'Sound, text size, controls and more.' },
+    { n: 3, name: 'Settings', text: 'Theme, sound, text size, controls and more.' },
     { n: 4, name: 'Clock', text: 'Two minutes a round. It turns red for the last ten seconds.' },
     {
       n: 5,
@@ -54,13 +54,14 @@
       text: 'Every word you have made this round, longest first. Tap one to put it back in the tray. The Missed tab shows words that did not count.',
     },
     { n: 8, name: 'Tray', text: 'The word you are building. Tap a letter to take it back out, or drag letters to reorder them.' },
-    { n: 9, name: 'Letters', text: 'Tap a letter to add it, or just type. You can drag them too.' },
+    { n: 9, name: 'Root word / Letters', text: "The letters of the round's root word. Tap one to add it, or just type. You can drag them too." },
     { n: 10, name: 'Shuffle, Restore, Keep', text: 'Shuffle mixes the letters up. Restore puts them back in order. Keep leaves your word in the tray after you submit.' },
     { n: 11, name: 'Clear, Submit, Delete', text: 'Clear empties the tray, Submit checks your word, Delete removes the last letter.' },
   ]
 </script>
 
-<figure class="map">
+<div class="map">
+  <figure class="wrap">
   <div class="mock" inert aria-hidden="true">
     <div class="top">
       <div class="part"><i class="pin">1</i><IconButton label="Pause" tabindex={-1}><Pause size="1.375rem" /></IconButton></div>
@@ -120,13 +121,34 @@
       </div>{/if}
     </figcaption>
   {/if}
-</figure>
+  </figure>
+</div>
 
 <style>
   .map {
+    margin: 0;
+    container-type: inline-size;
+  }
+
+  .wrap {
     display: grid;
     gap: var(--space-4);
     margin: 0;
+  }
+
+  /* Room to spare (the How to play page on a computer, the guide dialog): the picture beside its list. */
+  @container (min-width: 38rem) {
+    .wrap {
+      grid-template-columns: 24rem 1fr;
+      align-items: start;
+      gap: var(--space-6);
+    }
+
+    .mock {
+      position: sticky;
+      top: var(--space-2);
+      margin-inline: 0;
+    }
   }
 
   /* The picture: the real parts in a fixed-shape frame that fits any screen. */
@@ -142,6 +164,8 @@
     box-shadow: var(--shadow-md);
     pointer-events: none;
     user-select: none;
+    /* The pins stay above the picture but can't climb over anything outside it (a sticky Play bar, say). */
+    isolation: isolate;
   }
 
   .part {

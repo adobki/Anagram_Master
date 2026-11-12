@@ -57,7 +57,7 @@
 
 <style>
   dialog {
-    width: min(30rem, calc(100vw - 1.5rem));
+    width: min(52rem, calc(100vw - 1.5rem));
     max-width: none;
     max-height: calc(100dvh - 1.5rem);
     padding: 0;

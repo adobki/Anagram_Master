@@ -35,10 +35,10 @@
   </ScreenBar>
 
   <main>
-    <section>
+    <section class="wide">
       <h2><Target size="1.25rem" /> The goal</h2>
       <p>
-        Each round deals you a long word. Make as many words as you can from its letters, each letter used once, before
+        Each round deals you a long word, the root word. Make as many words as you can from its letters, each letter used once, before
         the two-minute clock runs out. There are 20 rounds.
       </p>
       <p class="example">
@@ -46,7 +46,7 @@
       </p>
     </section>
 
-    <section>
+    <section class="wide">
       <h2><LayoutDashboard size="1.25rem" /> The game screen</h2>
       <InterfaceMap />
     </section>
@@ -146,6 +146,19 @@
     padding-block: var(--space-4) var(--space-6);
   }
 
+  /* A computer or a wide window: two columns of cards, with the game screen map across both. */
+  @media (min-width: 56rem) {
+    main {
+      max-width: 66rem;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+  }
+
   section {
     display: grid;
     gap: var(--space-3);
@@ -229,6 +242,7 @@
   footer {
     position: sticky;
     bottom: 0;
+    z-index: 5; /* above the page content, below the top bar, toasts and dialogs */
     padding-top: var(--space-6);
     background: linear-gradient(transparent, var(--bg) 35%);
   }
