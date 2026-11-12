@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import House from '@lucide/svelte/icons/house'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
@@ -30,10 +31,12 @@
     note?: string
     onplay: () => void
     onhome: () => void
+    /** Opened from History: the top-left button goes back there instead of home. */
+    onback?: () => void
     onleaderboard: () => void
   }
 
-  let { result, best = 0, beaten = null, past = false, note = '', onplay, onhome, onleaderboard }: Props = $props()
+  let { result, best = 0, beaten = null, past = false, note = '', onplay, onhome, onback, onleaderboard }: Props = $props()
 
   const rounds = $derived(
     Object.entries(result.words).map(([root, answers], i) => ({
@@ -74,7 +77,11 @@
 
 <div class="screen">
   <ScreenBar>
-    <IconButton label="Home" onclick={onhome}><House size="1.25rem" /></IconButton>
+    {#if onback}
+      <IconButton label="Back" onclick={onback}><ArrowLeft size="1.25rem" /></IconButton>
+    {:else}
+      <IconButton label="Home" onclick={onhome}><House size="1.25rem" /></IconButton>
+    {/if}
     <SettingsButton />
   </ScreenBar>
 

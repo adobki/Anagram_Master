@@ -2,7 +2,7 @@
   import ArrowRight from '@lucide/svelte/icons/arrow-right'
   import CircleStop from '@lucide/svelte/icons/circle-stop'
   import Clock from '@lucide/svelte/icons/clock'
-  import House from '@lucide/svelte/icons/house'
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Button from '../components/Button.svelte'
   import Dialog from '../components/Dialog.svelte'
   import IconButton from '../components/IconButton.svelte'
@@ -20,10 +20,10 @@
     busy?: boolean
     onresume: () => void
     onend: () => Promise<void>
-    onhome: () => void
+    onback: () => void
   }
 
-  let { game, canResume, busy = false, onresume, onend, onhome }: Props = $props()
+  let { game, canResume, busy = false, onresume, onend, onback }: Props = $props()
 
   const info = $derived(game.state)
   const found = $derived(Object.values(info.words).flat().filter(([, valid]) => valid).map(([word]) => word))
@@ -41,7 +41,7 @@
 
 <div class="screen">
   <ScreenBar>
-    <IconButton label="Home" onclick={onhome}><House size="1.25rem" /></IconButton>
+    <IconButton label="Back" onclick={onback}><ArrowLeft size="1.25rem" /></IconButton>
     <SettingsButton />
   </ScreenBar>
 
@@ -59,7 +59,7 @@
 
       <p class="running">
         <Clock size="1rem" />
-        <span>The clock keeps running while you're away. If a round's time ran out, the next one starts when you resume.</span>
+        <span>The clock keeps running while you're away. If a round's time ran out, the next one waits for you to tap when you resume.</span>
       </p>
 
       {#if canResume}

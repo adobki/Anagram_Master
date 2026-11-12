@@ -49,6 +49,8 @@
   let viewing = $state<string | null>(null)
   let pastNote = $state('')
   let working = $state(false)
+  /** The results on show were reached from History, so their top-left button goes back there. */
+  let overFromHistory = $state(false)
   const viewed = $derived(viewing ? games.get(viewing) : undefined)
 
   // A game saved behind the player's cookie shows up as "Continue" on the home
@@ -256,7 +258,7 @@
         game = createApiGame(state, entry.token)
       }
       await game!.quit()
-      if (!game!.state.status) finish(false)
+      if (!game!.state.status) finish(true, true) // replaces the stats page, so Back lands on the list
     } catch (error) {
       if (isGone(error)) endedAway(id)
       else toasts.show("Couldn't reach the server. Try again.")
@@ -265,7 +267,8 @@
     }
   }
 
-  function finish(replace = true) {
+  function finish(replace = true, fromHistory = false) {
+    overFromHistory = fromHistory
     if (game) {
       result = $state.snapshot(game.state)
       ;({ best, beaten } = recordScore(result.score))
@@ -293,6 +296,7 @@
         {beaten}
         onplay={() => newGame(player.valid ? player.trimmed : result!.name)}
         onhome={() => go('home')}
+        onback={overFromHistory ? back : undefined}
         onleaderboard={() => go('scores')}
       />
     {:else if screen === 'scores'}
@@ -311,6 +315,7 @@
           note={pastNote}
           onplay={() => newGame(player.valid ? player.trimmed : viewed.state.name)}
           onhome={() => go('home')}
+          onback={back}
           onleaderboard={() => go('scores')}
         />
       {:else}
@@ -320,7 +325,7 @@
           busy={working}
           onresume={() => resumePast(viewed.id)}
           onend={() => endPast(viewed.id)}
-          onhome={() => go('home')}
+          onback={back}
         />
       {/if}
     {:else if screen === 'help'}
