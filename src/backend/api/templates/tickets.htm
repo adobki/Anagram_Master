@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Tickets</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; padding: 1rem; font: 15px/1.45 system-ui, sans-serif; background: Canvas; color: CanvasText; }
+    main { max-width: 52rem; margin: 0 auto; }
+    h1 { font-size: 1.25rem; margin: 0 0 1rem; }
+    .card { border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 10px; padding: 1rem; margin: 0 0 1rem; }
+    .head { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: baseline; color: color-mix(in srgb, CanvasText 65%, transparent); font-size: .85rem; }
+    .stars { color: #e5a400; letter-spacing: .1em; }
+    .tag { padding: 0 .5rem; border-radius: 99px; background: color-mix(in srgb, CanvasText 10%, transparent); font-weight: 600; }
+    .message { white-space: pre-wrap; margin: .75rem 0; }
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: .15rem 1rem; margin: .5rem 0 0; font-size: .9rem; }
+    dt { color: color-mix(in srgb, CanvasText 60%, transparent); }
+    dd { margin: 0; overflow-wrap: anywhere; }
+    .wa { display: inline-block; margin-top: .6rem; padding: .45rem .9rem; background: #25d366; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; }
+    .shots { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+    .shots img { height: 7rem; border-radius: 6px; border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); }
+    .empty { color: color-mix(in srgb, CanvasText 60%, transparent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Tickets <span class="empty">({{ tickets|length }})</span></h1>
+  {% for t in tickets %}
+  <article class="card">
+    <div class="head">
+      <span>{{ t.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+      {% if t.category %}<span class="tag">{{ t.category|capitalize }}</span>{% endif %}
+      {% if t.rating %}<span class="stars" title="{{ t.rating }} of 5">{{ '★' * t.rating }}{{ '☆' * (5 - t.rating) }}</span>{% endif %}
+    </div>
+    <div class="message">{{ t.message }}</div>
+    <dl>
+      {% if t.player %}<dt>Player</dt><dd>{{ t.player }}</dd>{% endif %}
+      {% if t.name %}<dt>Name</dt><dd>{{ t.name }}</dd>{% endif %}
+      {% if t.email %}<dt>Email</dt><dd><a href="mailto:{{ t.email }}">{{ t.email }}</a></dd>{% endif %}
+      {% if t.whatsapp %}<dt>WhatsApp</dt><dd>{{ t.whatsapp }}</dd>{% endif %}
+      {% if t.client %}<dt>App</dt><dd>{{ t.client }}</dd>{% endif %}
+    </dl>
+    {% if t.whatsapp %}
+    <a class="wa" href="https://wa.me/{{ t.whatsapp.lstrip('+') }}?text={{ 'Hi, this is about your Anagram Master feedback.'|urlencode }}">Chat on WhatsApp</a>
+    {% endif %}
+    {% if t.images %}
+    <div class="shots">
+      {% for image in t.images %}
+      <a href="/v1/tickets/{{ t.id }}/{{ loop.index0 }}" target="_blank" rel="noopener"><img src="/v1/tickets/{{ t.id }}/{{ loop.index0 }}" alt="Screenshot {{ loop.index }}" loading="lazy"></a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </article>
+  {% else %}
+  <p class="empty">No tickets yet.</p>
+  {% endfor %}
+</main>
+</body>
+</html>

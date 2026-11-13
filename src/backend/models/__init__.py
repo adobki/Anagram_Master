@@ -2,6 +2,7 @@
 """ Initializes the models package """
 from .game_engine import Game
 from .db_scores import DBScores
+from .db_tickets import DBTickets
 from .cypher import Cypher
 
 

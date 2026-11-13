@@ -6,6 +6,7 @@ from api.controllers_frontend import about, home, gameplay, onboarding, \
                                      html_scores, redirect_internal
 from api.controllers_backend import init, status, resume, play, close, \
                                     scores, api_status
+from api.controllers_feedback import feedback, tickets, ticket_image
 
 # General/shared routes
 general_routes = [
@@ -38,6 +39,9 @@ api_routes = [
     # scores route: Returns highscores
     {'rule': '/api/v1/scores', 'view_func': scores, 'methods': ['GET'],
      'strict_slashes': False},
+    # feedback route: Receives a feedback form (text and up to 6 images)
+    {'rule': '/api/v1/feedback', 'view_func': feedback, 'methods': ['POST'],
+     'strict_slashes': False},
 ]
 
 # Legacy (v1) web pages, kept under /v1. The new web app is served at /.
@@ -55,6 +59,9 @@ html_routes = [
     {'rule': '/v1/scores', 'view_func': html_scores, 'strict_slashes': False},
     # about route: About/info page
     {'rule': '/v1/about', 'view_func': about, 'strict_slashes': False},
+    # tickets route: Private page listing feedback (needs a login stored in MongoDB)
+    {'rule': '/v1/tickets', 'view_func': tickets, 'strict_slashes': False},
+    {'rule': '/v1/tickets/<ticket_id>/<int:n>', 'view_func': ticket_image},
     # redirect route: makes above HTML routes accessible with a *.htm extension
     {'rule': '/v1/<page>.htm', 'view_func': redirect_internal},
 ]

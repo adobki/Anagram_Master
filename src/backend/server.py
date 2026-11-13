@@ -3,6 +3,7 @@
 Run from this folder with `python -m server`. Listens on $PORT, default 5555.
 """
 
+import load_env  # noqa: F401  (optional .env file; must come before anything reads the environment)
 from api.api import app as am_api
 from os import environ
 from paste.translogger import TransLogger
