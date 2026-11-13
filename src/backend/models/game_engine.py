@@ -107,7 +107,7 @@ class Game:
         self.__update(self.db.update({
             'words': self.__words,
             'round_time': self.__round_time,
-            'score': self.score,  # This is for easy bonus computation in play()
+            'score': self.score,
         }))
 
     def play(self, word: str = None):
@@ -133,7 +133,14 @@ class Game:
         root_word = self.word.lower()
         used_words = [key[0] for key in self.used_words[root_word]]
         correct = [key[1] for key in self.used_words[root_word]].count(True)
-        score, updates, new_round, error = self.score, dict(), False, None
+        if correct >= self.__rounds_limit:  # The round has all its words
+            # A complete round takes no more words (nothing is scored or
+            # penalised). Like a round that ran out of time, it waits for
+            # skip(): the server never moves on to the next round by itself.
+            return self.__with_error(
+                self.status, 'This round is complete. '
+                             'Move on to the next one.')
+        score, updates, cleared, error = self.score, dict(), False, None
 
         # Check if given word is the root word for the current round
         if word == root_word:
@@ -152,7 +159,7 @@ class Game:
                 # Add bonus if correct words limit reached
                 if correct == self.__rounds_limit - 1:
                     bonus += 50
-                    new_round = True  # Triggers round switch below
+                    cleared = True  # This word completes the round
                 score += ceil(10 * len(word) / len(root_word)) + bonus
             else:
                 score -= 2  # Penalise player for invalid input
@@ -171,16 +178,14 @@ class Game:
             updates['score'] = score
 
         # Update and save game session if scores or used words was updated
-        if new_round and self.words:  # Rounds remain: move on to the next one
-            self.__words = updates['words']
-            self.__score = score
-            error = self.new_round()
-        elif updates:
+        if updates:
             payload = self.__save(**updates)
             self.__update(payload)
-            # The last round's word limit ends the game (its words and score
-            # were saved first, so the leaderboard gets the score shown)
-            if new_round:
+            # A completed round stays the current one until skip() is called,
+            # however it ended. Only the last round differs: its word limit
+            # ends the game (its words and score were saved first, so the
+            # leaderboard gets the score shown)
+            if cleared and not self.words:
                 self.end()
                 error = None
 
