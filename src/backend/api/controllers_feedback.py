@@ -1,20 +1,22 @@
 #!/usr/bin/python3
-"""Feedback: the submission API (/api/v1/feedback) and the private tickets page (/v1/tickets)."""
+"""Feedback: the submission API, the admin tickets pages (/v1/tickets) and the public ticket views."""
 import hmac
 import re
 import threading
 import time
+from api.controllers_app import asset
 from api.controllers_auxiliary import error_handler
 from flask import jsonify, make_response, render_template, request
 from models import DBTickets
+from models.db_tickets import (CODE, FIELDS, MAX_RESPONSE, OWN_FIELDS, PER_PAGE, STATUSES,
+                               CodeTaken, clean_fields, public_view)
 from os import environ
+from urllib.parse import quote, urlencode, urlparse
 from utils import db, mailer
 
 # ── Rules for a submission ──────────────────────────────────────────────────
 MAX_IMAGES = 6
-MAX_IMAGE_BYTES = 2 * 1024 * 1024       # each image
-MAX_TOTAL_BYTES = 4 * 1024 * 1024       # all images together
-BODY_HEADROOM = 256 * 1024              # text fields and multipart framing on top of the images
+MAX_TOTAL_BYTES = 4 * 1024 * 1024       # all images together (every request is also capped at 10 MB, see api.py)
 MAX_MESSAGE = 1000
 CATEGORIES = ('bug', 'idea', 'praise')
 E164 = re.compile(r'^\+[1-9]\d{6,14}$')
@@ -30,6 +32,11 @@ _lock = threading.Lock()
 _submits: dict[str, list[float]] = {}
 _fails: dict[str, int] = {}
 _blocked: dict[str, float] = {}
+
+
+def _base() -> str:
+    """The public address of this server (for links in mail and on pages)."""
+    return environ.get('am_app_url', '').rstrip('/') or request.host_url.rstrip('/')
 
 
 def _bad(message: str, code: int = 400):
@@ -64,11 +71,6 @@ def _limited(ip: str) -> bool:
 def feedback():
     """Receives a feedback form: text fields and up to six images (multipart/form-data)."""
     ip = request.remote_addr or '?'
-    length = request.content_length
-    if length is None:
-        return _bad('Content-Length is required')
-    if length > MAX_TOTAL_BYTES + BODY_HEADROOM:
-        return _bad('That is too much to upload at once (4 MB of images at most)', 413)
 
     form = request.form
     if (form.get('website') or '').strip():
@@ -109,9 +111,7 @@ def feedback():
         return _bad(f'At most {MAX_IMAGES} images', 413)
     images, total = [], 0
     for file in files:
-        data = file.read(MAX_IMAGE_BYTES + 1)
-        if len(data) > MAX_IMAGE_BYTES:
-            return _bad('Each image must be 2 MB or smaller', 413)
+        data = file.read()
         total += len(data)
         if total > MAX_TOTAL_BYTES:
             return _bad('The images are over 4 MB in all', 413)
@@ -127,21 +127,21 @@ def feedback():
               'player': player, 'whatsapp': whatsapp, 'email': email,
               'client': (request.headers.get('X-Client') or '')[:300] or None}
     try:
-        ticket_id = DBTickets().add(ticket, images)
+        saved = DBTickets().add(ticket, images)
     except Exception:
         return _bad('We could not save that just now. Please try again.', 503)
 
-    # Email it to the owner (in the background, so the player isn't kept waiting).
-    base = environ.get('am_app_url', '').rstrip('/')
-    link = f'{base}/v1/tickets' if base else None
-    subject, text, html, reply_to = mailer.ticket_email({**ticket, 'images': images}, link)
+    # Email it to the owner (in the background, so the player isn't kept waiting). The link is the
+    # ticket's own share link, which every ticket has from the start.
+    link = f'{_base()}/v1/feedback/shared/{saved["code"]}' if environ.get('am_app_url') else None
+    subject, text, html, reply_to = mailer.ticket_email({**ticket, 'status': 'pending', 'images': images}, link)
     attachments = [(f'screenshot-{i + 1}.{mime.split("/")[1].replace("jpeg", "jpg")}', mime, data)
                    for i, (mime, data) in enumerate(images)]
     mailer.send_in_background(subject, text, html, reply_to, attachments)
-    return jsonify({'ok': True, 'id': ticket_id})
+    return jsonify({'ok': True, 'id': saved['tid'], 'url': f'/v1/feedback/{saved["tid"]}'})
 
 
-# ── The tickets page ────────────────────────────────────────────────────────
+# ── The tickets pages (admin) ───────────────────────────────────────────────
 
 def _not_found():
     """What every unknown address gets, and what a blocked address gets for everything."""
@@ -195,19 +195,155 @@ def _gate():
     return _not_found()
 
 
+def _assets() -> dict:
+    """Files borrowed from the front end's build (their names carry a hash, so they are found by pattern)."""
+    return {'font': asset('outfit-latin-wght-normal-*.woff2'), 'logo': asset('logo-horizontal-white-*.webp')}
+
+
+def _page(template: str, **context):
+    response = make_response(render_template(template, **context, assets=_assets()))
+    response.headers['Cache-Control'] = 'private, no-store'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+
+def _image_response(found):
+    mime, data = found
+    response = make_response(data)
+    response.headers['Content-Type'] = mime
+    response.headers['Content-Disposition'] = 'inline'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Cache-Control'] = 'private, no-store'
+    response.headers['Content-Security-Policy'] = "default-src 'none'; sandbox"
+    return response
+
+
+def _int(value, default: int, low: int = 0, high: int = 10**6) -> int:
+    try:
+        return min(max(int(value), low), high)
+    except (TypeError, ValueError):
+        return default
+
+
 def tickets():
-    """The tickets, newest first (needs the login)."""
+    """The tickets: search, filters, sorting and pages (needs the login)."""
+    denied = _gate()
+    if denied:
+        return denied
+    status, category, sort = request.args.get('status'), request.args.get('category'), request.args.get('sort')
+    args = {
+        'q': (request.args.get('q') or '').strip()[:100],
+        'status': status if status in STATUSES else '',
+        'category': category if category in CATEGORIES else '',
+        'rating': _int(request.args.get('rating'), 0, 0, 5),
+        'sort': sort if sort in ('new', 'old', 'high', 'low') else 'new',
+    }
+    page = _int(request.args.get('page'), 1, 1)
+    try:
+        model = DBTickets()
+        items, total = model.list(**args, page=page)
+        counts = model.counts()
+    except Exception:
+        return error_handler(500)
+    pages = max(1, -(-total // PER_PAGE))
+    page = min(page, pages)
+
+    def link(**changes):
+        """This list's address with some filters changed (back to page 1 unless a page is given)."""
+        merged = {**args, 'page': 1, **changes}
+        keep = {k: v for k, v in merged.items()
+                if v not in ('', 0, None) and not (k == 'sort' and v == 'new') and not (k == 'page' and v == 1)}
+        return '/v1/tickets' + ('?' + urlencode(keep) if keep else '')
+
+    return _page('tickets.htm', tickets=items, total=total, counts=counts, args=args, page=page,
+                 pages=pages, link=link)
+
+
+def _contact(ticket: dict, share_url: str | None) -> dict:
+    """Ready-made ways to answer the sender, with the share link in the default message."""
+    who = ticket.get('name') or ticket.get('player')
+    lines = [f'Hi{" " + who if who else ""}, thanks for your feedback on Anagram Master.']
+    if share_url:
+        lines.append(f'You can follow it here: {share_url}')
+    text = '\n\n'.join(lines)
+    out = {'text': text, 'whatsapp': None, 'email': None}
+    if ticket.get('whatsapp'):
+        out['whatsapp'] = f'https://wa.me/{ticket["whatsapp"].lstrip("+")}?text={quote(text)}'
+    if ticket.get('email'):
+        out['email'] = (f'mailto:{quote(ticket["email"])}?subject={quote("Your Anagram Master feedback")}'
+                        f'&body={quote(text)}')
+    return out
+
+
+def _same_origin() -> bool:
+    """Writes come only from this site's own page (the browser sends the login by itself, so check)."""
+    site = request.headers.get('Sec-Fetch-Site')
+    if site:
+        return site in ('same-origin', 'none')
+    origin = request.headers.get('Origin')
+    return bool(origin) and urlparse(origin).netloc == request.host
+
+
+def ticket_detail(ticket_id: str):
+    """One ticket, with its images, reply form and sharing (GET); its status and reply saved (POST)."""
     denied = _gate()
     if denied:
         return denied
     try:
-        items = DBTickets().list()
+        model = DBTickets()
+        if request.method == 'POST':
+            if not _same_origin() or not request.is_json:
+                return _bad('Not allowed', 403)
+            body = request.get_json(silent=True) or {}
+            status, response = body.get('status'), body.get('response')
+            if status not in STATUSES or not isinstance(response, str):
+                return _bad('A status and a reply (possibly empty) are needed')
+            response = response.replace('\x00', '').strip()
+            if len(response) > MAX_RESPONSE:
+                return _bad(f'The reply is too long (up to {MAX_RESPONSE} characters)')
+            if not model.update(ticket_id, status, response):
+                return _not_found()
+            return jsonify({'ok': True, 'status': status})
+        ticket = model.find(id=ticket_id)
     except Exception:
         return error_handler(500)
-    response = make_response(render_template('tickets.htm', tickets=items))
-    response.headers['Cache-Control'] = 'private, no-store'
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    return response
+    if not ticket:
+        return _not_found()
+    share = ticket.get('share')
+    share_url = f'{_base()}/v1/feedback/shared/{share["code"]}' if share else None
+    return _page('ticket.htm', t=ticket, share=share, share_url=share_url, fields=FIELDS,
+                 statuses=STATUSES, contact=_contact(ticket, share_url), base=_base(),
+                 own_url=f'{_base()}/v1/feedback/{ticket["tid"]}')
+
+
+def ticket_share(ticket_id: str):
+    """Starts or changes (PUT: code and fields) or stops (DELETE) sharing a ticket."""
+    denied = _gate()
+    if denied:
+        return denied
+    if not _same_origin():
+        return _bad('Not allowed', 403)
+    try:
+        model = DBTickets()
+        if request.method == 'DELETE':
+            return jsonify({'ok': True}) if model.clear_share(ticket_id) else _not_found()
+        if not request.is_json:
+            return _bad('Not allowed', 403)
+        body = request.get_json(silent=True) or {}
+        code, fields = body.get('code'), clean_fields(body.get('fields'))
+        if not isinstance(code, str) or not CODE.match(code):
+            return _bad('The link name needs 3 to 60 letters, digits, - or _')
+        if fields is None:
+            return _bad('Those fields are not recognised')
+        try:
+            found = model.set_share(ticket_id, code, fields)
+        except CodeTaken:
+            return _bad('That link name is taken. Pick another.', 409)
+        if not found:
+            return _not_found()
+        return jsonify({'ok': True, 'url': f'{_base()}/v1/feedback/shared/{code}'})
+    except Exception:
+        return error_handler(500)
 
 
 def ticket_image(ticket_id: str, n: int):
@@ -216,16 +352,76 @@ def ticket_image(ticket_id: str, n: int):
     if denied:
         return denied
     try:
-        found = DBTickets().image(ticket_id, n)
+        found = DBTickets().image(n, id=ticket_id)
     except Exception:
         return error_handler(500)
-    if not found:
+    return _image_response(found) if found else _not_found()
+
+
+# ── Public, read-only views (no login) ──────────────────────────────────────
+
+def _public_page(view: dict, images_url: str, shared: bool):
+    return _page('ticket_public.htm', v=view, images_url=images_url, shared=shared)
+
+
+def own_ticket(tid: str):
+    """The submitter's page for their ticket: what they sent, its status and the reply."""
+    try:
+        ticket = DBTickets().find(tid=tid)
+    except Exception:
+        return error_handler(500)
+    if not ticket:
         return _not_found()
-    mime, data = found
-    response = make_response(data)
-    response.headers['Content-Type'] = mime
-    response.headers['Content-Disposition'] = 'inline'
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['Cache-Control'] = 'private, no-store'
-    response.headers['Content-Security-Policy'] = "default-src 'none'; sandbox"
+    return _public_page(public_view(ticket, OWN_FIELDS), f'/v1/feedback/{tid}', False)
+
+
+def own_ticket_image(tid: str, n: int):
+    try:
+        found = DBTickets().image(n, tid=tid)
+    except Exception:
+        return error_handler(500)
+    return _image_response(found) if found else _not_found()
+
+
+def _shared(code: str):
+    """(ticket, shared fields), or (None, None) when there is no such ticket or it isn't shared."""
+    ticket = DBTickets().find(code=code)
+    share = (ticket or {}).get('share')
+    return (ticket, share['fields']) if share else (None, None)
+
+
+def shared_ticket(code: str):
+    """A ticket's share page: only the fields the admin chose to share."""
+    try:
+        ticket, fields = _shared(code)
+    except Exception:
+        return error_handler(500)
+    if not ticket:
+        return _not_found()
+    return _public_page(public_view(ticket, fields), f'/v1/feedback/shared/{code}', True)
+
+
+def shared_ticket_image(code: str, n: int):
+    try:
+        ticket, fields = _shared(code)
+        found = DBTickets().image(n, code=code) if ticket and 'images' in fields else None
+    except Exception:
+        return error_handler(500)
+    return _image_response(found) if found else _not_found()
+
+
+def shared_ticket_json(code: str):
+    """The same shared view as JSON, for the web app's own screen."""
+    try:
+        ticket, fields = _shared(code)
+    except Exception:
+        return error_handler(500)
+    if not ticket:
+        return _not_found()
+    view = public_view(ticket, fields)
+    for key in ('date', 'responded_at'):
+        if view.get(key):
+            view[key] = view[key].isoformat()
+    response = jsonify(view)
+    response.headers['Cache-Control'] = 'no-store'
     return response

@@ -3,12 +3,17 @@
 import load_env  # noqa: F401  (optional .env file; must come before anything reads the environment)
 from api.controllers_auxiliary import error_handler
 from api.routes import app_routes, api_routes, html_routes, general_routes
-from flask import Flask
+from flask import Flask, request
 from os import environ
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+# No request may carry a body of 10 MB or more, whatever the endpoint.
+MAX_BODY = 10 * 1024 * 1024
+
 app = Flask(__name__)
+# Backstop for a body sent without a Content-Length (chunked): Flask answers 413 as soon as the body is read.
+app.config['MAX_CONTENT_LENGTH'] = MAX_BODY - 1
 # Keep dict keys in insertion order: a game's `words` lists rounds in play order.
 app.json.sort_keys = False
 # Behind a reverse proxy (Render: 1) the player's address is in X-Forwarded-For; the rate limits and the
@@ -34,6 +39,13 @@ for route in html_routes:
 # The web app, at / (registered last: it has a catch-all file route)
 for route in app_routes:
     app.add_url_rule(**route)
+
+
+@app.before_request
+def guard_body_size():
+    """Turns away an oversized request before any controller (or the body) is touched."""
+    if (request.content_length or 0) >= MAX_BODY:
+        return error_handler(413)
 
 
 # Error handlers

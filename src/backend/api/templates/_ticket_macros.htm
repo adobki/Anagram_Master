@@ -1,0 +1,15 @@
+{% macro stars(n) -%}
+<span class="stars" title="{{ n }} of 5" aria-label="{{ n }} of 5 stars">{% for i in range(5) %}<span{% if i >= n %} class="off"{% endif %}>★</span>{% endfor %}</span>
+{%- endmacro %}
+
+{% macro status_chip(s) -%}
+<span class="chip {{ s }}">{{ {'pending': 'Pending', 'active': 'Active', 'closed': 'Closed'}.get(s, s) }}</span>
+{%- endmacro %}
+
+{% macro category_chip(c) -%}
+<span class="chip {{ c }}">{{ {'bug': 'Bug', 'idea': 'Idea', 'praise': 'Praise'}.get(c, c) }}</span>
+{%- endmacro %}
+
+{% macro when(d) -%}
+{% if d %}<time datetime="{{ d.strftime('%Y-%m-%dT%H:%M:%SZ') }}" title="{{ d.strftime('%Y-%m-%d %H:%M') }} UTC">{{ d.strftime('%d %b %Y, %H:%M') }}</time>{% endif %}
+{%- endmacro %}

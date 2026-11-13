@@ -66,6 +66,8 @@ def error_handler(e):
             return jsonify({'error': f'{code}: Forbidden'}), code
         case 404:
             return jsonify({'error': f'{code}: Not Found'}), code
+        case 413:
+            return jsonify({'error': f'{code}: Payload Too Large'}), code
         case 405:
             return jsonify({'error': f'{code}: Method Not Allowed'}), code
         case 500:

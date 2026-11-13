@@ -1,0 +1,207 @@
+{% extends '_ticket_base.htm' %}
+{% from '_ticket_macros.htm' import stars, status_chip, category_chip, when %}
+{% set labels = {'message': 'Message', 'rating': 'Rating', 'category': 'Category', 'status': 'Status', 'response': 'Your reply', 'images': 'Screenshots', 'date': 'Date', 'player': 'Player name', 'name': 'Name', 'email': 'Email', 'whatsapp': 'WhatsApp number', 'app': 'App details (version and settings)'} %}
+{% block title %}Ticket{% endblock %}
+{% block css %}
+    .crumb { display: inline-block; margin-bottom: 1rem; color: var(--muted); text-decoration: none; }
+    .crumb:hover { color: var(--text); }
+    .meta { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin-bottom: 1.25rem; }
+    .meta h1 { font-size: 1.5rem; flex-basis: 100%; }
+    .cols { display: grid; gap: 1rem; align-items: start; }
+    @media (min-width: 860px) { .cols { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); } }
+    .stack { display: grid; gap: 1rem; }
+    .panel h2 { font-size: 1rem; margin-bottom: .75rem; }
+    .message { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.05rem; }
+    dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .35rem 1rem; margin: 0; font-size: .92rem; }
+    dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
+    .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: .6rem; }
+    .shots button { padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); cursor: zoom-in; aspect-ratio: 1; }
+    .shots img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #lb { width: auto; max-width: calc(100vw - 2rem); padding: .5rem; }
+    #lb img { max-width: 100%; max-height: calc(100vh - 6rem); display: block; border-radius: 8px; }
+    #lb form { margin-top: .5rem; text-align: right; }
+    .grid2 { display: grid; gap: .75rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .85rem; }
+    .link { display: flex; gap: .5rem; align-items: center; }
+    .link input { font-size: .85rem; }
+    .fields { display: grid; gap: .1rem; margin: .5rem 0 1rem; max-height: 40vh; overflow: auto; }
+    .fields label { display: flex; align-items: center; gap: .6rem; padding: .4rem .25rem; cursor: pointer; border-radius: 8px; }
+    .fields label:hover { background: var(--surface-2); }
+    .fields input { width: 1.1rem; height: 1.1rem; min-height: 0; accent-color: var(--accent); }
+    .fields .sens { color: var(--muted); font-size: .8rem; margin-left: auto; }
+    .row2 { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; margin-top: 1rem; }
+    .err { color: #ff8a8a; font-size: .9rem; min-height: 1.3em; margin: .5rem 0 0; }
+{% endblock %}
+{% block body %}
+<a class="crumb" href="/v1/tickets">← All tickets</a>
+
+<div class="meta">
+  <h1>{{ 'Feedback from ' ~ (t.name or t.player) if (t.name or t.player) else 'Feedback' }}</h1>
+  {{ status_chip(t.status or 'pending') }}
+  {% if t.category %}{{ category_chip(t.category) }}{% endif %}
+  {% if t.rating %}{{ stars(t.rating) }}{% endif %}
+  <span class="muted">{{ when(t.created_at) }}</span>
+</div>
+
+<div class="cols">
+  <div class="stack">
+    <section class="panel">
+      <h2>Message</h2>
+      <div class="message">{{ t.message }}</div>
+    </section>
+
+    {% if t.images %}
+    <section class="panel">
+      <h2>Screenshots ({{ t.images|length }})</h2>
+      <div class="shots">
+        {% for image in t.images %}
+        <button type="button" data-img="/v1/tickets/{{ t.id }}/{{ loop.index0 }}" aria-label="Open screenshot {{ loop.index }}"><img src="/v1/tickets/{{ t.id }}/{{ loop.index0 }}" alt="Screenshot {{ loop.index }}" loading="lazy"></button>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="panel">
+      <h2>Status and reply</h2>
+      <div class="grid2">
+        <div><label class="lbl" for="status">Status</label>
+          <select id="status">
+            {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if (t.status or 'pending') == s }}>{{ s|capitalize }}</option>{% endfor %}
+          </select></div>
+        <div><label class="lbl" for="response">Reply shown to the sender (and to anyone it is shared with)</label>
+          <textarea id="response" maxlength="2000" placeholder="Thanks! We're looking into this…">{{ t.response or '' }}</textarea></div>
+      </div>
+      <p class="err" id="saveErr" role="alert"></p>
+      <div class="actions"><button class="btn primary" id="save" type="button">Save</button>
+        {% if t.responded_at %}<span class="muted" style="align-self:center">Last reply {{ when(t.responded_at) }}</span>{% endif %}</div>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="panel">
+      <h2>Details</h2>
+      <dl>
+        {% if t.player %}<dt>Player</dt><dd>{{ t.player }}</dd>{% endif %}
+        {% if t.name %}<dt>Name</dt><dd>{{ t.name }}</dd>{% endif %}
+        {% if t.email %}<dt>Email</dt><dd><a href="mailto:{{ t.email }}">{{ t.email }}</a></dd>{% endif %}
+        {% if t.whatsapp %}<dt>WhatsApp</dt><dd>{{ t.whatsapp }}</dd>{% endif %}
+        {% if t.client %}<dt>App</dt><dd>{{ t.client }}</dd>{% endif %}
+        <dt>Sender's page</dt><dd><a href="{{ own_url }}" target="_blank" rel="noopener">Open</a></dd>
+      </dl>
+      {% if contact.whatsapp or contact.email %}
+      <div class="actions">
+        {% if contact.whatsapp %}<a class="btn wa" href="{{ contact.whatsapp }}" target="_blank" rel="noopener">Chat on WhatsApp</a>{% endif %}
+        {% if contact.email %}<a class="btn" href="{{ contact.email }}">Email {{ t.name or 'them' }}</a>{% endif %}
+      </div>
+      <p class="muted" style="font-size:.8rem;margin:.6rem 0 0">The message is filled in{% if share_url %} with the share link{% endif %}.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel" id="shareBox">
+      <h2>Sharing</h2>
+      {% if share %}
+      <p class="muted" style="margin:0 0 .6rem;font-size:.9rem">Anyone with this link can read the shared fields.</p>
+      <div class="link"><input id="shareUrl" value="{{ share_url }}" readonly aria-label="Share link"><button class="btn" id="copy" type="button">Copy</button></div>
+      <p class="muted" style="font-size:.85rem;margin:.6rem 0 0">Shared: {{ share.fields|map('title')|join(', ') if share.fields else 'nothing' }}</p>
+      <div class="actions"><button class="btn" id="editShare" type="button">Edit sharing</button><a class="btn" href="{{ share_url }}" target="_blank" rel="noopener">Preview</a></div>
+      {% else %}
+      <p class="muted" style="margin:0;font-size:.9rem">Not shared. The link doesn't work until you start sharing.</p>
+      <div class="actions"><button class="btn primary" id="editShare" type="button">Start sharing</button></div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+
+<dialog id="lb"><img alt=""><form method="dialog"><button class="btn">Close</button></form></dialog>
+
+<dialog id="shareDlg" aria-labelledby="shareTitle">
+  <form id="shareForm" method="dialog">
+    <h2 id="shareTitle" style="margin-bottom:.75rem">{{ 'Edit sharing' if share else 'Start sharing' }}</h2>
+    <label class="lbl" for="code">Link name</label>
+    <div class="link"><input id="code" maxlength="60" autocomplete="off" spellcheck="false" pattern="[A-Za-z0-9_\-]{3,60}"><button class="btn" id="rand" type="button">New random</button></div>
+    <p class="muted" id="preview" style="font-size:.8rem;margin:.4rem 0 1rem;overflow-wrap:anywhere"></p>
+    <span class="lbl">What the link shows</span>
+    <div class="fields" id="fieldList">
+      {% for f in fields %}
+      <label><input type="checkbox" value="{{ f }}"> {{ labels[f] }}{% if f in ('player', 'name', 'email', 'whatsapp') %}<span class="sens">contact</span>{% elif f == 'app' %}<span class="sens">admin only by default</span>{% endif %}</label>
+      {% endfor %}
+    </div>
+    <p class="err" id="shareErr" role="alert"></p>
+    <div class="row2">
+      {% if share %}<button class="btn danger" type="button" id="stop" style="margin-right:auto">Stop sharing</button>{% endif %}
+      <button class="btn" type="button" id="cancel">Cancel</button>
+      <button class="btn primary" type="submit" id="saveShare">Save</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const id = {{ t.id|tojson }}
+  const share = {{ share|tojson }}
+  const base = {{ base|tojson }}
+  const defaults = ['message', 'rating', 'category', 'status', 'response', 'images', 'date']
+  const $ = (s) => document.querySelector(s)
+  const toast = (text) => { const el = $('#toast'); el.textContent = text; el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 1800) }
+  const call = async (url, method, body) => {
+    const res = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined })
+    let data = {}
+    try { data = await res.json() } catch {}
+    if (!res.ok) throw new Error(data.error || 'Something went wrong (' + res.status + ')')
+    return data
+  }
+
+  // Screenshots, enlarged
+  document.querySelectorAll('[data-img]').forEach((b) => b.addEventListener('click', () => { $('#lb img').src = b.dataset.img; $('#lb').showModal() }))
+  $('#lb').addEventListener('click', (e) => { if (e.target === $('#lb')) $('#lb').close() })
+
+  // Status and reply
+  $('#save').addEventListener('click', async () => {
+    $('#saveErr').textContent = ''
+    $('#save').disabled = true
+    try { await call('/v1/tickets/' + id, 'POST', { status: $('#status').value, response: $('#response').value }); toast('Saved') }
+    catch (e) { $('#saveErr').textContent = e.message }
+    $('#save').disabled = false
+  })
+
+  // Sharing
+  const dlg = $('#shareDlg')
+  const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789'
+  const random = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (n) => alphabet[n % alphabet.length]).join('')
+  const showPreview = () => { $('#preview').textContent = base + '/v1/feedback/shared/' + ($('#code').value || '…') }
+  const open = () => {
+    $('#code').value = share ? share.code : random()
+    const on = share ? share.fields : defaults
+    document.querySelectorAll('#fieldList input').forEach((c) => { c.checked = on.includes(c.value) })
+    $('#shareErr').textContent = ''
+    showPreview()
+    dlg.showModal()
+  }
+  $('#editShare').addEventListener('click', open)
+  $('#rand').addEventListener('click', () => { $('#code').value = random(); showPreview() })
+  $('#code').addEventListener('input', showPreview)
+  $('#cancel').addEventListener('click', () => dlg.close())
+  $('#shareForm').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const code = $('#code').value.trim()
+    if (!/^[A-Za-z0-9_-]{3,60}$/.test(code)) { $('#shareErr').textContent = 'Use 3 to 60 letters, digits, - or _.'; return }
+    const fields = [...document.querySelectorAll('#fieldList input:checked')].map((c) => c.value)
+    $('#saveShare').disabled = true
+    try { await call('/v1/tickets/' + id + '/share', 'PUT', { code, fields }); location.reload() }
+    catch (err) { $('#shareErr').textContent = err.message; $('#saveShare').disabled = false }
+  })
+  const stop = $('#stop')
+  if (stop) stop.addEventListener('click', async () => {
+    if (!confirm('Stop sharing? The link will stop working for everyone, including the one in the email.')) return
+    try { await call('/v1/tickets/' + id + '/share', 'DELETE'); location.reload() }
+    catch (err) { $('#shareErr').textContent = err.message }
+  })
+  const copy = $('#copy')
+  if (copy) copy.addEventListener('click', async () => {
+    const input = $('#shareUrl')
+    try { await navigator.clipboard.writeText(input.value); toast('Link copied') } catch { input.select(); toast('Press Ctrl+C to copy') }
+  })
+})()
+</script>
+{% endblock %}

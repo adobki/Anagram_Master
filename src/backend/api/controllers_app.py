@@ -15,6 +15,12 @@ DIST = Path(environ.get('am_frontend_dist') or
 YEAR = 60 * 60 * 24 * 365
 
 
+def asset(pattern: str) -> str | None:
+    """The public path of a build asset found by glob (their names carry a hash), or None."""
+    found = sorted((DIST / 'assets').glob(pattern)) if (DIST / 'assets').is_dir() else []
+    return f'/assets/{found[0].name}' if found else None
+
+
 def app_index():
     """The web app's single page"""
     if not (DIST / 'index.html').is_file():

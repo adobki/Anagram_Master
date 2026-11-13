@@ -134,11 +134,11 @@ def ticket_email(ticket: dict, link: str | None) -> tuple[str, str, str, str | N
     rows = [
         ('Category', category),
         ('Rating', f'{"★" * rating}{"☆" * (5 - rating)} ({rating}/5)' if rating else ''),
+        ('Status', (ticket.get('status') or 'pending').capitalize()),
         ('Player', ticket.get('player') or ''),
         ('Name', ticket.get('name') or ''),
         ('WhatsApp', ticket.get('whatsapp') or ''),
         ('Email', ticket.get('email') or ''),
-        ('App', ticket.get('client') or ''),
         ('Images', str(len(ticket.get('images') or [])) or ''),
     ]
     rows = [(k, v) for k, v in rows if v and v != '0']
@@ -148,7 +148,7 @@ def ticket_email(ticket: dict, link: str | None) -> tuple[str, str, str, str | N
     if ticket.get('whatsapp'):
         text += ['', f'Chat on WhatsApp: {_wa_link(ticket["whatsapp"])}']
     if link:
-        text += ['', f'All tickets: {link}']
+        text += ['', f'This ticket: {link}']
 
     cells = ''.join(f'<tr><td style="padding:2px 12px 2px 0;color:#666">{e(k)}</td><td>{e(v)}</td></tr>' for k, v in rows)
     button = ''
@@ -161,7 +161,7 @@ def ticket_email(ticket: dict, link: str | None) -> tuple[str, str, str, str | N
         f'<h2 style="margin:0 0 8px">{e(category)} from {e(who)}</h2>'
         f'<p style="white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:6px">{e(ticket.get("message", ""))}</p>'
         f'<table>{cells}</table>{button}'
-        + (f'<p><a href="{e(link)}">Open the tickets page</a></p>' if link else '')
+        + (f'<p><a href="{e(link)}">Open this ticket</a></p>' if link else '')
         + '</div>'
     )
     return subject, '\n'.join(text), body, ticket.get('email') or None

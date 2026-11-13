@@ -4,7 +4,7 @@ Run from this folder with `python -m server`. Listens on $PORT, default 5555.
 """
 
 import load_env  # noqa: F401  (optional .env file; must come before anything reads the environment)
-from api.api import app as am_api
+from api.api import app as am_api, MAX_BODY
 from os import environ
 from paste.translogger import TransLogger
 from waitress import serve
@@ -19,4 +19,5 @@ options = {'application':           am_api,
            'format':                log_format}
 
 if __name__ == "__main__":
-    serve(TransLogger(**options), port=int(environ.get('PORT', 5555)), threads=4, ident='AnagramMaster')
+    serve(TransLogger(**options), port=int(environ.get('PORT', 5555)), threads=4, ident='AnagramMaster',
+          max_request_body_size=MAX_BODY - 1)
