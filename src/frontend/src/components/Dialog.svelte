@@ -120,7 +120,7 @@
 
   .actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* minmax: long labels can't push the row wider than the dialog */
     gap: var(--space-3);
     margin-top: var(--space-2);
   }

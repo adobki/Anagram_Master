@@ -6,7 +6,7 @@
   import { onDestroy, untrack } from 'svelte'
   import Button from '../components/Button.svelte'
   import Dialog from '../components/Dialog.svelte'
-  import type { Guide, GuidePart } from '../lib/game'
+  import { MIN_LEADERBOARD_SCORE, type Guide, type GuidePart } from '../lib/game'
   import { settings } from '../lib/settings.svelte'
   import {
     createTutorialGame,
@@ -105,9 +105,9 @@
     {
       text: 'Nice! Now tap your word in the Found list: it goes back into the tray, handy for building on a word or fixing a typo. (You could also edit it and submit another real word.)',
       after: 'There it is in the tray again. Add letters to make a longer word, or just press Next.',
-      parts: () => ['found', 'tray', 'actions'],
+      parts: () => ['found', 'rack', 'tray', 'actions'],
       focus: () => ['found'],
-      holdParts: ['found', 'tray', 'actions'],
+      holdParts: ['found', 'rack', 'tray', 'actions'],
       gate: (word) => (real(word) ? null : { text: 'Not a real word. Tap a word in the Found list, or press Skip' }),
       hint: null,
       progress: () => (foundMore() ? 'advance' : tapped ? 'hold' : false),
@@ -357,13 +357,23 @@
     That's all {TUTORIAL_GOAL} words and the +50 round bonus. A real game is twenty rounds like that, two minutes each.
     Go and play for real!
   </p>
+  <p class="free">
+    A game has 20 rounds, but you're free to end it whenever you like, from the pause menu. Whatever you've scored by
+    then still counts, if it is {MIN_LEADERBOARD_SCORE} points or more.
+  </p>
   {#snippet actions()}
-    <Button variant="secondary" onclick={onhelp}>Back to How to play</Button>
-    <Button onclick={onfinish}>Start a real game</Button>
+    <Button class="span" onclick={onfinish}>Start a real game</Button>
+    <Button class="span" variant="secondary" onclick={onhelp}>Back to How to play</Button>
   {/snippet}
 </Dialog>
 
 <style>
+  .free {
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-2);
+  }
+
   .tutorial {
     display: flex;
     flex-direction: column;
