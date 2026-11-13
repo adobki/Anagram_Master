@@ -26,9 +26,11 @@
   interface Props {
     onback: () => void
     onplay: () => void
+    /** Opens the feedback form. */
+    onfeedback: () => void
   }
 
-  let { onback, onplay }: Props = $props()
+  let { onback, onplay, onfeedback }: Props = $props()
 
   // This page shows the version, so look for a newer one while it's open. It's quiet:
   // nothing shows unless one is found, and then the usual banner does.
@@ -133,6 +135,10 @@
           can cheat by pausing it.)
         </p>
         <InstallSteps />
+        <p>
+          Something to tell us, a bug or an idea? <button type="button" class="link" onclick={onfeedback}>Send feedback</button>,
+          screenshots welcome.
+        </p>
         <p>
           Settings, the gear at the top of every screen, has the rest: light or dark (it follows your device until you
           choose), larger text, high contrast, sound effects with a volume control, vibration, and more.
@@ -308,6 +314,17 @@
       margin-inline: auto;
       aspect-ratio: 1 / 2;
     }
+  }
+
+  .link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
   }
 
   .install .icon {

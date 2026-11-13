@@ -29,15 +29,16 @@
   import Home from './screens/Home.svelte'
   import Leaderboard from './screens/Leaderboard.svelte'
   import PastGame from './screens/PastGame.svelte'
+  import Feedback from './screens/Feedback.svelte'
   import Tutorial from './screens/Tutorial.svelte'
 
-  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about' | 'history' | 'past' | 'tutorial'
+  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about' | 'history' | 'past' | 'tutorial' | 'feedback'
 
   // Each screen has a URL hash, so the browser's (and Android's) back button
   // moves between screens. #scores and #help can be linked to directly.
   const fromHash = (): Screen => {
     const hash = location.hash.slice(1) as Screen
-    return hash === 'scores' || hash === 'help' || hash === 'about' || hash === 'history' ? hash : 'home'
+    return hash === 'scores' || hash === 'help' || hash === 'about' || hash === 'history' || hash === 'feedback' ? hash : 'home'
   }
 
   let screen = $state<Screen>(fromHash())
@@ -140,7 +141,7 @@
     ui.closeSettings()
     const hash = location.hash.slice(1) as Screen
     const restorable =
-      hash === 'scores' || hash === 'help' || hash === 'about' || hash === 'history' || (hash === 'over' && result) || (hash === 'past' && viewed)
+      hash === 'scores' || hash === 'help' || hash === 'about' || hash === 'history' || hash === 'feedback' || (hash === 'over' && result) || (hash === 'past' && viewed)
     screen = restorable ? hash : 'home'
     scroller?.scrollTo(0, 0)
   }
@@ -335,7 +336,9 @@
     {:else if screen === 'tutorial'}
       <Tutorial onleave={back} onfinish={() => go('home', true)} onhelp={() => go('help', true)} />
     {:else if screen === 'about'}
-      <About onback={back} onplay={play} />
+      <About onback={back} onplay={play} onfeedback={() => go('feedback')} />
+    {:else if screen === 'feedback'}
+      <Feedback onback={back} onhome={() => go('home', true)} />
     {:else}
       <Home
         saved={game?.state.status ? game.state : null}
@@ -378,7 +381,7 @@
   {/snippet}
 </Dialog>
 
-<Settings {game} inGame={screen === 'game'} />
+<Settings {game} inGame={screen === 'game'} onfeedback={() => (ui.closeSettings(), go('feedback'))} />
 <InstallGuide />
 <Toaster />
 <UpdatePrompt hidden={screen === 'game' || screen === 'tutorial'} />

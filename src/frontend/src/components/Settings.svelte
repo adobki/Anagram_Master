@@ -30,6 +30,8 @@
   interface Props {
     /** The game in progress, if any. */
     game: GameController | null
+    /** Opens the feedback form (closing Settings first). */
+    onfeedback?: () => void
     /**
      * The game screen is showing. Then the round's clock is shown here (it keeps
      * running while Settings is open), and the name can't change, because the
@@ -38,7 +40,7 @@
     inGame: boolean
   }
 
-  let { game, inGame }: Props = $props()
+  let { game, inGame, onfeedback }: Props = $props()
   const uid = $props.id()
 
   const TEXT_SIZES: { value: TextSize; label: string }[] = [
@@ -323,6 +325,15 @@
 
   <section aria-labelledby="{uid}-app">
     <h3 id="{uid}-app">App</h3>
+    {#if onfeedback && !inGame}
+      <div class="action">
+        <span class="text">
+          <span class="label">Send feedback</span>
+          <span class="hint">Tell us what you think, report a bug or share an idea. Screenshots welcome.</span>
+        </span>
+        <Button size="sm" variant="secondary" onclick={onfeedback}>Open</Button>
+      </div>
+    {/if}
     {#if !install.installed}
       <div class="action">
         <span class="text">

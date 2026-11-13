@@ -73,20 +73,25 @@ export function isGameState(reply: GameState | ErrorReply): reply is GameState {
   return 'status' in reply
 }
 
-async function send<T>(path: string, method = 'GET', body?: object): Promise<{ data: T; res: Response }> {
+async function send<T>(path: string, method = 'GET', body?: object | FormData): Promise<{ data: T; res: Response }> {
+  const form = body instanceof FormData
   const res = await fetch(BASE + path, {
     method,
-    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), 'X-Client': clientInfo() },
-    body: body ? JSON.stringify(body) : undefined,
+    // A form sets its own Content-Type (with the multipart boundary), so it must not be given one here.
+    headers: { ...(body && !form ? { 'Content-Type': 'application/json' } : {}), 'X-Client': clientInfo() },
+    body: body ? (form ? body : JSON.stringify(body)) : undefined,
   })
   const data = await res.json().catch(() => null)
   if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText)
   return { data: data as T, res }
 }
 
-const request = <T>(path: string, method = 'GET', body?: object) => send<T>(path, method, body).then((r) => r.data)
+const request = <T>(path: string, method = 'GET', body?: object | FormData) => send<T>(path, method, body).then((r) => r.data)
 
 export const api = {
+  /** Send feedback: a multipart form (message, optional rating, category, name, WhatsApp, email, images). */
+  feedback: (form: FormData) => request<{ ok: boolean }>('/feedback', 'POST', form),
+
   /** Is the API up, and are its database and word list available? */
   health: () => request<Health>('/health'),
 
