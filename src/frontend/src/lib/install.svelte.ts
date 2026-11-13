@@ -49,6 +49,24 @@ interface InstallPromptEvent extends Event {
 }
 
 const standalone = matchMedia('(display-mode: standalone)')
+/** A browser tab can't tell that the app is installed elsewhere on the device, so the app remembers having run as one. */
+const INSTALLED = 'am-installed'
+
+function remembered(): boolean {
+  try {
+    return localStorage.getItem(INSTALLED) === '1'
+  } catch {
+    return false
+  }
+}
+
+function remember() {
+  try {
+    localStorage.setItem(INSTALLED, '1')
+  } catch {
+    // Storage is blocked: it just isn't remembered.
+  }
+}
 
 class InstallState {
   #offer = $state.raw<InstallPromptEvent | null>(null)
@@ -59,15 +77,25 @@ class InstallState {
   #snoozed = $state(snoozedUntil() > Date.now())
 
   constructor() {
+    if (this.installed) remember()
     addEventListener('beforeinstallprompt', (event) => {
       event.preventDefault() // keep it for our own button, instead of the browser's mini bar
       this.#offer = event as InstallPromptEvent
     })
     addEventListener('appinstalled', () => {
       this.installed = true
+      remember()
       this.#offer = null
     })
-    standalone.addEventListener('change', () => (this.installed = standalone.matches))
+    standalone.addEventListener('change', () => {
+      this.installed = standalone.matches
+      if (this.installed) remember()
+    })
+  }
+
+  /** The app is installed on this device as far as it can tell: running as an app now, or has been before. */
+  get onDevice() {
+    return this.installed || remembered()
   }
 
   /** The browser has offered to install it, and it isn't installed yet. */

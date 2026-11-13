@@ -15,7 +15,6 @@
   import {
     ACCEPT,
     extension,
-    fit,
     isPickable,
     MAX_IMAGES,
     MAX_TOTAL_BYTES,
@@ -24,6 +23,7 @@
   } from '../lib/images'
   import { network } from '../lib/network.svelte'
   import { player } from '../lib/player.svelte'
+  import { loadTickets, saveTicket, ticketUrl, type StoredTicket } from '../lib/tickets'
 
   /**
    * The feedback form: a message with an optional star rating and category, up to six screenshots (shrunk here
@@ -64,7 +64,6 @@
   interface Item {
     id: number
     name: string
-    original: File
     blob: Blob
     url: string
   }
@@ -75,6 +74,9 @@
   let sending = $state(false)
   let sent = $state(false)
   let error = $state('')
+  /** The token of the ticket just sent (its read-only page shows the status and any reply). */
+  let sentId = $state('')
+  const mine: StoredTicket[] = loadTickets()
 
   $effect(() => {
     const text = message
@@ -94,7 +96,8 @@
   )
   const emailError = $derived(email && !EMAIL.test(email.trim()) ? "That email address doesn't look right." : undefined)
   const total = $derived(items.reduce((sum, item) => sum + item.blob.size, 0))
-  const canSend = $derived(messageOk && !phoneError && !emailError && !picking && !sending && network.online)
+  const overLimit = $derived(total > MAX_TOTAL_BYTES)
+  const canSend = $derived(messageOk && !phoneError && !emailError && !overLimit && !picking && !sending && network.online)
 
   /** The number field takes only a + and digits (spaces and dashes from pasted numbers are dropped). */
   function cleanPhone() {
@@ -119,7 +122,7 @@
       }
       try {
         const blob = await shrink(file)
-        items.push({ id: ++seq, name: file.name, original: file, blob, url: URL.createObjectURL(blob) })
+        items.push({ id: ++seq, name: file.name, blob, url: URL.createObjectURL(blob) })
       } catch {
         notes.push(`“${file.name}” couldn't be read as an image`)
       }
@@ -140,15 +143,7 @@
     sending = true
     error = ''
     try {
-      let blobs: Blob[] = items.map((item) => item.blob)
-      if (total > MAX_TOTAL_BYTES) {
-        const fitted = await fit(items.map((item) => item.original))
-        if (!fitted) {
-          error = 'Those images are too big even after shrinking. Please remove one and try again.'
-          return
-        }
-        blobs = fitted
-      }
+      const blobs = items.map((item) => item.blob)
       const form = new FormData()
       form.set('message', message.trim())
       if (rating) form.set('rating', String(rating))
@@ -159,7 +154,11 @@
       if (player.trimmed) form.set('player', player.trimmed) // not a field: sent along quietly
       form.set('website', website)
       blobs.forEach((blob, i) => form.append('images', blob, `screenshot-${i + 1}.${extension(blob)}`))
-      await api.feedback(form)
+      const reply = await api.feedback(form)
+      if (reply.id) {
+        sentId = reply.id
+        saveTicket({ id: reply.id, at: Date.now(), text: message.trim().slice(0, 60), rating: rating || undefined })
+      }
       sent = true
       try {
         localStorage.removeItem(DRAFT)
@@ -196,12 +195,30 @@
         <CircleCheck size="2.5rem" />
         <h2>Thank you!</h2>
         <p>Your feedback is on its way to us. We read every message.</p>
+        {#if sentId}
+          <Button variant="secondary" onclick={() => location.assign(ticketUrl(sentId))}>View your feedback</Button>
+        {/if}
         <Button size="lg" onclick={onhome}>Back to Home</Button>
       </section>
     {:else}
       <form onsubmit={submit} novalidate>
         <section>
           <p class="lead">What do you think of Anagram Master? A bug, an idea, or just a hello.</p>
+          {#if mine.length}
+            <div class="field">
+              <span class="label">Your earlier feedback</span>
+              <ul class="mine">
+                {#each mine as ticket (ticket.id)}
+                  <li>
+                    <a href={ticketUrl(ticket.id)}>
+                      <span class="when">{new Date(ticket.at).toLocaleDateString()}</span>
+                      {ticket.text}{ticket.text.length >= 60 ? '…' : ''}
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
 
           <div class="field">
             <span class="label" id="rating-label">How would you rate it? <span class="opt">(optional)</span></span>
@@ -264,9 +281,10 @@
               />
             </label>
             <p class="note" aria-live="polite">
-              PNG, JPEG or WebP, up to 2 MB each. They are shrunk on your device before sending{items.length
-                ? ` (${readable(total)} in all)`
-                : ''}.
+              PNG, JPEG or WebP, any size. They are shrunk on your device, and all together must come to {readable(
+                MAX_TOTAL_BYTES,
+              )} or less{items.length ? ` (now ${readable(total)})` : ''}.
+              {#if overLimit}<span class="warn">That is over the limit: remove one or more.</span>{/if}
               {#if imageNote}<span class="warn">{imageNote}.</span>{/if}
             </p>
           </div>
@@ -274,7 +292,7 @@
 
         <section>
           <p class="lead">Want a reply? Leave a way to reach you. All three are optional.</p>
-          <TextField label="Your name" maxlength={40} autocomplete="name" bind:value={name} />
+          <TextField label="Your name" placeholder="e.g. Ada" maxlength={40} autocomplete="name" bind:value={name} />
           <TextField
             label="WhatsApp number"
             placeholder="+2348012345678"
@@ -288,6 +306,7 @@
           />
           <TextField
             label="Email"
+            placeholder="e.g. ada@example.com"
             inputmode="email"
             autocomplete="email"
             maxlength={120}
@@ -493,6 +512,30 @@
     height: 1px;
     opacity: 0;
     pointer-events: none;
+  }
+
+  .mine {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mine a {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .mine .when {
+    margin-right: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-3);
   }
 
   .note,

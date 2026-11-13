@@ -6,6 +6,7 @@
   import LogOut from '@lucide/svelte/icons/log-out'
   import HistoryIcon from '@lucide/svelte/icons/rotate-ccw-clock'
   import Info from '@lucide/svelte/icons/info'
+  import MessageSquare from '@lucide/svelte/icons/message-square'
   import Play from '@lucide/svelte/icons/play'
   import Plus from '@lucide/svelte/icons/plus'
   import WifiOff from '@lucide/svelte/icons/wifi-off'
@@ -58,6 +59,7 @@
     onleaderboard: () => void
     onhelp: () => void
     onabout: () => void
+    onfeedback: () => void
   }
 
   let {
@@ -76,6 +78,7 @@
     onleaderboard,
     onhelp,
     onabout,
+    onfeedback,
   }: Props = $props()
 
   const clock = $derived(`${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`)
@@ -329,6 +332,7 @@
   <footer>
     <Button variant="ghost" onclick={onleaderboard}><Trophy size="1.125rem" /> Leaderboard</Button>
     <Button variant="ghost" onclick={onhelp}><CircleQuestionMark size="1.125rem" /> How to play</Button>
+    <Button variant="ghost" onclick={onfeedback}><MessageSquare size="1.125rem" /> Send feedback</Button>
     <Button variant="ghost" onclick={onabout}><Info size="1.125rem" /> About</Button>
   </footer>
 </div>

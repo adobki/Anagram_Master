@@ -58,6 +58,27 @@ export interface Health {
 export type ScoreEntry = [score: number, name: string, date: string]
 
 /** A non-2xx reply. From /status, 401 or 403 means there is no saved game. */
+/** A shared ticket: every field is optional because the sharer picks which ones are visible. */
+export interface SharedFeedback {
+  message?: string
+  rating?: number
+  category?: 'bug' | 'idea' | 'praise'
+  status?: 'pending' | 'active' | 'closed'
+  response?: string
+  responded_at?: string
+  date?: string
+  /** How many screenshots are shared (see `sharedImage`). */
+  images?: number
+  player?: string
+  name?: string
+  email?: string
+  whatsapp?: string
+  app?: string
+}
+
+/** The address of a shared ticket's nth screenshot. */
+export const sharedImage = (code: string, n: number) => `${BASE}/feedback/shared/${encodeURIComponent(code)}/${n}`
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -90,7 +111,10 @@ const request = <T>(path: string, method = 'GET', body?: object | FormData) => s
 
 export const api = {
   /** Send feedback: a multipart form (message, optional rating, category, name, WhatsApp, email, images). */
-  feedback: (form: FormData) => request<{ ok: boolean }>('/feedback', 'POST', form),
+  feedback: (form: FormData) => request<{ ok: boolean; id?: string; url?: string }>('/feedback', 'POST', form),
+
+  /** A feedback ticket the team has chosen to share (only the fields they picked come back). */
+  sharedFeedback: (code: string) => request<SharedFeedback>(`/feedback/shared/${encodeURIComponent(code)}`),
 
   /** Is the API up, and are its database and word list available? */
   health: () => request<Health>('/health'),

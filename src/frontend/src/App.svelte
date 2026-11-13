@@ -30,13 +30,18 @@
   import Leaderboard from './screens/Leaderboard.svelte'
   import PastGame from './screens/PastGame.svelte'
   import Feedback from './screens/Feedback.svelte'
+  import FeedbackShared from './screens/FeedbackShared.svelte'
   import Tutorial from './screens/Tutorial.svelte'
 
-  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about' | 'history' | 'past' | 'tutorial' | 'feedback'
+  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about' | 'history' | 'past' | 'tutorial' | 'feedback' | 'shared'
 
   // Each screen has a URL hash, so the browser's (and Android's) back button
   // moves between screens. #scores and #help can be linked to directly.
+  /** `#feedback/shared/<code>` opens a ticket the team shared; the code is kept here. */
+  const SHARED = /^#feedback\/shared\/([^/]+)$/
+  let sharedCode = $state(decodeURIComponent(SHARED.exec(location.hash)?.[1] ?? ''))
   const fromHash = (): Screen => {
+    if (SHARED.test(location.hash)) return 'shared'
     const hash = location.hash.slice(1) as Screen
     return hash === 'scores' || hash === 'help' || hash === 'about' || hash === 'history' || hash === 'feedback' ? hash : 'home'
   }
@@ -139,6 +144,13 @@
     leaving = false
     menu = 'closed'
     ui.closeSettings()
+    const match = SHARED.exec(location.hash)
+    if (match) {
+      sharedCode = decodeURIComponent(match[1])
+      screen = 'shared'
+      scroller?.scrollTo(0, 0)
+      return
+    }
     const hash = location.hash.slice(1) as Screen
     const restorable =
       hash === 'scores' || hash === 'help' || hash === 'about' || hash === 'history' || hash === 'feedback' || (hash === 'over' && result) || (hash === 'past' && viewed)
@@ -337,6 +349,8 @@
       <Tutorial onleave={back} onfinish={() => go('home', true)} onhelp={() => go('help', true)} />
     {:else if screen === 'about'}
       <About onback={back} onplay={play} onfeedback={() => go('feedback')} />
+    {:else if screen === 'shared'}
+      <FeedbackShared code={sharedCode} onback={back} />
     {:else if screen === 'feedback'}
       <Feedback onback={back} onhome={() => go('home', true)} />
     {:else}
@@ -356,6 +370,7 @@
         onleaderboard={() => go('scores')}
         onhelp={() => go('help')}
         onabout={() => go('about')}
+        onfeedback={() => go('feedback')}
       />
     {/if}
   </div>

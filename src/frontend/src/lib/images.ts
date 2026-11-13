@@ -4,25 +4,17 @@
  */
 
 export const MAX_IMAGES = 6
-/** The biggest file a player may pick (before shrinking). */
-export const MAX_PICK_BYTES = 2 * 1024 * 1024
 /** All the images in one submission, after shrinking. The server enforces the same limit. */
 export const MAX_TOTAL_BYTES = 4 * 1024 * 1024
 export const ACCEPT = 'image/png,image/jpeg,image/webp'
 const TYPES = ACCEPT.split(',')
 
-/** From gentle to hard: how big and how compressed an image is made. */
-const LEVELS = [
-  { edge: 1600, quality: 0.8 },
-  { edge: 1400, quality: 0.7 },
-  { edge: 1200, quality: 0.6 },
-  { edge: 1000, quality: 0.5 },
-  { edge: 800, quality: 0.4 },
-]
+/** How big and how compressed a picture is made: up to 1600 pixels on its long side, at WebP quality 0.8. */
+const EDGE = 1600
+const QUALITY = 0.8
 
 export function isPickable(file: File): string | null {
   if (!TYPES.includes(file.type)) return `“${file.name}” isn't a PNG, JPEG or WebP image`
-  if (file.size > MAX_PICK_BYTES) return `“${file.name}” is over 2 MB`
   return null
 }
 
@@ -31,8 +23,9 @@ function toBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promi
 }
 
 /** One image, shrunk to `edge` pixels on its long side and re-encoded as WebP (JPEG where WebP isn't available). */
-export async function shrink(file: Blob, level = 0): Promise<Blob> {
-  const { edge, quality } = LEVELS[Math.min(level, LEVELS.length - 1)]
+export async function shrink(file: Blob): Promise<Blob> {
+  const edge = EDGE
+  const quality = QUALITY
   // createImageBitmap applies the photo's rotation (EXIF), so a portrait shot isn't sent on its side.
   const bitmap = await createImageBitmap(file)
   try {
@@ -56,15 +49,6 @@ export async function shrink(file: Blob, level = 0): Promise<Blob> {
   } finally {
     bitmap.close()
   }
-}
-
-/** Every image shrunk, at the gentlest level that fits them all under `limit`, or null when none does. */
-export async function fit(files: Blob[], limit = MAX_TOTAL_BYTES): Promise<Blob[] | null> {
-  for (let level = 0; level < LEVELS.length; level++) {
-    const shrunk = await Promise.all(files.map((file) => shrink(file, level)))
-    if (shrunk.reduce((sum, blob) => sum + blob.size, 0) <= limit) return shrunk
-  }
-  return null
 }
 
 export const extension = (blob: Blob) => (blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg')
