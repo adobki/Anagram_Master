@@ -115,8 +115,38 @@ def play():
     return jsonify({'error': 'You have no active game'}), 403
 
 
+def close_by_token(token):
+    """Ends the game a token stands for (the value the app kept from /init's
+    X-Session header) and returns its final status. The cookie is neither
+    read nor changed, so the app can end a game other than the current one
+    without losing the current one. 401 if the token is bad or that game is
+    already over."""
+    if not token or not isinstance(token, str):
+        return jsonify({'error': 'Expected a token'}), 400
+    try:
+        player_id = Cypher.decrypt(token)
+    except Exception:
+        return jsonify({'error': 'You have no active game'}), 401
+    try:
+        game = Game(_id=player_id)
+        if not game.active:
+            return jsonify({'error': 'You have no active game'}), 401
+        game.end()
+        return jsonify(game.status)
+    except (SyntaxError, ValueError) as err:
+        print({'error': err})
+        return jsonify({'error': 'You have no active game'}), 401
+    except Exception as err:
+        print({'error': err})
+        return error_handler(500)
+
+
 def close():
-    """Handles user off-boarding"""
+    """Handles user off-boarding. A JSON body with a `token` ends that game
+    instead of the cookie's (see close_by_token)."""
+    data = request.get_json(force=True, silent=True)
+    if isinstance(data, dict) and 'token' in data:
+        return close_by_token(data['token'])
     # Get player_id from cookie
     player_id = get_player_id(request)
     if player_id:
