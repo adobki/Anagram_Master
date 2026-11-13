@@ -2,7 +2,9 @@
  * The practice game: a GameController that runs entirely on the device, on the
  * word MASTER and the bundled list of its words (lib/tutorial-words.ts). It
  * scores like the server does, has no clock, makes no requests and keeps
- * nothing. The 20th valid word clears the round and ends it, like a real one.
+ * nothing. The 20th valid word clears the round, like a real one: the round is
+ * over, the game screen shows its round-end panel, and going on from there
+ * (`skip`) ends the practice, because it has only the one round.
  */
 import type { Answer, GameState } from './api'
 import { praise, type Feedback, type GameController } from './game'
@@ -45,6 +47,8 @@ export type TutorialGame = GameController & {
   gate: ((word: string) => Rejection | null) | null
   /** The last word that reached Submit (accepted or not), lower case; empty at the start. */
   readonly lastWord: string
+  /** The round was cleared and the player went on from its round-end panel: the practice is complete. */
+  readonly complete: boolean
   /** Record a word and score it as a submit would, without feedback or sound (used when the coach skips a step). */
   inject(word: string, valid: boolean): void
   snapshot(): Snapshot
@@ -77,14 +81,14 @@ export function createTutorialGame(): TutorialGame {
   })
 
   let lastWord = $state('')
+  let complete = $state(false)
   const answers = () => g.state.words[TUTORIAL_ROOT]
   const found = () => answers().filter(([, valid]) => valid).map(([word]) => word)
   const missed = () => answers().filter(([, valid]) => !valid).map(([word]) => word)
 
-  function record(word: string, valid: boolean, score: number, over = false) {
+  function record(word: string, valid: boolean, score: number) {
     g.state = {
       ...g.state,
-      status: !over,
       score,
       words: { [TUTORIAL_ROOT]: [...answers(), [word, valid] as Answer] },
     }
@@ -98,6 +102,9 @@ export function createTutorialGame(): TutorialGame {
     get lastWord() {
       return lastWord
     },
+    get complete() {
+      return complete
+    },
     get state() {
       return g.state
     },
@@ -107,7 +114,10 @@ export function createTutorialGame(): TutorialGame {
     },
     busy: false,
     lastRound: null,
-    roundPoints: null,
+    // One round, started at 0: everything scored so far is this round's.
+    get roundPoints() {
+      return g.state.score
+    },
     get found() {
       return found()
     },
@@ -118,6 +128,8 @@ export function createTutorialGame(): TutorialGame {
     async submit(raw): Promise<Feedback> {
       const word = raw.toLowerCase()
       lastWord = word
+      // A full round takes no more words, as on the server.
+      if (found().length >= TUTORIAL_GOAL) return { tone: 'info', text: 'This round already has all its words' }
       const refusal = controller.gate?.(word)
       if (refusal) {
         if (refusal.penalty !== false) g.state = { ...g.state, score: Math.max(0, g.state.score - 2) }
@@ -133,14 +145,19 @@ export function createTutorialGame(): TutorialGame {
       }
       const points = pointsFor(word)
       if (found().length + 1 >= TUTORIAL_GOAL) {
-        record(word, true, g.state.score + points + 50, true)
+        record(word, true, g.state.score + points + 50)
         return { tone: 'great', text: 'Round cleared! +50 bonus' }
       }
       record(word, true, g.state.score + points)
       return { tone: 'good', text: praise(word.length, TUTORIAL_ROOT.length) }
     },
 
-    async skip() {},
+    // "Next round" on the cleared round. Before that there is nothing to skip to.
+    async skip() {
+      if (found().length < TUTORIAL_GOAL) return
+      complete = true
+      g.state = { ...g.state, status: false }
+    },
     async quit() {
       g.state = { ...g.state, status: false, word: null }
     },
@@ -164,6 +181,7 @@ export function createTutorialGame(): TutorialGame {
         words: { [TUTORIAL_ROOT]: snap.answers.map(([w, v]) => [w, v] as Answer) },
       }
       lastWord = ''
+      complete = false
     },
     reset() {
       controller.restore({ score: 0, answers: [] })

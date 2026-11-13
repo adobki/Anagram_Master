@@ -1,4 +1,5 @@
 import type { GameState } from './api'
+import { games } from './history.svelte'
 
 /** Scores below this are not saved. Mirrors DBScores.min_score on the server. */
 export const MIN_LEADERBOARD_SCORE = 10
@@ -35,13 +36,33 @@ export function recapText({ round, words, points }: RoundSummary): string {
 }
 
 /**
+ * The round has every word it can take: `rounds_limit` is also the most valid words a round accepts, and the last
+ * of them earns the bonus. Such a round is over, although the game stays on it until the player moves on.
+ */
+export function roundIsFull(state: GameState): boolean {
+  if (!state.word) return false
+  let valid = 0
+  for (const [, scored] of state.words[state.word] ?? []) if (scored) valid++
+  return valid >= state.rounds_limit
+}
+
+/**
+ * Seconds left in the round as the player sees them. A round is over for them once its time runs out, they skip
+ * it, or its last word is found. From then on every screen shows 0, although the server's own clock runs on until
+ * they move to the next round (so `timeLeft` itself is never changed for this).
+ */
+export function roundClock(game: Pick<GameController, 'state' | 'timeLeft'>): number {
+  return games.endedEarly(game.state) || roundIsFull(game.state) ? 0 : game.timeLeft
+}
+
+/**
  * Everything the game screen needs from "the game". lib/api-game.svelte.ts
  * implements it on the API.
  */
 export interface GameController {
   /** The latest game state from the server. */
   readonly state: GameState
-  /** Seconds left in the round, counted down locally between server replies. */
+  /** Seconds left in the round by the server's clock, counted down locally between its replies. See `roundClock`. */
   readonly timeLeft: number
   /** True while a request is in flight. */
   readonly busy: boolean
@@ -50,7 +71,10 @@ export interface GameController {
   /** Points gained so far in the current round, or null when its starting score isn't known (a game resumed mid-round). */
   readonly roundPoints: number | null
   submit(word: string): Promise<Feedback>
-  /** Moves on to the next round (for the round that is current now, so a repeat does nothing). */
+  /**
+   * Moves on to the next round (for the round that is current now, so a repeat does nothing). Nothing else ever
+   * does: a round that ends (time up, skipped, or all its words found) waits for the game screen to call this.
+   */
   skip(): Promise<void>
   quit(): Promise<void>
   /**
@@ -79,7 +103,7 @@ export function praise(length: number, rootLength: number): string {
 }
 
 /** The parts of the game screen the guided tutorial can switch on and off. */
-export type GuidePart = 'found' | 'tabs' | 'tray' | 'rack' | 'actions' | 'shuffle' | 'keep'
+export type GuidePart = 'found' | 'tabs' | 'tray' | 'rack' | 'actions' | 'shuffle' | 'keep' | 'settings'
 
 /** What the guided tutorial asks of the game screen. Without one, everything works. */
 export interface Guide {

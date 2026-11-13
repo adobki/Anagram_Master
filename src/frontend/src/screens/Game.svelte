@@ -29,12 +29,15 @@
     MIN_LEADERBOARD_SCORE,
     MIN_WORD_LENGTH,
     recapText,
+    roundClock,
+    roundIsFull,
     type Feedback,
     type GameController,
     type Guide,
     type GuidePart,
   } from '../lib/game'
   import { holdScreen } from '../lib/awake'
+  import { games } from '../lib/history.svelte'
   import { buzzBad, buzzCleared, buzzWarn } from '../lib/haptics'
   import { shuffled, tilesOf, type Tile as TileData } from '../lib/letters'
   import { ms } from '../lib/motion'
@@ -80,8 +83,8 @@
   }
 
   const FEEDBACK_MS = 3000
-  /** Seconds the "time's up" countdown runs before the next round starts by itself. */
-  const COUNTDOWN_S = 5
+  /** Seconds the round-end countdown runs before the next round starts by itself. */
+  const COUNTDOWN_S = 10
   /** Seconds into a round before Skip unlocks (unless the player turned that off). */
   const SKIP_COOLDOWN_S = 5
   const BANNER_MS = 1600
@@ -113,12 +116,18 @@
   let skipArmed = $state(false)
 
   // ── The end of a round ───────────────────────────────────────────────────
-  // When a round's time runs out, the game waits (the server doesn't move on by itself). Depending on the
-  // setting it counts down to the next round, starts it straight away, or waits for a tap. Nothing is lost
-  // while it waits, so it is also a safe moment for a break.
-  /** The player ended the round with Skip: the same panel as a time-up, with the clock still running. */
-  let endedEarly = $state(false)
-  const roundUp = $derived(s.status && !lastRound && (game.timeLeft <= 0 || endedEarly))
+  // A round ends in three ways: its time runs out, the player skips it, or its last word is found. Each one
+  // raises the same round-end event (`roundUp`), and nothing else ever moves the game on: neither the server nor
+  // the controller does it by itself. Depending on the setting, the event counts down to the next round, starts
+  // it straight away, or waits for the player. Nothing is lost while it waits, so it is also a safe moment for
+  // a break. Only the last round is different: it ends the game.
+  /** The player ended the round with Skip. Kept with the saved game, so it is still over if they leave and return. */
+  const endedEarly = $derived(games.endedEarly(s))
+  /** The round has all the words it can take. */
+  const full = $derived(roundIsFull(s))
+  /** The round's time as the player sees it: 0 once the round is over, however it ended. */
+  const clock = $derived(roundClock(game))
+  const roundUp = $derived(s.status && !lastRound && clock <= 0)
   /** What the round achieved, for the panel's one-line summary (the same wording as the new-round banner). */
   const summary = $derived(
     recapText({ round: s.round, words: answers.filter(([, valid]) => valid).length, points: game.roundPoints }),
@@ -177,7 +186,7 @@
 
   $effect(() => {
     const up = roundUp
-    const left = game.timeLeft
+    const left = clock
     untrack(() => {
       if (!up) {
         stopCountdown()
@@ -186,21 +195,20 @@
         if (left > 0) sawClock = true
         return
       }
-      // Once per round end (the clock may still be ticking after an early end, which re-runs this).
+      // Once per round end.
       if (announced || advancing) return
       announced = true
-      sound.roundup()
+      if (!full) sound.roundup() // a cleared round has just played its own tune
+      // The practice round always waits, so there is time to read about the panel.
+      if (tutorial) return
       if (settings.roundEnd === 'instant') void advance()
       else if (settings.roundEnd === 'countdown' && sawClock) startCountdown()
     })
   })
-  // A new round starts a new clock.
+  // A new round starts a new clock. Coming back to a round that is already over waits, with no countdown.
   $effect(() => {
     void s.round
-    untrack(() => {
-      sawClock = game.timeLeft > 0
-      endedEarly = false
-    })
+    untrack(() => (sawClock = clock > 0))
   })
 
   /** "Take a break": the countdown stops, and the overlay waits for a tap. */
@@ -281,7 +289,7 @@
   // second it beeped for, so a clock resync can't beep twice.
   let beeped = 0
   $effect(() => {
-    const time = game.timeLeft
+    const time = clock
     untrack(() => {
       if (time > 10 || time < 1) beeped = 0
       else if (time !== beeped && s.status) {
@@ -304,7 +312,7 @@
   // One buzz as the clock ticks from 11 to 10. Resuming at 10 or less doesn't buzz.
   let lastTime = Infinity
   $effect(() => {
-    const time = game.timeLeft
+    const time = clock
     untrack(() => {
       if (time === 10 && lastTime === 11) buzzWarn()
       lastTime = time
@@ -435,7 +443,7 @@
     clearTimeout(disarm)
     skipArmed = false
     // The round ends here (the panel offers the next one); the server only moves on when that is chosen.
-    endedEarly = true
+    games.endRound(s)
   }
 
   function leave() {
@@ -505,12 +513,12 @@
       <span>Round <strong>{s.round}</strong> of {s.rounds_limit}</span>
       <span class="round-bar"><span style:width="{(s.round / s.rounds_limit) * 100}%"></span></span>
     </div>
-    <SettingsButton />
+    <SettingsButton hot={hot('settings')} />
   </header>
 
   <div class="board">
     <div class="stats">
-      <Timer time={game.timeLeft} limit={s.time_limit} />
+      <Timer time={clock} limit={s.time_limit} />
       {#if tutorial}<span></span>{:else}<Button
         variant="secondary"
         size="sm"
@@ -623,8 +631,16 @@
           {/if}
 
           {#if panel}
-            <div class="roundup" role="group" aria-label="Round over" transition:fade={{ duration: ms(200) }}>
-              <p class="eyebrow">{game.timeLeft > 0 ? 'Round ended' : "Time's up"}</p>
+            <!-- A tap on the panel itself (not on its buttons) stops the countdown, so there is time to read it. -->
+            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+            <div
+              class="roundup"
+              role="group"
+              aria-label="Round over"
+              transition:fade={{ duration: ms(200) }}
+              onclick={(event) => !(event.target as HTMLElement).closest('button') && stopCountdown()}
+            >
+              <p class="eyebrow">{full ? 'Round cleared!' : endedEarly ? 'Round ended' : "Time's up"}</p>
               <p class="summary">{summary}</p>
               <p class="count" aria-live="polite">
                 {#if upCount !== null}Next round in <strong>{Math.max(upCount, 0)}</strong>{:else}Ready when you are{/if}
@@ -689,13 +705,14 @@
         </p>
       {:else if roundUp}
         <p>
-          <strong>This round is over,</strong> so this is a safe moment for a break. Nothing is lost: the next
-          round starts when you come back and tap.
+          <strong>This round is over,</strong> so this is a safe moment for a break. Nothing is lost: press
+          Next round when you come back.
         </p>
       {:else}
         <p>
           <strong>The clock keeps running.</strong> Rounds can't be paused, to prevent cheating. It's best to take your
-          break when the round ends. If time runs out while you're away, the next round simply waits for you.
+          break when the round ends. If time runs out while you're away, the next round waits for you: press Next round when you're
+          back.
         </p>
       {/if}
     </div>
@@ -825,13 +842,20 @@
     gap: var(--space-2);
   }
 
+  /* Never shorter than the round-end panel that covers it (measured: about 12.6rem), so a one-row root word
+     doesn't squeeze the panel. In rem, so it follows the text size and the UI scale. */
+  .lower {
+    min-height: 13.5rem;
+    justify-content: center;
+  }
+
   /* The round-end panel sits over the letters, tools and Submit, with the board above it left alone. */
   .roundup {
     position: absolute;
     inset: 0;
     z-index: 22;
     display: grid;
-    align-content: center;
+    align-content: safe center;
     justify-items: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-4);

@@ -65,7 +65,7 @@
       <ul>
         <li><strong>Longer words score more:</strong> up to 10 points, by how much of the round's word they use.</li>
         <li><strong>+10</strong> for a word that uses every letter.</li>
-        <li><strong>+50</strong> for finding 20 words in a round, which also takes you to the next round.</li>
+        <li><strong>+50</strong> for finding 20 words in a round, which also ends the round: press Next round to go on.</li>
         <li><strong>−2</strong> for a word that isn't in the dictionary.</li>
         <li>Words need at least {MIN_WORD_LENGTH} letters. Repeats and the round's own word don't count, and don't cost you.</li>
       </ul>
@@ -78,8 +78,8 @@
         <li><strong>Shuffle</strong> the letters for a fresh look; <strong>Restore</strong> puts them back.</li>
         <li><strong>Keep</strong> leaves your letters in the tray after you submit, to build on a word.</li>
         <li>
-          <strong>Skip word</strong> ends the round at no cost, and the same panel as when time runs out lets you go on to
-          the next one. It asks you to tap twice, unless you turn that off in Settings.
+          <strong>Skip word</strong> ends the round at no cost and stops its clock, and the same panel as when time runs out lets you
+          go on to the next one. It asks you to tap twice, unless you turn that off in Settings.
         </li>
       </ul>
     </section>
@@ -105,8 +105,11 @@
       <h2><Clock size="1.25rem" /> The clock</h2>
       <p>
         The clock runs on the server, so it never stops during a round, even when you leave the game. That's to prevent
-        cheating. When a round's time runs out, the game waits for you: you get a short countdown (or a tap, if you
-        prefer, in Settings) before the next round starts. That's a safe moment for a break, and the best time to leave. Press Review round, or tap outside the panel, to look back over the round's words before going on.
+        cheating. A round ends when its time runs out, when you skip it, or when you find its 20th word, and the game
+        never moves on behind your back: a panel shows how the round went, with a ten-second countdown to the next
+        one. Press Next round to go on sooner, or tap the panel to stop the countdown and take your time (Settings can
+        switch the countdown off altogether). That's a safe moment for a break, and the best time to leave. Press
+        Review round, or tap outside the panel, to look back over the round's words before going on.
       </p>
     </section>
 

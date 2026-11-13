@@ -11,7 +11,7 @@
 
 import { api, ApiError, isGameState, type ErrorReply, type GameState } from './api'
 import { games } from './history.svelte'
-import { praise, type Feedback, type GameController, type RoundSummary } from './game'
+import { praise, roundIsFull, type Feedback, type GameController, type RoundSummary } from './game'
 import { tilesOf } from './letters'
 import { toasts } from './toast.svelte'
 
@@ -143,18 +143,18 @@ export function createApiGame(initial: GameState, token?: string | null): GameCo
 
       const error = reply.error ?? ''
       if (error.includes("Time's up")) return { tone: 'info', text: "Time's up for this round" }
+      if (error.includes('round is complete')) return { tone: 'info', text: 'This round already has all its words' }
       if (error.includes('Invalid word')) return { tone: 'bad', text: `“${word}” isn't in the word list · −2` }
       if (error.includes('Duplicate')) return { tone: 'bad', text: `“${word}” was already played · −2` }
       if (error.includes("can't use")) return { tone: 'info', text: "That's this round's word. Make new ones from it!" }
+      // The server never moves a game on for a word, so this is a game that moved on somewhere else meanwhile.
+      if (reply.round !== before.round) return { tone: 'info', text: `That round is over. This is round ${reply.round}.` }
 
       const root = before.word ?? ''
       const accepted = (reply.words[root] ?? []).some(([played, valid]) => valid && played === word.toLowerCase())
-      if (reply.round !== before.round || error.includes('last word')) {
-        // The round ended with this reply: either this word was the 20th
-        // (bonus), or time had run out and the server discarded it.
-        if (accepted) return { tone: 'great', text: 'Round cleared! +50 bonus' }
-        return { tone: 'info', text: `Time ran out. On to round ${reply.round}.` }
-      }
+      // The round's last word earns the bonus and ends the round. The game stays on it: the screen's round-end
+      // panel takes over, as it does for a time-up or a skip.
+      if (accepted && roundIsFull(reply)) return { tone: 'great', text: 'Round cleared! +50 bonus' }
       if (accepted) return { tone: 'good', text: praise(word.length, tilesOf(root).length) }
       return { tone: 'info', text: error.replace(/<br\s*\/?>/gi, ' ') || 'Try another word' }
     },

@@ -8,6 +8,7 @@
   import Dialog from '../components/Dialog.svelte'
   import { MIN_LEADERBOARD_SCORE, type Guide, type GuidePart } from '../lib/game'
   import { settings } from '../lib/settings.svelte'
+  import { ui } from '../lib/ui.svelte'
   import {
     createTutorialGame,
     isTutorialWord,
@@ -20,12 +21,13 @@
 
   /**
    * The practice game: the real game screen on a local controller, with a coach card above it. It is a guided tour
-   * first: ten steps, each one lighting up (a flashing outline) the part to use while the rest of the screen is
+   * first: eleven steps, each one lighting up (a flashing outline) the part to use while the rest of the screen is
    * greyed out and switched off, and a word that isn't what the step asks for is refused like a wrong word. Doing
    * what a step asks moves on by itself (a few steps wait for Next so the coach can explain). Skip does the task
    * for the player and moves on; Previous steps back and restores the game as it was. After the tour comes
    * Practice, where everything is open and the player makes the rest of the 20 words. Free play opens everything
-   * at any time.
+   * at any time. The 20th word clears the round, and the game screen's own round-end panel appears; the coach
+   * explains it, and its Next round button finishes the tutorial.
    */
   interface Props {
     /** Leave without finishing. */
@@ -85,6 +87,8 @@
   let hint = $state<string | null>(null)
   let tapped = $state(false)
   let shuffled = $state(0)
+  /** Settings has been opened during this step (the Settings step is done once it is closed again). */
+  let opened = $state(false)
   let base = $state({ found: 0, missed: 0 })
   let finished = $state(false)
   /** The game as each step began, so Previous can put it back. */
@@ -171,7 +175,7 @@
     },
     {
       text: 'Keep leaves your word in the tray after you submit, so you can build on it. Turn Keep on, then submit one word.',
-      after: 'See how the word stayed in the tray? Handy for building longer ones. That is everything: the rest is yours.',
+      after: 'See how the word stayed in the tray? Handy for building longer ones.',
       parts: () => (settings.keepLetters ? ALL : ['keep']),
       gate: (word) =>
         !settings.keepLetters
@@ -186,6 +190,15 @@
         game.inject(game.suggest([2, 3, 4, 5]) ?? 'am', true)
       },
     },
+    {
+      text: 'Settings are one tap away, on the gear at the top right. The theme (Light or Dark) is right at the top, and there is text size, sound and more. Open it, have a look, then close it.',
+      after: "That's everything, so play freely: the rest is yours.",
+      parts: () => ['settings'],
+      holdParts: ['settings'],
+      hint: null,
+      progress: () => opened && !ui.settingsOpen && 'hold',
+      fulfil: () => {},
+    },
   ]
   const GUIDED = STEPS.length
   const practice = $derived(step >= GUIDED)
@@ -198,6 +211,10 @@
     focus: unrestricted || hold || !def ? new Set() : new Set((def.focus ?? def.parts)()),
     onuse: () => (tapped = true),
     onshuffle: () => shuffled++,
+  })
+
+  $effect(() => {
+    if (ui.settingsOpen) opened = true
   })
 
   // Refuse words the step doesn't ask for.
@@ -221,6 +238,7 @@
     hint = null
     tapped = false
     shuffled = 0
+    opened = false
     base = { found: game.found.length, missed: game.missed.length }
     snaps[index] = { game: game.snapshot(), keep: settings.keepLetters, tab }
   }
@@ -286,29 +304,43 @@
   })
 
   const remaining = $derived(Math.max(0, TUTORIAL_GOAL - game.found.length))
-  const label = $derived(free ? 'Free play' : practice ? 'Your turn' : `Step ${step + 1} of ${GUIDED}`)
+  /** The round is cleared and its round-end panel is showing: the coach explains it, and Next round finishes. */
+  const wrap = $derived(game.found.length >= TUTORIAL_GOAL && game.state.status)
+  const label = $derived(
+    wrap ? 'Last thing' : free ? 'Free play' : practice ? 'Your turn' : `Step ${step + 1} of ${GUIDED}`,
+  )
 
-  let finishTimer: ReturnType<typeof setTimeout> | undefined
-  /** The game ended: with all 20 words that is the tutorial complete (after the confetti), otherwise the player left. */
+  /** The game ended: from the cleared round's Next round that is the tutorial complete, otherwise the player left. */
   function ended() {
-    if (game.found.length >= TUTORIAL_GOAL) finishTimer = setTimeout(() => (finished = true), 2200)
+    if (game.complete) finished = true
     else onleave()
   }
-  onDestroy(() => clearTimeout(finishTimer))
 </script>
 
 <div class="tutorial">
   <aside class="coach" aria-live="polite">
     <p class="head">
       <GraduationCap size="1.125rem" /> <strong>Tutorial</strong>
-      {#if free}
+      {#if wrap}
+        <!-- Nothing to switch: the round is done. -->
+      {:else if free}
         <Button variant="ghost" size="sm" class="mode" onclick={backToGuide}>Back to the guide</Button>
       {:else if !practice}
         <Button variant="ghost" size="sm" class="mode" onclick={freePlay}>Free play</Button>
       {/if}
       <span class="step">{label}</span>
     </p>
-    {#if free}
+    {#if wrap}
+      <p class="text">
+        One last thing. Every round ends like this, whether you find all {TUTORIAL_GOAL} words, run out of time or skip.
+        <strong>Next round</strong> moves on, <strong>Review round</strong> lets you look back over your words, and
+        <strong>Take a break</strong> pauses safely. Press Next round to finish.
+      </p>
+      <p class="aside">
+        In a real game the next round starts after a ten-second countdown, unless you tap the panel to stop it or
+        change that in Settings.
+      </p>
+    {:else if free}
       <p class="text">
         Free play: everything is open, so make words however you like. {remaining} more
         {remaining === 1 ? 'word' : 'words'} from <strong>{TUTORIAL_ROOT.toUpperCase()}</strong> to clear the round with a +50
@@ -322,8 +354,8 @@
     {:else if def}
       <p class="text">{hold && def.after ? def.after : def.text}</p>
     {/if}
-    {#if hint}<p class="hint"><Lightbulb size="1rem" /> Try “<strong>{hint}</strong>”</p>{/if}
-    <div class="buttons">
+    {#if hint && !wrap}<p class="hint"><Lightbulb size="1rem" /> Try “<strong>{hint}</strong>”</p>{/if}
+    <div class="buttons" hidden={wrap}>
       {#if !free && step > 0}
         <Button variant="secondary" size="sm" onclick={back}><ChevronLeft size="1rem" /> Previous</Button>
       {/if}
@@ -371,6 +403,11 @@
   .free {
     margin-top: var(--space-2);
     font-size: var(--text-sm);
+    color: var(--text-2);
+  }
+
+  .aside {
+    font-size: var(--text-xs);
     color: var(--text-2);
   }
 
@@ -436,6 +473,10 @@
 
   .hint strong {
     color: var(--text);
+  }
+
+  .buttons[hidden] {
+    display: none;
   }
 
   .buttons {

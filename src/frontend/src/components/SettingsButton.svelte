@@ -3,6 +3,13 @@
   import { ui } from '../lib/ui.svelte'
   import { update } from '../lib/update.svelte'
   import IconButton from './IconButton.svelte'
+
+  interface Props {
+    /** Flash, to point the player at it (the tutorial's Settings step). */
+    hot?: boolean
+  }
+
+  let { hot = false }: Props = $props()
 </script>
 
 <!--
@@ -11,6 +18,7 @@
   during a game, so this is how a player in one finds out).
 -->
 <IconButton
+  class={hot ? 'guide-hot' : ''}
   label={update.ready ? 'Settings (an update is ready)' : 'Settings'}
   aria-haspopup="dialog"
   aria-expanded={ui.settingsOpen}

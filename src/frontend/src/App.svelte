@@ -11,7 +11,8 @@
   import { api, ApiError, type GameState } from './lib/api'
   import { createApiGame, findSavedGame } from './lib/api-game.svelte'
   import { loadBest, recordScore } from './lib/best'
-  import { MIN_LEADERBOARD_SCORE, type GameController } from './lib/game'
+  import { flushEnding } from './lib/ending'
+  import { MIN_LEADERBOARD_SCORE, roundClock, type GameController } from './lib/game'
   import { games, MAX_ACTIVE } from './lib/history.svelte'
   import { ms } from './lib/motion'
   import { network } from './lib/network.svelte'
@@ -30,18 +31,30 @@
   import Leaderboard from './screens/Leaderboard.svelte'
   import PastGame from './screens/PastGame.svelte'
   import Feedback from './screens/Feedback.svelte'
-  import FeedbackShared from './screens/FeedbackShared.svelte'
+  import FeedbackTicket from './screens/FeedbackTicket.svelte'
   import Tutorial from './screens/Tutorial.svelte'
 
-  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about' | 'history' | 'past' | 'tutorial' | 'feedback' | 'shared'
+  type Screen = 'home' | 'game' | 'over' | 'scores' | 'help' | 'about' | 'history' | 'past' | 'tutorial' | 'feedback' | 'ticket'
 
   // Each screen has a URL hash, so the browser's (and Android's) back button
   // moves between screens. #scores and #help can be linked to directly.
-  /** `#feedback/shared/<code>` opens a ticket the team shared; the code is kept here. */
-  const SHARED = /^#feedback\/shared\/([^/]+)$/
-  let sharedCode = $state(decodeURIComponent(SHARED.exec(location.hash)?.[1] ?? ''))
+  /**
+   * A feedback ticket's screen: `#feedback/shared/<code>` is one the team shared, `#feedback/<token>` is the
+   * sender's own. (A token has 8 or more characters, so `shared` alone is never taken for one.)
+   */
+  interface TicketRef {
+    mode: 'yours' | 'shared'
+    id: string
+  }
+  const TICKET = /^#feedback\/(?:shared\/([A-Za-z0-9_-]{3,60})|([A-Za-z0-9_-]{8,64}))$/
+  function ticketFromHash(): TicketRef | null {
+    const match = TICKET.exec(location.hash)
+    if (!match) return null
+    return match[1] ? { mode: 'shared', id: match[1] } : { mode: 'yours', id: match[2] }
+  }
+  let ticketRef = $state<TicketRef | null>(ticketFromHash())
   const fromHash = (): Screen => {
-    if (SHARED.test(location.hash)) return 'shared'
+    if (ticketFromHash()) return 'ticket'
     const hash = location.hash.slice(1) as Screen
     return hash === 'scores' || hash === 'help' || hash === 'about' || hash === 'history' || hash === 'feedback' ? hash : 'home'
   }
@@ -86,7 +99,10 @@
     }
   }
 
-  onMount(check)
+  onMount(() => {
+    flushEnding() // games that "Clear my data" left to be ended
+    void check()
+  })
 
   // Retry while it's failing: when the connection comes back, and every 10 s.
   $effect(() => {
@@ -99,7 +115,10 @@
   let wasOnline = network.online
   $effect(() => {
     const online = network.online
-    if (online && !wasOnline && lookup === 'failed') void check()
+    if (online && !wasOnline) {
+      flushEnding()
+      if (lookup === 'failed') void check()
+    }
     wasOnline = online
   })
 
@@ -116,7 +135,8 @@
   let gameEntry: object | null = null
   let leaving = false
 
-  function go(next: Screen, replace = false) {
+  /** `hash` is for a screen whose address says more than its name (a ticket's). */
+  function go(next: Screen, replace = false, hash: string = next) {
     if (next === screen) return
     const origin = screen
     const carried = history.state?.from
@@ -125,7 +145,7 @@
     // The game has no URL of its own (it sits at "/", like home), so reloading
     // or coming back to a paused game never reopens it. `from` remembers which
     // screen the game was opened from, for leaveGame().
-    const url = next === 'home' || next === 'game' ? location.pathname : `#${next}`
+    const url = next === 'home' || next === 'game' ? location.pathname : `#${hash}`
     const state = { inApp: true, game: next === 'game', from: replace ? carried : origin }
     if (next === 'game') gameEntry = state
     if (replace) history.replaceState(state, '', url)
@@ -144,10 +164,10 @@
     leaving = false
     menu = 'closed'
     ui.closeSettings()
-    const match = SHARED.exec(location.hash)
-    if (match) {
-      sharedCode = decodeURIComponent(match[1])
-      screen = 'shared'
+    const ticket = ticketFromHash()
+    if (ticket) {
+      ticketRef = ticket
+      screen = 'ticket'
       scroller?.scrollTo(0, 0)
       return
     }
@@ -193,6 +213,12 @@
 
   /** In-app back: the browser's back if we came from another screen, else home (e.g. opened via a #scores link). */
   const back = () => (history.state?.inApp ? history.back() : go('home', true))
+
+  /** Open one of this device's own feedback tickets. Back returns to where the player was. */
+  function openTicket(id: string) {
+    ticketRef = { mode: 'yours', id }
+    go('ticket', false, `feedback/${id}`)
+  }
 
   /** Shown when starting a game would go over MAX_ACTIVE games in progress. */
   let capped = $state(false)
@@ -349,17 +375,17 @@
       <Tutorial onleave={back} onfinish={() => go('home', true)} onhelp={() => go('help', true)} />
     {:else if screen === 'about'}
       <About onback={back} onplay={play} onfeedback={() => go('feedback')} />
-    {:else if screen === 'shared'}
-      <FeedbackShared code={sharedCode} onback={back} />
+    {:else if screen === 'ticket' && ticketRef}
+      <FeedbackTicket mode={ticketRef.mode} id={ticketRef.id} onback={back} />
     {:else if screen === 'feedback'}
-      <Feedback onback={back} onhome={() => go('home', true)} />
+      <Feedback onback={back} onhome={() => go('home', true)} onticket={openTicket} />
     {:else}
       <Home
         saved={game?.state.status ? game.state : null}
         {lookup}
         onretry={check}
         {best}
-        timeLeft={game?.timeLeft ?? 0}
+        timeLeft={game ? roundClock(game) : 0}
         hasHistory={games.any}
         canReturn={!!game && !!games.get(game.state.session_id)?.token}
         onhistory={() => go('history')}
@@ -396,7 +422,8 @@
   {/snippet}
 </Dialog>
 
-<Settings {game} inGame={screen === 'game'} onfeedback={() => (ui.closeSettings(), go('feedback'))} />
+<!-- In the tutorial Settings behaves as in a game (no name row), but the real game's clock is not its business. -->
+<Settings game={screen === 'tutorial' ? null : game} inGame={screen === 'game' || screen === 'tutorial'} onfeedback={() => (ui.closeSettings(), go('feedback'))} />
 <InstallGuide />
 <Toaster />
 <UpdatePrompt hidden={screen === 'game' || screen === 'tutorial'} />

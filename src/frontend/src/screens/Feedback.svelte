@@ -34,9 +34,11 @@
     onback: () => void
     /** After sending: back to Home. */
     onhome: () => void
+    /** Open one of this device's tickets (its token) on its own screen. */
+    onticket: (id: string) => void
   }
 
-  let { onback, onhome }: Props = $props()
+  let { onback, onhome, onticket }: Props = $props()
 
   const MAX_MESSAGE = 1000
   const E164 = /^\+[1-9]\d{6,14}$/
@@ -74,7 +76,7 @@
   let sending = $state(false)
   let sent = $state(false)
   let error = $state('')
-  /** The token of the ticket just sent (its read-only page shows the status and any reply). */
+  /** The token of the ticket just sent (its read-only screen shows the status and any reply). */
   let sentId = $state('')
   const mine: StoredTicket[] = loadTickets()
 
@@ -196,7 +198,7 @@
         <h2>Thank you!</h2>
         <p>Your feedback is on its way to us. We read every message.</p>
         {#if sentId}
-          <Button variant="secondary" onclick={() => location.assign(ticketUrl(sentId))}>View your feedback</Button>
+          <Button variant="secondary" onclick={() => onticket(sentId)}>View your feedback</Button>
         {/if}
         <Button size="lg" onclick={onhome}>Back to Home</Button>
       </section>
@@ -210,7 +212,7 @@
               <ul class="mine">
                 {#each mine as ticket (ticket.id)}
                   <li>
-                    <a href={ticketUrl(ticket.id)}>
+                    <a href={ticketUrl(ticket.id)} onclick={(event) => (event.preventDefault(), onticket(ticket.id))}>
                       <span class="when">{new Date(ticket.at).toLocaleDateString()}</span>
                       {ticket.text}{ticket.text.length >= 60 ? '…' : ''}
                     </a>

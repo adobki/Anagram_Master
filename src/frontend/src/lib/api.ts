@@ -57,28 +57,36 @@ export interface Health {
 /** [score, name, date]. The date is an HTTP-date string, e.g. "Tue, 02 Jul 2024 19:02:09 GMT". */
 export type ScoreEntry = [score: number, name: string, date: string]
 
-/** A non-2xx reply. From /status, 401 or 403 means there is no saved game. */
-/** A shared ticket: every field is optional because the sharer picks which ones are visible. */
-export interface SharedFeedback {
+/**
+ * A feedback ticket as the app may show it. Every field is optional: the sender's own view leaves out what they
+ * didn't fill in, and a shared view has only the fields the team chose to share (it can even be empty).
+ */
+export interface FeedbackView {
   message?: string
   rating?: number
   category?: 'bug' | 'idea' | 'praise'
   status?: 'pending' | 'active' | 'closed'
   response?: string
-  responded_at?: string
-  date?: string
-  /** How many screenshots are shared (see `sharedImage`). */
+  /** ISO dates in UTC. Null when the server has no date for it. */
+  responded_at?: string | null
+  date?: string | null
+  /** How many screenshots there are (see `ownImage` and `sharedImage`). */
   images?: number
   player?: string
   name?: string
   email?: string
   whatsapp?: string
+  /** The app details sent along with it. Only ever in a shared view, when the team ticked it. */
   app?: string
 }
+
+/** The address of the nth screenshot of the sender's own ticket. */
+export const ownImage = (token: string, n: number) => `${BASE}/feedback/${encodeURIComponent(token)}/${n}`
 
 /** The address of a shared ticket's nth screenshot. */
 export const sharedImage = (code: string, n: number) => `${BASE}/feedback/shared/${encodeURIComponent(code)}/${n}`
 
+/** A non-2xx reply. From /status, 401 or 403 means there is no saved game. */
 export class ApiError extends Error {
   readonly status: number
 
@@ -111,10 +119,13 @@ const request = <T>(path: string, method = 'GET', body?: object | FormData) => s
 
 export const api = {
   /** Send feedback: a multipart form (message, optional rating, category, name, WhatsApp, email, images). */
-  feedback: (form: FormData) => request<{ ok: boolean; id?: string; url?: string }>('/feedback', 'POST', form),
+  feedback: (form: FormData) => request<{ ok: boolean; id?: string }>('/feedback', 'POST', form),
 
-  /** A feedback ticket the team has chosen to share (only the fields they picked come back). */
-  sharedFeedback: (code: string) => request<SharedFeedback>(`/feedback/shared/${encodeURIComponent(code)}`),
+  /** The sender's own ticket, by the token they got when sending it. 404 when there is no such ticket. */
+  ownFeedback: (token: string) => request<FeedbackView>(`/feedback/${encodeURIComponent(token)}`),
+
+  /** A feedback ticket the team has chosen to share (only the fields they picked come back). 404 when not shared. */
+  sharedFeedback: (code: string) => request<FeedbackView>(`/feedback/shared/${encodeURIComponent(code)}`),
 
   /** Is the API up, and are its database and word list available? */
   health: () => request<Health>('/health'),
@@ -152,6 +163,12 @@ export const api = {
 
   /** End the game and clear the cookie. Scores of 10+ go on the leaderboard. */
   quit: () => request<GameState>('/close', 'POST'),
+
+  /**
+   * End a game by its token, whichever game is current: the cookie is neither read nor changed. 401 means the
+   * game is already over or gone.
+   */
+  endGame: (token: string) => request<GameState>('/close', 'POST', { token }),
 
   /** The top 20 scores, best first. */
   scores: () => request<{ scores: ScoreEntry[] }>('/scores').then((r) => r.scores),

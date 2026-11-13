@@ -59,7 +59,7 @@
 
       <p class="running">
         <Clock size="1rem" />
-        <span>The clock keeps running while you're away. If a round's time ran out, the next one waits for you to tap when you resume.</span>
+        <span>The clock keeps running while you're away. If a round's time ran out, the next one waits for you: press Next round when you resume.</span>
       </p>
 
       {#if canResume}

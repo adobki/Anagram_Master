@@ -9,10 +9,10 @@
     children: Snippet
   }
 
-  let { label, variant = 'plain', type = 'button', children, ...rest }: Props = $props()
+  let { label, variant = 'plain', type = 'button', class: className = '', children, ...rest }: Props = $props()
 </script>
 
-<button {type} class="icon-btn {variant}" aria-label={label} title={label} {...rest}>
+<button {type} class="icon-btn {variant} {className}" aria-label={label} title={label} {...rest}>
   {@render children()}
 </button>
 

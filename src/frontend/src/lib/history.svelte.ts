@@ -30,6 +30,11 @@ export interface SavedGame {
   savedAt: number
   /** The game has ended (finished, quit, or ran out on the server). */
   over: boolean
+  /**
+   * The round the player ended early with Skip. It stays over for them until they go on to the next one, even
+   * if they leave and come back; the server only hears of it then, so its own clock for that round runs on.
+   */
+  skipped?: number
 }
 
 function load(): SavedGame[] {
@@ -77,6 +82,19 @@ class History {
     }
     this.#trim()
     this.#save()
+  }
+
+  /** The player skipped the round this state is on: it is over for them from now on (see `SavedGame.skipped`). */
+  endRound(state: GameState) {
+    const game = this.get(state.session_id)
+    if (!game || game.skipped === state.round) return
+    game.skipped = state.round
+    this.#save()
+  }
+
+  /** Whether the round this state is on was ended early with Skip. */
+  endedEarly(state: GameState): boolean {
+    return !!state.session_id && this.get(state.session_id)?.skipped === state.round
   }
 
   /** The server says this game is over (resuming it failed): keep what we know, and stop offering Resume. */

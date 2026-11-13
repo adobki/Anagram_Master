@@ -8,7 +8,7 @@
   import { prefersReducedMotion } from 'svelte/motion'
   import { sparkle } from '../lib/confetti'
   import { canKeepAwake, canVibrate } from '../lib/device'
-  import type { GameController } from '../lib/game'
+  import { MIN_LEADERBOARD_SCORE, roundClock, type GameController } from '../lib/game'
   import { fullscreen } from '../lib/fullscreen.svelte'
   import { buzzTest } from '../lib/haptics'
   import { clearMyData } from '../lib/data'
@@ -68,13 +68,14 @@
     advance: "Tapping anywhere off the round-end panel starts the next round.",
   }
   const ROUND_END_HINTS: Record<RoundEnd, string> = {
-    countdown: "Time's up shows a five-second countdown to the next round. Tap to go on sooner, or take a break.",
-    instant: 'The next round starts the moment time runs out. Fastest.',
-    manual: "Time's up waits for you to tap before the next round. No countdown.",
+    countdown: 'A finished round shows a ten-second countdown to the next one. Press Next round to go on sooner, tap the panel to stop the countdown, or take a break.',
+    instant: 'The next round starts the moment one ends (time up, skipped, or all its words found). Fastest.',
+    manual: 'A finished round waits until you press Next round. No countdown.',
   }
 
+  /** The round's time as the player sees it: 0 once the round is over (see `roundClock`). */
+  const time = $derived(game ? roundClock(game) : 0)
   const clock = $derived.by(() => {
-    const time = game?.timeLeft ?? 0
     return `${Math.floor(time / 60)}:${String(time % 60).padStart(2, '0')}`
   })
 
@@ -164,7 +165,11 @@
     {#if inGame && game?.state.status}
       <p class="clock" role="timer">
         <Clock size="1rem" />
-        <span><strong>{clock}</strong> left in round {game.state.round}. The clock keeps running.</span>
+        {#if time > 0 || game.state.round >= game.state.rounds_limit}
+          <span><strong>{clock}</strong> left in round {game.state.round}. The clock keeps running.</span>
+        {:else}
+          <span><strong>Round {game.state.round} is over.</strong> Take your time: nothing is lost.</span>
+        {/if}
       </p>
     {/if}
   {/snippet}
@@ -395,7 +400,9 @@
           <Trash2 size="1rem" /> Clear my data
         </Button>
       </div>
-      <p class="note">Removes your name, best score and settings from this device.</p>
+      <p class="note">
+        Removes your name, best score, settings and games from this device. Games in progress are ended.
+      </p>
     {/if}
   </section>
 
@@ -416,8 +423,9 @@
 
 <Dialog bind:open={clearing} title="Clear my data?">
   <p>
-    This removes your name, best score and settings from this device. Your saved game and the leaderboard aren't
-    affected.
+    This removes your name, best score, settings and saved games from this device. Any games in progress here are
+    ended quietly, and a score of {MIN_LEADERBOARD_SCORE} or more still goes on the leaderboard. The leaderboard
+    itself isn't affected.
   </p>
   {#snippet actions()}
     <Button variant="secondary" onclick={() => (clearing = false)}>Cancel</Button>

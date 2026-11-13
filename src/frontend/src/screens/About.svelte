@@ -120,7 +120,7 @@
           has the chance to form up to twenty anagrams for a single root word (called the round word). Once that time
           elapses, the clock resets and a new root word is given to the player to signify the start of a new round.
           However, if the player is able to create twenty valid anagrams before the time runs out, they are rewarded
-          with a bonus, and taken to the next round. These limits, bonuses and the penalties for invalid words create a
+          with a bonus and the round ends early. These limits, bonuses and the penalties for invalid words create a
           sense of urgency and engagement that excites the player, making the game more fun.
         </p>
       </article>

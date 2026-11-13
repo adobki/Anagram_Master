@@ -1,13 +1,13 @@
 /**
  * The feedback this device has sent. Each ticket has a private token (from the server) that opens a read-only
- * page with its status and any reply, so the player can come back to it. Only the token and a short preview are
+ * screen with its status and any reply (`#feedback/<token>`), so the player can come back to it. Only the token and a short preview are
  * kept, in `am-tickets` (listed in `data.ts`, so "Clear my data" forgets them).
  */
 const KEY = 'am-tickets'
 const MAX_KEPT = 20
 
 export interface StoredTicket {
-  /** The ticket's token: the address of its page is /v1/feedback/<id>. */
+  /** The ticket's token: its screen is at `#feedback/<id>`. */
   id: string
   /** When it was sent (ms since 1970). */
   at: number
@@ -36,5 +36,5 @@ export function saveTicket(ticket: StoredTicket) {
   }
 }
 
-/** The address of a ticket's own read-only page. */
-export const ticketUrl = (id: string) => `/v1/feedback/${encodeURIComponent(id)}`
+/** The address of a ticket's own read-only screen, inside the app. */
+export const ticketUrl = (id: string) => `#feedback/${encodeURIComponent(id)}`
