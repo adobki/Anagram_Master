@@ -1,5 +1,5 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import pkg from './package.json' with { type: 'json' }
 import { displayVersion } from './src/lib/version-format.ts'
@@ -8,7 +8,8 @@ import { displayVersion } from './src/lib/version-format.ts'
 // The dev and preview servers forward /api/* to it, so the browser sees a
 // single origin and the API's HttpOnly `session` cookie works with no CORS
 // and no change to Flask.
-const API = 'http://127.0.0.1:5555'
+// Override it with VITE_API_TARGET (see .env.example) to point the dev server somewhere else.
+const API = loadEnv('development', process.cwd(), 'VITE_').VITE_API_TARGET || 'http://127.0.0.1:5555'
 
 // https://vite.dev/config/
 const criticalSince = (pkg as { criticalSince?: string }).criticalSince
