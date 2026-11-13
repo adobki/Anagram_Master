@@ -62,8 +62,8 @@
     { value: 'advance', label: 'Start the next round' },
   ]
   const ROUND_TAP_HINTS: Record<RoundTap, string> = {
-    review: "Tapping outside the Time's up panel hides it, so you can look back over the round's words. Tap the letters to bring it back.",
-    advance: "Tapping outside the Time's up panel starts the next round.",
+    review: "Tapping anywhere off the round-end panel hides it, so you can look back over the round's words. Tap the letters to bring it back.",
+    advance: "Tapping anywhere off the round-end panel starts the next round.",
   }
   const ROUND_END_HINTS: Record<RoundEnd, string> = {
     countdown: "Time's up shows a five-second countdown to the next round. Tap to go on sooner, or take a break.",

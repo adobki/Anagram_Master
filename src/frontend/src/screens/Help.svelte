@@ -78,8 +78,8 @@
         <li><strong>Shuffle</strong> the letters for a fresh look; <strong>Restore</strong> puts them back.</li>
         <li><strong>Keep</strong> leaves your letters in the tray after you submit, to build on a word.</li>
         <li>
-          <strong>Skip word</strong> moves to the next round at no cost. It asks you to tap twice, unless you turn that off in
-          Settings.
+          <strong>Skip word</strong> ends the round at no cost, and the same panel as when time runs out lets you go on to
+          the next one. It asks you to tap twice, unless you turn that off in Settings.
         </li>
       </ul>
     </section>

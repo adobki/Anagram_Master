@@ -47,6 +47,8 @@ export interface GameController {
   readonly busy: boolean
   /** The round that just ended, set at the moment `state` moves to the next one. */
   readonly lastRound: RoundSummary | null
+  /** Points gained so far in the current round, or null when its starting score isn't known (a game resumed mid-round). */
+  readonly roundPoints: number | null
   submit(word: string): Promise<Feedback>
   /** Moves on to the next round (for the round that is current now, so a repeat does nothing). */
   skip(): Promise<void>

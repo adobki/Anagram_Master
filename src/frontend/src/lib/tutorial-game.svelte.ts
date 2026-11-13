@@ -107,6 +107,7 @@ export function createTutorialGame(): TutorialGame {
     },
     busy: false,
     lastRound: null,
+    roundPoints: null,
     get found() {
       return found()
     },

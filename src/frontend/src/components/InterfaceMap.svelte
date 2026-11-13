@@ -45,7 +45,7 @@
     {
       n: 5,
       name: 'Skip word',
-      text: 'Gives up the round for the next word. It asks for a second tap, and waits five seconds into each round (both can be switched off in Settings).',
+      text: 'Ends the round early, then you go on to the next word. It asks for a second tap, and waits five seconds into each round (both can be switched off in Settings).',
     },
     { n: 6, name: 'Score', text: 'Your points, adding up as you go.' },
     {

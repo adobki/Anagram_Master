@@ -116,7 +116,15 @@
   // When a round's time runs out, the game waits (the server doesn't move on by itself). Depending on the
   // setting it counts down to the next round, starts it straight away, or waits for a tap. Nothing is lost
   // while it waits, so it is also a safe moment for a break.
-  const roundUp = $derived(s.status && game.timeLeft <= 0 && !lastRound)
+  /** The player ended the round with Skip: the same panel as a time-up, with the clock still running. */
+  let endedEarly = $state(false)
+  const roundUp = $derived(s.status && !lastRound && (game.timeLeft <= 0 || endedEarly))
+  /** What the round achieved, for the panel's one-line summary (the same wording as the new-round banner). */
+  const summary = $derived(
+    recapText({ round: s.round, words: answers.filter(([, valid]) => valid).length, points: game.roundPoints }),
+  )
+  /** The chime, countdown or straight-on advance have been started for this round end. */
+  let announced = false
   /** Seconds left in the countdown, or null when it isn't running (waiting for a tap). */
   let upCount = $state<number | null>(null)
   /** The clock was seen running in this round, so it ran out while the player was here (not while they were away). */
@@ -174,10 +182,13 @@
       if (!up) {
         stopCountdown()
         reviewing = false
+        announced = false
         if (left > 0) sawClock = true
         return
       }
-      if (upTimer || advancing) return
+      // Once per round end (the clock may still be ticking after an early end, which re-runs this).
+      if (announced || advancing) return
+      announced = true
       sound.roundup()
       if (settings.roundEnd === 'instant') void advance()
       else if (settings.roundEnd === 'countdown' && sawClock) startCountdown()
@@ -186,7 +197,10 @@
   // A new round starts a new clock.
   $effect(() => {
     void s.round
-    untrack(() => (sawClock = game.timeLeft > 0))
+    untrack(() => {
+      sawClock = game.timeLeft > 0
+      endedEarly = false
+    })
   })
 
   /** "Take a break": the countdown stops, and the overlay waits for a tap. */
@@ -420,7 +434,8 @@
     }
     clearTimeout(disarm)
     skipArmed = false
-    await game.skip()
+    // The round ends here (the panel offers the next one); the server only moves on when that is chosen.
+    endedEarly = true
   }
 
   function leave() {
@@ -509,12 +524,12 @@
         onclick={skip}
       >
         <SkipForward size="1rem" />
-        {skipArmed ? 'Tap again to skip' : 'Skip word'}
+        {skipArmed ? 'Tap again to end this round' : 'Skip word'}
       </Button>{/if}
       <Score score={s.score} />
     </div>
 
-    <div class="found" class:over={panel} class:guide-hot={hot('found')} class:guide-off={!on('found') && !on('tabs')} inert={!on('found') && !on('tabs')}>
+    <div class="found" class:guide-hot={hot('found')} class:guide-off={!on('found') && !on('tabs')} inert={!on('found') && !on('tabs')}>
       <WordList
         {answers}
         goal={s.rounds_limit}
@@ -543,7 +558,8 @@
       <div class="inputs">
         <div class:guide-hot={hot('tray')} class:guide-off={!on('tray')} inert={!on('tray')}>
           <Tray
-            tiles={roundUp ? rootTiles : trayTiles}
+            tiles={panel ? rootTiles : roundUp ? [] : trayTiles}
+          slide={roundUp}
             {shake}
             target={!!dragged && dragged.index >= 0}
             onremove={roundUp ? () => {} : remove}
@@ -608,7 +624,8 @@
 
           {#if panel}
             <div class="roundup" role="group" aria-label="Round over" transition:fade={{ duration: ms(200) }}>
-              <p class="eyebrow">Time's up · Round {s.round} completed</p>
+              <p class="eyebrow">{game.timeLeft > 0 ? 'Round ended' : "Time's up"}</p>
+              <p class="summary">{summary}</p>
               <p class="count" aria-live="polite">
                 {#if upCount !== null}Next round in <strong>{Math.max(upCount, 0)}</strong>{:else}Ready when you are{/if}
               </p>
@@ -672,7 +689,7 @@
         </p>
       {:else if roundUp}
         <p>
-          <strong>Time's up for this round,</strong> so this is a safe moment for a break. Nothing is lost: the next
+          <strong>This round is over,</strong> so this is a safe moment for a break. Nothing is lost: the next
           round starts when you come back and tap.
         </p>
       {:else}
@@ -834,6 +851,12 @@
     color: var(--accent);
   }
 
+  .summary {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text);
+  }
+
   .count {
     color: var(--text-2);
   }
@@ -851,7 +874,7 @@
     gap: var(--space-2);
   }
 
-  /* A tap outside the panel (setting): over the board, under the panel and the word list (so its tabs still work). */
+  /* A tap outside the panel (setting): over the whole board, the word list included, under the panel only. */
   .catch {
     grid-area: 1 / 1 / -1 / -1;
     position: relative;
@@ -861,11 +884,6 @@
     border: 0;
     background: transparent;
     cursor: pointer;
-  }
-
-  .found.over {
-    position: relative;
-    z-index: 21;
   }
 
   /* Reviewing: the inputs look normal, but a tap on any of them brings the panel back. */

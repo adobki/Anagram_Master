@@ -119,6 +119,9 @@ export function createApiGame(initial: GameState, token?: string | null): GameCo
     get lastRound() {
       return g.lastRound
     },
+    get roundPoints() {
+      return roundStart === null ? null : g.state.score - roundStart
+    },
 
     async submit(word) {
       const before = g.state

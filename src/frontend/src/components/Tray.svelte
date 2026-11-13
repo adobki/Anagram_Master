@@ -1,6 +1,6 @@
 <script lang="ts">
   import { flip } from 'svelte/animate'
-  import { scale } from 'svelte/transition'
+  import { fly, scale } from 'svelte/transition'
   import type { Tile as TileData } from '../lib/letters'
   import { ms } from '../lib/motion'
   import { rem } from '../lib/rem.svelte'
@@ -19,6 +19,11 @@
     ondrag: (event: PointerEvent, tile: TileData) => void
     /** The tray element, for drop hit-testing. */
     element?: HTMLElement
+    /**
+     * Letters slide up into the tray and back down out of it, one after another, like a word being typed in
+     * and cleared (the round-end panel). Otherwise they pop in, and leave at once.
+     */
+    slide?: boolean
   }
 
   let {
@@ -28,6 +33,7 @@
     onremove,
     ondrag,
     element = $bindable(),
+    slide = false,
   }: Props = $props()
 
   // Tiles shrink to keep a word on one line, down to MIN, then wrap.
@@ -41,6 +47,16 @@
     const fit = width ? (width - GAP * rem.px * (count - 1)) / count : MAX * rem.px
     return Math.floor(Math.max(MIN * rem.px, Math.min(MAX * rem.px, fit)))
   })
+
+  function enter(node: Element, { i }: { i: number }) {
+    return slide
+      ? fly(node, { y: 72, duration: ms(300), delay: ms(i * 35) })
+      : scale(node, { duration: ms(160), start: 0.5 })
+  }
+
+  function leave(node: Element, { i }: { i: number }) {
+    return slide ? fly(node, { y: 72, duration: ms(240), delay: ms(i * 25) }) : { duration: 0 }
+  }
 
   let row = $state<HTMLElement>()
   $effect(() => {
@@ -69,8 +85,8 @@
   bind:clientWidth={width}
 >
   <div class="row" bind:this={row} style:--size="{size}px" style:gap="{GAP}rem">
-    {#each tiles as tile (tile.id)}
-      <div animate:flip={{ duration: ms(200) }} in:scale={{ duration: ms(160), start: 0.5 }}>
+    {#each tiles as tile, i (tile.id)}
+      <div animate:flip={{ duration: ms(200) }} in:enter={{ i }} out:leave={{ i }}>
         <Tile
           letter={tile.letter}
           data-tray-tile=""
@@ -80,7 +96,7 @@
         />
       </div>
     {/each}
-    {#if !tiles.length}<span class="placeholder">Tap, drag or type letters</span>{/if}
+    {#if !tiles.length && !slide}<span class="placeholder">Tap, drag or type letters</span>{/if}
   </div>
 </div>
 
