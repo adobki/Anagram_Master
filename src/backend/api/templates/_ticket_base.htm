@@ -31,7 +31,9 @@
     .brand { display: flex; align-items: center; gap: .75rem; color: var(--text); text-decoration: none; font-weight: 700; }
     .brand img { height: 1.75rem; width: auto; display: block; }
     .brand .tag { padding: .1rem .55rem; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line); font-size: .8rem; font-weight: 600; color: var(--muted); }
-    .top nav { margin-left: auto; display: flex; gap: 1rem; font-size: .9rem; }
+    .top nav { margin-left: auto; display: flex; gap: 1rem; font-size: .9rem; white-space: nowrap; }
+    .brand { min-width: 0; } .brand img { flex: none; }
+    @media (max-width: 480px) { .top nav { display: none; } }
     .top nav a { color: var(--muted); text-decoration: none; }
     .top nav a:hover { color: var(--text); }
     main { flex: 1; padding-block: 1.5rem 3rem; }

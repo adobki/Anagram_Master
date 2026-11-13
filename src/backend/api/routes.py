@@ -47,6 +47,8 @@ api_routes = [
     # a ticket shared by the admin, as JSON for the web app's read-only screen
     {'rule': '/api/v1/feedback/shared/<code>', 'view_func': shared_ticket_json,
      'methods': ['GET']},
+    {'rule': '/api/v1/feedback/shared/<code>/<int:n>',
+     'view_func': shared_ticket_image, 'methods': ['GET']},
 ]
 
 # Legacy (v1) web pages, kept under /v1. The new web app is served at /.
