@@ -40,6 +40,7 @@
     .foot { border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
     .foot .in { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; padding-block: 1rem; }
     .foot a { color: var(--muted); }
+    .foot .copy { margin-left: auto; }
 
     .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
     .muted { color: var(--muted); }
@@ -86,6 +87,7 @@
   <div class="in">
     <span>Anagram Master · {% block foot %}Feedback tickets{% endblock %}</span>
     <a href="/">Play the game</a>
+    <span class="copy">Copyright © 2023–{{ year }}, Donald Ajaps</span>
   </div>
 </footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

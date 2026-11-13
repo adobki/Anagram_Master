@@ -1,9 +1,11 @@
 #!/usr/bin/python3
-"""Feedback: the submission API, the admin tickets pages (/v1/tickets) and the public ticket views."""
+"""Feedback: the submission API, the admin tickets pages (/v1/tickets) and the read-only ticket views
+(JSON) that the web app shows."""
 import hmac
 import re
 import threading
 import time
+from datetime import datetime, timezone
 from api.controllers_app import asset
 from api.controllers_auxiliary import error_handler
 from flask import jsonify, make_response, render_template, request
@@ -34,9 +36,22 @@ _fails: dict[str, int] = {}
 _blocked: dict[str, float] = {}
 
 
+TOKEN = re.compile(r'^[A-Za-z0-9_-]{8,64}$')  # a ticket's public token (never the word "shared")
+
+
 def _base() -> str:
-    """The public address of this server (for links in mail and on pages)."""
+    """The public address of the web app (for links in mail and on pages)."""
     return environ.get('am_app_url', '').rstrip('/') or request.host_url.rstrip('/')
+
+
+def _shared_link(code: str) -> str:
+    """The web app's read-only screen for a shared ticket. Everyone but the admin reads tickets there."""
+    return f'{_base()}/#feedback/shared/{code}'
+
+
+def _own_link(tid: str) -> str:
+    """The web app's screen for a sender's own ticket."""
+    return f'{_base()}/#feedback/{tid}'
 
 
 def _bad(message: str, code: int = 400):
@@ -132,13 +147,15 @@ def feedback():
         return _bad('We could not save that just now. Please try again.', 503)
 
     # Email it to the owner (in the background, so the player isn't kept waiting). The link is the
-    # ticket's own share link, which every ticket has from the start.
-    link = f'{_base()}/v1/feedback/shared/{saved["code"]}' if environ.get('am_app_url') else None
+    # ticket's share link in the web app, which every ticket has from the start: a reply to this email
+    # may quote it to the sender, so it must not be an admin address. It is only added when the app's
+    # address is configured, because anyone can send this request with a made-up Host header.
+    link = _shared_link(saved['code']) if environ.get('am_app_url') else None
     subject, text, html, reply_to = mailer.ticket_email({**ticket, 'status': 'pending', 'images': images}, link)
     attachments = [(f'screenshot-{i + 1}.{mime.split("/")[1].replace("jpeg", "jpg")}', mime, data)
                    for i, (mime, data) in enumerate(images)]
     mailer.send_in_background(subject, text, html, reply_to, attachments)
-    return jsonify({'ok': True, 'id': saved['tid'], 'url': f'/v1/feedback/{saved["tid"]}'})
+    return jsonify({'ok': True, 'id': saved['tid']})
 
 
 # ── The tickets pages (admin) ───────────────────────────────────────────────
@@ -201,7 +218,8 @@ def _assets() -> dict:
 
 
 def _page(template: str, **context):
-    response = make_response(render_template(template, **context, assets=_assets()))
+    context = {**context, 'assets': _assets(), 'year': datetime.now(timezone.utc).year}
+    response = make_response(render_template(template, **context))
     response.headers['Cache-Control'] = 'private, no-store'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
@@ -310,10 +328,10 @@ def ticket_detail(ticket_id: str):
     if not ticket:
         return _not_found()
     share = ticket.get('share')
-    share_url = f'{_base()}/v1/feedback/shared/{share["code"]}' if share else None
+    share_url = _shared_link(share['code']) if share else None
     return _page('ticket.htm', t=ticket, share=share, share_url=share_url, fields=FIELDS,
-                 statuses=STATUSES, contact=_contact(ticket, share_url), base=_base(),
-                 own_url=f'{_base()}/v1/feedback/{ticket["tid"]}')
+                 statuses=STATUSES, contact=_contact(ticket, share_url),
+                 share_base=_shared_link(''), own_url=_own_link(ticket['tid']))
 
 
 def ticket_share(ticket_id: str):
@@ -341,7 +359,7 @@ def ticket_share(ticket_id: str):
             return _bad('That link name is taken. Pick another.', 409)
         if not found:
             return _not_found()
-        return jsonify({'ok': True, 'url': f'{_base()}/v1/feedback/shared/{code}'})
+        return jsonify({'ok': True, 'url': _shared_link(code)})
     except Exception:
         return error_handler(500)
 
@@ -358,24 +376,37 @@ def ticket_image(ticket_id: str, n: int):
     return _image_response(found) if found else _not_found()
 
 
-# ── Public, read-only views (no login) ──────────────────────────────────────
+# ── Read-only views for the web app (JSON, no login) ────────────────────────
+# The app shows these on its own screens: #feedback/<token> for the sender and #feedback/shared/<code>
+# for anyone the admin gave the link to. public_view() decides what each may see.
 
-def _public_page(view: dict, images_url: str, shared: bool):
-    return _page('ticket_public.htm', v=view, images_url=images_url, shared=shared)
+def _view_response(view: dict):
+    """A ticket view as JSON, never cached (the status and reply change)."""
+    for key in ('date', 'responded_at'):
+        if view.get(key):
+            # MongoDB hands the dates back without a zone; they are UTC, and the app needs to be told so.
+            view[key] = view[key].replace(tzinfo=timezone.utc).isoformat()
+    response = jsonify(view)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
-def own_ticket(tid: str):
-    """The submitter's page for their ticket: what they sent, its status and the reply."""
+def own_ticket_json(tid: str):
+    """The sender's own ticket: everything they sent, its status and the reply (never the app details)."""
+    if not TOKEN.match(tid):
+        return _not_found()
     try:
         ticket = DBTickets().find(tid=tid)
     except Exception:
         return error_handler(500)
     if not ticket:
         return _not_found()
-    return _public_page(public_view(ticket, OWN_FIELDS), f'/v1/feedback/{tid}', False)
+    return _view_response(public_view(ticket, OWN_FIELDS))
 
 
 def own_ticket_image(tid: str, n: int):
+    if not TOKEN.match(tid):
+        return _not_found()
     try:
         found = DBTickets().image(n, tid=tid)
     except Exception:
@@ -390,15 +421,15 @@ def _shared(code: str):
     return (ticket, share['fields']) if share else (None, None)
 
 
-def shared_ticket(code: str):
-    """A ticket's share page: only the fields the admin chose to share."""
+def shared_ticket_json(code: str):
+    """A shared ticket: only the fields the admin chose to share."""
     try:
         ticket, fields = _shared(code)
     except Exception:
         return error_handler(500)
     if not ticket:
         return _not_found()
-    return _public_page(public_view(ticket, fields), f'/v1/feedback/shared/{code}', True)
+    return _view_response(public_view(ticket, fields))
 
 
 def shared_ticket_image(code: str, n: int):
@@ -408,20 +439,3 @@ def shared_ticket_image(code: str, n: int):
     except Exception:
         return error_handler(500)
     return _image_response(found) if found else _not_found()
-
-
-def shared_ticket_json(code: str):
-    """The same shared view as JSON, for the web app's own screen."""
-    try:
-        ticket, fields = _shared(code)
-    except Exception:
-        return error_handler(500)
-    if not ticket:
-        return _not_found()
-    view = public_view(ticket, fields)
-    for key in ('date', 'responded_at'):
-        if view.get(key):
-            view[key] = view[key].isoformat()
-    response = jsonify(view)
-    response.headers['Cache-Control'] = 'no-store'
-    return response

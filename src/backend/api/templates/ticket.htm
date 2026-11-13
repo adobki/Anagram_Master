@@ -100,7 +100,7 @@
     <section class="panel" id="shareBox">
       <h2>Sharing</h2>
       {% if share %}
-      <p class="muted" style="margin:0 0 .6rem;font-size:.9rem">Anyone with this link can read the shared fields.</p>
+      <p class="muted" style="margin:0 0 .6rem;font-size:.9rem">Anyone with this link can read the shared fields. It opens in the game.</p>
       <div class="link"><input id="shareUrl" value="{{ share_url }}" readonly aria-label="Share link"><button class="btn" id="copy" type="button">Copy</button></div>
       <p class="muted" style="font-size:.85rem;margin:.6rem 0 0">Shared: {{ share.fields|map('title')|join(', ') if share.fields else 'nothing' }}</p>
       <div class="actions"><button class="btn" id="editShare" type="button">Edit sharing</button><a class="btn" href="{{ share_url }}" target="_blank" rel="noopener">Preview</a></div>
@@ -140,7 +140,7 @@
 (() => {
   const id = {{ t.id|tojson }}
   const share = {{ share|tojson }}
-  const base = {{ base|tojson }}
+  const shareBase = {{ share_base|tojson }}
   const defaults = ['message', 'rating', 'category', 'status', 'response', 'images', 'date']
   const $ = (s) => document.querySelector(s)
   const toast = (text) => { const el = $('#toast'); el.textContent = text; el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 1800) }
@@ -169,7 +169,7 @@
   const dlg = $('#shareDlg')
   const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789'
   const random = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (n) => alphabet[n % alphabet.length]).join('')
-  const showPreview = () => { $('#preview').textContent = base + '/v1/feedback/shared/' + ($('#code').value || '…') }
+  const showPreview = () => { $('#preview').textContent = shareBase + ($('#code').value || '…') }
   const open = () => {
     $('#code').value = share ? share.code : random()
     const on = share ? share.fields : defaults

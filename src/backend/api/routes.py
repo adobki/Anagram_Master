@@ -7,8 +7,8 @@ from api.controllers_frontend import about, home, gameplay, onboarding, \
 from api.controllers_backend import init, status, resume, play, close, \
                                     scores, api_status
 from api.controllers_feedback import feedback, tickets, ticket_detail, ticket_share, ticket_image, \
-                                     own_ticket, own_ticket_image, shared_ticket, \
-                                     shared_ticket_image, shared_ticket_json
+                                     own_ticket_json, own_ticket_image, \
+                                     shared_ticket_json, shared_ticket_image
 
 # General/shared routes
 general_routes = [
@@ -44,11 +44,17 @@ api_routes = [
     # feedback route: Receives a feedback form (text and up to 6 images)
     {'rule': '/api/v1/feedback', 'view_func': feedback, 'methods': ['POST'],
      'strict_slashes': False},
-    # a ticket shared by the admin, as JSON for the web app's read-only screen
+    # ticket views for the web app's read-only screens (no login): a ticket
+    # shared by the admin, found by its share code...
     {'rule': '/api/v1/feedback/shared/<code>', 'view_func': shared_ticket_json,
      'methods': ['GET']},
     {'rule': '/api/v1/feedback/shared/<code>/<int:n>',
      'view_func': shared_ticket_image, 'methods': ['GET']},
+    # ...and a sender's own ticket, found by the token their device keeps
+    {'rule': '/api/v1/feedback/<tid>', 'view_func': own_ticket_json,
+     'methods': ['GET']},
+    {'rule': '/api/v1/feedback/<tid>/<int:n>',
+     'view_func': own_ticket_image, 'methods': ['GET']},
 ]
 
 # Legacy (v1) web pages, kept under /v1. The new web app is served at /.
@@ -66,18 +72,14 @@ html_routes = [
     {'rule': '/v1/scores', 'view_func': html_scores, 'strict_slashes': False},
     # about route: About/info page
     {'rule': '/v1/about', 'view_func': about, 'strict_slashes': False},
-    # tickets route: Private page listing feedback (needs a login stored in MongoDB)
+    # tickets routes: Private pages for feedback (they need a login stored in
+    # MongoDB). Nobody else reads a ticket here: the web app shows them.
     {'rule': '/v1/tickets', 'view_func': tickets, 'strict_slashes': False},
     {'rule': '/v1/tickets/<ticket_id>', 'view_func': ticket_detail,
      'methods': ['GET', 'POST']},
     {'rule': '/v1/tickets/<ticket_id>/share', 'view_func': ticket_share,
      'methods': ['PUT', 'DELETE']},
     {'rule': '/v1/tickets/<ticket_id>/<int:n>', 'view_func': ticket_image},
-    # feedback routes: a submitter's own ticket and tickets shared by the admin (read-only, no login)
-    {'rule': '/v1/feedback/<tid>', 'view_func': own_ticket},
-    {'rule': '/v1/feedback/<tid>/<int:n>', 'view_func': own_ticket_image},
-    {'rule': '/v1/feedback/shared/<code>', 'view_func': shared_ticket},
-    {'rule': '/v1/feedback/shared/<code>/<int:n>', 'view_func': shared_ticket_image},
     # redirect route: makes above HTML routes accessible with a *.htm extension
     {'rule': '/v1/<page>.htm', 'view_func': redirect_internal},
 ]
