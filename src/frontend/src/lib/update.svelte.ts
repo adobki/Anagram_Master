@@ -15,6 +15,10 @@
  * The banner still appears, but if it is dismissed, or the player moves on to
  * another screen, the update installs by itself the next time the app is on a
  * screen that isn't a game (`applyIfCritical`).
+ * A new version is looked for (quietly, at most once a minute) when the app opens, whenever the home screen shows
+ * (App.svelte), when the app comes back to the front, when the connection returns, every hour, and when About or
+ * the Settings button asks. The resume trigger matters most on a phone: a backgrounded app does no navigation, and
+ * its hourly timer is paused while it is frozen, so nothing else would notice a new version until a relaunch.
  * One thing remains by design: with every window closed, nothing is left to
  * wait for, so the next open starts the version that was already downloaded.
  */
@@ -62,7 +66,10 @@ class UpdateState {
     const { needRefresh, updateServiceWorker } = useRegisterSW({
       onRegisteredSW: (_url, registration) => {
         this.#registration = registration
-        if (registration) setInterval(() => void this.check(), HOUR)
+        if (registration) {
+          setInterval(() => void this.check(), HOUR)
+          void this.check() // the app has just opened
+        }
       },
       // When a new worker takes over, the library reloads the page by itself. That is right for the window
       // the player pressed Update in, but not for another one, which may be in the middle of a game.
@@ -78,6 +85,12 @@ class UpdateState {
         void this.#readVersion()
       }
     })
+
+    // Back in front of the player (resumed from the background, or another tab selected), or back online.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') void this.check()
+    })
+    addEventListener('online', () => void this.check())
 
     if ('serviceWorker' in navigator) {
       // The worker changed under this window without Update being pressed here: another window did it.

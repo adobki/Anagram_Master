@@ -122,6 +122,11 @@
     wasOnline = online
   })
 
+  // Every time the home screen shows, look for a new version (quietly, and at most once a minute; it only downloads).
+  $effect(() => {
+    if (screen === 'home') void update.check()
+  })
+
   // A critical update installs itself once the player is on a screen that isn't a game.
   $effect(() => {
     update.applyIfCritical(screen, ui.settingsOpen)
