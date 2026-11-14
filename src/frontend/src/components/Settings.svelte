@@ -13,6 +13,9 @@
   import { buzzTest } from '../lib/haptics'
   import { clearMyData } from '../lib/data'
   import { install } from '../lib/install.svelte'
+
+  /** Android Chrome in a browser tab (not the installed app), where going full screen brings up Chrome's notice. */
+  const androidTab = /Android/i.test(navigator.userAgent) && !install.onDevice
   import { MAX_NAME_LENGTH, MIN_NAME_LENGTH, player } from '../lib/player.svelte'
   import { settings, type Motion, type RoundEnd, type RoundTap, type TextSize } from '../lib/settings.svelte'
   import { theme } from '../lib/theme.svelte'
@@ -235,10 +238,14 @@
         bind:value={settings.motion}
         hint="Auto follows your device, which is set to {prefersReducedMotion.current ? 'reduced' : 'full'} motion."
       />
-      {#if fullscreen.supported}
+      {#if fullscreen.byApp}
+        <p class="note">Full screen: the installed app already runs full screen.</p>
+      {:else if fullscreen.supported}
         <Switch
           label="Full screen"
-          hint="Hides the browser's bars. It stays on until you turn it off. Browsers only allow it after a tap, so it returns on your next tap after you leave it."
+          hint="Hides the browser's bars. It stays on until you turn it off. Browsers only allow it after a tap, so it returns on your next tap after you leave it.{androidTab
+            ? ' Chrome shows its own notice each time a page goes full screen. Installing the app avoids it.'
+            : ''}"
           bind:checked={settings.fullscreen}
           onchange={(on) => on && fullscreen.enter()}
         />

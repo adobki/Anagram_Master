@@ -47,6 +47,9 @@ export default defineConfig({
           'A timed word game: rearrange the letters of a root word to form as many new words as you can.',
         theme_color: '#0d0c11',
         background_color: '#0d0c11',
+        // Android Chrome launches the installed app full screen from this (no "viewing full screen" notice, which
+        // appears only when a page asks for it); everything else uses `display`.
+        display_override: ['fullscreen', 'standalone'],
         display: 'standalone',
         orientation: 'any',
         icons: [

@@ -12,7 +12,7 @@
  *   - taps inside Settings don't, so the switch can still be turned off;
  *   - switching it off, or resetting settings, leaves full screen.
  */
-import { canFullscreen } from './device'
+import { canFullscreen, fullscreenApp } from './device'
 import { settings } from './settings.svelte'
 import { ui } from './ui.svelte'
 
@@ -26,11 +26,18 @@ type FullscreenElement = HTMLElement & { webkitRequestFullscreen?: () => Promise
 const doc = document as FullscreenDocument
 const root = document.documentElement as FullscreenElement
 
-const isActive = () => !!(doc.fullscreenElement ?? doc.webkitFullscreenElement)
+const isActive = () => fullscreenApp.matches || !!(doc.fullscreenElement ?? doc.webkitFullscreenElement)
 
 class FullscreenState {
   /** The browser can do it. */
   supported = canFullscreen
+  /**
+   * The installed app is full screen from its manifest. Nothing here asks the browser for full screen then (that
+   * would bring up Chrome's notice), and Settings says so in place of the switch.
+   */
+  get byApp() {
+    return fullscreenApp.matches
+  }
   /** The page is full screen right now. */
   active = $state(isActive())
 
@@ -41,6 +48,7 @@ class FullscreenState {
 
   constructor() {
     if (!this.supported) return
+    fullscreenApp.addEventListener('change', () => (this.active = isActive()))
 
     const changed = () => {
       const was = this.active
@@ -54,17 +62,17 @@ class FullscreenState {
     // A reload or leaving the page ends full screen too, but that isn't the player turning it off.
     addEventListener('pagehide', () => (this.#unloading = true))
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && settings.fullscreen && !this.active) this.#startOnNextTap()
+      if (document.visibilityState === 'visible' && settings.fullscreen && !this.active && !this.byApp) this.#startOnNextTap()
     })
 
     // Turned off in Settings, by Reset settings, or in another window: leave full screen.
     $effect.root(() => {
       $effect(() => {
-        if (!settings.fullscreen && this.active) void this.exit()
+        if (!settings.fullscreen && this.active && !this.byApp) void this.exit()
       })
     })
 
-    if (settings.fullscreen) this.#startOnNextTap()
+    if (settings.fullscreen && !this.byApp) this.#startOnNextTap()
   }
 
   /**
@@ -99,6 +107,7 @@ class FullscreenState {
 
   /** Must be called from a tap or key press, or the browser refuses. */
   async enter(trigger = 'switch') {
+    if (this.byApp) return // already full screen; asking would only bring up Chrome's notice
     try {
       if (root.requestFullscreen) await root.requestFullscreen({ navigationUI: 'hide' })
       else await root.webkitRequestFullscreen?.()
@@ -117,7 +126,7 @@ class FullscreenState {
 
   async exit() {
     try {
-      if (!isActive()) return
+      if (this.byApp || !isActive()) return
       if (doc.exitFullscreen) await doc.exitFullscreen()
       else await doc.webkitExitFullscreen?.()
     } catch {

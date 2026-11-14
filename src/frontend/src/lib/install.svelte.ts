@@ -49,6 +49,9 @@ interface InstallPromptEvent extends Event {
 }
 
 const standalone = matchMedia('(display-mode: standalone)')
+/** The manifest asks Android Chrome to launch the installed app full screen; that is an installed app too. */
+const fullscreenMode = matchMedia('(display-mode: fullscreen)')
+const runningAsApp = () => standalone.matches || fullscreenMode.matches
 /** A browser tab can't tell that the app is installed elsewhere on the device, so the app remembers having run as one. */
 const INSTALLED = 'am-installed'
 
@@ -71,7 +74,7 @@ function remember() {
 class InstallState {
   #offer = $state.raw<InstallPromptEvent | null>(null)
   /** The app is already running as an installed app. */
-  installed = $state(standalone.matches || (navigator as { standalone?: boolean }).standalone === true)
+  installed = $state(runningAsApp() || (navigator as { standalone?: boolean }).standalone === true)
   /** The how-to-install dialog is open. */
   guideOpen = $state(false)
   #snoozed = $state(snoozedUntil() > Date.now())
@@ -87,10 +90,12 @@ class InstallState {
       remember()
       this.#offer = null
     })
-    standalone.addEventListener('change', () => {
-      this.installed = standalone.matches
-      if (this.installed) remember()
-    })
+    for (const query of [standalone, fullscreenMode]) {
+      query.addEventListener('change', () => {
+        this.installed = runningAsApp()
+        if (this.installed) remember()
+      })
+    }
   }
 
   /** The app is installed on this device as far as it can tell: running as an app now, or has been before. */
