@@ -446,6 +446,9 @@
     inset: 0;
     display: flex;
     flex-direction: column;
+    /* The on-screen keyboard's height while the page is full screen (lib/keyboard.svelte.ts), so the scrolling
+       area ends where the keyboard begins and the field being typed in can scroll above it. */
+    padding-bottom: var(--kb, 0px);
   }
 
   .scroller {
