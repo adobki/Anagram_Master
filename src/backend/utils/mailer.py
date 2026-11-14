@@ -28,6 +28,14 @@ TIMEOUT = 10  # seconds, for each call to Google
 _lock = threading.Lock()
 _token = {'value': None, 'expires': 0.0}
 _warned = False
+# Whether the last email went through. None until one has been tried: then it is just "is it set up".
+# (The Gmail API has no cheap "are my credentials good" call, so each send updates this instead.)
+_live: bool | None = None
+
+
+def is_live() -> bool:
+    """Whether feedback email is working: set up at launch, then the outcome of the latest send."""
+    return configured() if _live is None else _live
 
 
 def _config() -> dict | None:
@@ -88,7 +96,7 @@ def build(config: dict, subject: str, text: str, html: str,
 def send(subject: str, text: str, html: str, reply_to: str | None = None,
          attachments: list[tuple[str, str, bytes]] = ()) -> bool:
     """Emails the feedback address. Returns whether Google accepted it. Never raises."""
-    global _warned
+    global _warned, _live
     config = _config()
     if not config:
         if not _warned:
@@ -101,9 +109,17 @@ def send(subject: str, text: str, html: str, reply_to: str | None = None,
         reply = requests.post(SEND_URL, json={'raw': raw}, timeout=TIMEOUT,
                               headers={'Authorization': f'Bearer {_access_token(config)}'})
         reply.raise_for_status()
+        _live = True
+        log.info('Feedback email sent')
         return True
+    except requests.HTTPError as error:  # Google answered, but refused (bad credentials, quota, ...)
+        _live = False
+        status = error.response.status_code if error.response is not None else '?'
+        log.error('Feedback email failed: Google answered %s', status)
+        return False
     except Exception as error:  # a failed email must never fail the request
-        log.error('Feedback email failed: %s', error)
+        _live = False
+        log.error('Feedback email error: %s', error)
         return False
 
 

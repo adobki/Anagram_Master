@@ -7,6 +7,16 @@ from flask import Flask, request
 from os import environ
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
+import logging
+
+# The server's own messages (a ticket was submitted, the email's outcome, a failed admin login) go to the console.
+log = logging.getLogger('AnagramMaster')
+if not log.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s', '%Y-%m-%d %H:%M:%S'))
+    log.addHandler(handler)
+    log.setLevel(logging.INFO)
+    log.propagate = False
 
 # No request may carry a body of 10 MB or more, whatever the endpoint.
 MAX_BODY = 10 * 1024 * 1024

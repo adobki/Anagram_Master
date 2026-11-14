@@ -2,6 +2,7 @@
 """Feedback: the submission API, the admin tickets pages (/v1/tickets) and the read-only ticket views
 (JSON) that the web app shows."""
 import hmac
+import logging
 import re
 import threading
 import time
@@ -15,6 +16,8 @@ from models.db_tickets import (CODE, FIELDS, MAX_RESPONSE, OWN_FIELDS, PER_PAGE,
 from os import environ
 from urllib.parse import quote, urlencode, urlparse
 from utils import db, mailer
+
+log = logging.getLogger('AnagramMaster')
 
 # ── Rules for a submission ──────────────────────────────────────────────────
 MAX_IMAGES = 6
@@ -150,6 +153,8 @@ def feedback():
     # ticket's share link in the web app, which every ticket has from the start: a reply to this email
     # may quote it to the sender, so it must not be an admin address. It is only added when the app's
     # address is configured, because anyone can send this request with a made-up Host header.
+    log.info('Feedback ticket submitted: %s (%s, rating %s, %d image%s) from %s', saved['id'], category or 'no category',
+             rating or 'none', len(images), '' if len(images) == 1 else 's', ip)
     link = _shared_link(saved['code']) if environ.get('am_app_url') else None
     subject, text, html, reply_to = mailer.ticket_email({**ticket, 'status': 'pending', 'images': images}, link)
     attachments = [(f'screenshot-{i + 1}.{mime.split("/")[1].replace("jpeg", "jpg")}', mime, data)
@@ -207,8 +212,10 @@ def _gate():
         return None
     with _lock:
         _fails[ip] = _fails.get(ip, 0) + 1
-        if _fails[ip] >= FAILS_ALLOWED:
+        blocked = _fails[ip] >= FAILS_ALLOWED
+        if blocked:
             _blocked[ip] = now + BLOCK_SECONDS
+    log.warning('Invalid admin login from %s%s', ip, f' (address blocked for {BLOCK_SECONDS // 60} min)' if blocked else '')
     return _not_found()
 
 

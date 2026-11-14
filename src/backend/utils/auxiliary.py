@@ -70,9 +70,11 @@ def isAnagram(word: str, root: str) -> bool:
 
 
 def health():
-    """Returns connection statuses for MongoDB and FileStorage utilities"""
+    """Returns connection statuses for MongoDB, FileStorage and the mailer"""
+    from utils import mailer  # here, because the package imports this module first
     return {'Database':    bool(isAlive()),
-            'FileStorage': bool(dictionary)}
+            'FileStorage': bool(dictionary),
+            'Mailer':      mailer.is_live()}
 
 
 # Prepare words dictionary
