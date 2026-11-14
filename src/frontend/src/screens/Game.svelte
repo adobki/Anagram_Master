@@ -95,6 +95,9 @@
   const rootLetters = $derived(tilesOf(root).map((tile) => tile.letter).join(''))
   const answers = $derived(s.word ? (s.words[s.word] ?? []) : [])
   const lastRound = $derived(s.round >= s.rounds_limit)
+  // The tutorial has a single round whose goal is 20 words, so its counter follows the words found (the one being
+  // worked on, so it starts at 1 and stops at 20), however they got there: typed, or put in by the coach's Skip.
+  const shownRound = $derived(tutorial ? Math.min(answers.filter(([, valid]) => valid).length + 1, s.rounds_limit) : s.round)
   /** A shortcut's name for a tooltip, unless the keyboard is off. */
   const key = (name: string) => (settings.keyboardOff ? '' : ` (${name})`)
 
@@ -510,8 +513,8 @@
   <header class="top">
     <IconButton label="Pause or end the game" onclick={() => (menu = 'button')}><Pause size="1.375rem" /></IconButton>
     <div class="round">
-      <span>Round <strong>{s.round}</strong> of {s.rounds_limit}</span>
-      <span class="round-bar"><span style:width="{(s.round / s.rounds_limit) * 100}%"></span></span>
+      <span>Round <strong>{shownRound}</strong> of {s.rounds_limit}</span>
+      <span class="round-bar"><span style:width="{(shownRound / s.rounds_limit) * 100}%"></span></span>
     </div>
     <SettingsButton hot={hot('settings')} />
   </header>
