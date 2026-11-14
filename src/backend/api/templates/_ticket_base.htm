@@ -20,28 +20,32 @@
     html { -webkit-text-size-adjust: 100%; }
     body {
       margin: 0; min-height: 100vh; display: flex; flex-direction: column;
-      background: var(--bg); color: var(--text);
+      background: radial-gradient(60rem 22rem at 50% -6rem, rgb(247 63 82 / .13), transparent 70%) no-repeat, var(--bg);
+      color: var(--text);
       font: 16px/1.5 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     }
     a { color: var(--accent-2); }
     h1, h2, h3 { margin: 0; line-height: 1.2; }
-    .top { position: sticky; top: 0; z-index: 5; background: rgb(14 15 18 / .92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .top { position: sticky; top: 0; z-index: 5; background: rgb(14 15 18 / .92); backdrop-filter: blur(8px); border-bottom: 2px solid var(--accent); }
     .top .in, main, .foot .in { width: 100%; max-width: 60rem; margin: 0 auto; padding-inline: 1rem; }
     .top .in { display: flex; align-items: center; gap: 1rem; height: 3.5rem; }
-    .brand { display: flex; align-items: center; gap: .75rem; color: var(--text); text-decoration: none; font-weight: 700; }
+    .brand { display: flex; align-items: center; gap: .75rem; color: var(--accent); text-decoration: none; font-weight: 700; }
     .brand img { height: 1.75rem; width: auto; display: block; }
-    .brand .tag { padding: .1rem .55rem; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line); font-size: .8rem; font-weight: 600; color: var(--muted); }
-    .top nav { margin-left: auto; display: flex; gap: 1rem; font-size: .9rem; white-space: nowrap; }
+    .brand .tag { padding: .1rem .65rem; border-radius: 99px; background: rgb(247 63 82 / .14); border: 1px solid rgb(247 63 82 / .55); font-size: .8rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+    .top nav { margin-left: auto; display: flex; gap: .4rem; font-size: .9rem; white-space: nowrap; }
     .brand { min-width: 0; } .brand img { flex: none; }
     @media (max-width: 480px) { .top nav { display: none; } }
-    .top nav a { color: var(--muted); text-decoration: none; }
-    .top nav a:hover { color: var(--text); }
+    .top nav a { color: var(--accent); text-decoration: none; font-weight: 600; padding: .3rem .8rem; border-radius: 99px; border: 1px solid transparent; transition: background .15s, border-color .15s; }
+    .top nav a:hover { background: rgb(247 63 82 / .14); border-color: rgb(247 63 82 / .55); }
     main { flex: 1; padding-block: 1.5rem 3rem; }
-    .foot { border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+    .foot { border-top: 2px solid var(--accent); background: linear-gradient(0deg, rgb(247 63 82 / .08), transparent); color: var(--muted); font-size: .85rem; }
+    .foot .name { color: var(--accent); font-weight: 700; }
     .foot .in { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; padding-block: 1rem; }
-    .foot a { color: var(--muted); }
+    .foot a { color: var(--accent); font-weight: 600; text-decoration: none; }
+    .foot a:hover { text-decoration: underline; }
     .foot .copy { margin-left: auto; }
 
+    h1 { text-shadow: 0 0 28px rgb(247 63 82 / .35); }
     .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
     .muted { color: var(--muted); }
     .stars { color: var(--amber); letter-spacing: .08em; white-space: nowrap; }
@@ -85,7 +89,7 @@
 </main>
 <footer class="foot">
   <div class="in">
-    <span>Anagram Master · {% block foot %}Feedback tickets{% endblock %}</span>
+    <span><span class="name">Anagram Master</span> · {% block foot %}Feedback tickets{% endblock %}</span>
     <a href="/">Play the game</a>
     <span class="copy">Copyright © 2023–{{ year }}, Donald Ajaps</span>
   </div>

@@ -214,7 +214,7 @@ def _gate():
 
 def _assets() -> dict:
     """Files borrowed from the front end's build (their names carry a hash, so they are found by pattern)."""
-    return {'font': asset('outfit-latin-wght-normal-*.woff2'), 'logo': asset('logo-horizontal-white-*.webp')}
+    return {'font': asset('outfit-latin-wght-normal-*.woff2'), 'logo': asset('logo-horizontal-????????.webp')}
 
 
 def _page(template: str, **context):
