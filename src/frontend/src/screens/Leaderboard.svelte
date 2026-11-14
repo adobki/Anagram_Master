@@ -14,6 +14,7 @@
   import { ms } from '../lib/motion'
   import { network } from '../lib/network.svelte'
   import { scores } from '../lib/scores.svelte'
+  import { shortStamp } from '../lib/time'
 
   interface Props {
     /** A just-finished game to highlight, if it made the board. */
@@ -39,8 +40,7 @@
     const parsed = new Date(date)
     return Number.isNaN(parsed.getTime()) ? '' : day.format(parsed)
   }
-  const stamp = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
-  const kept = $derived(scores.savedAt ? stamp.format(scores.savedAt) : '')
+  const kept = $derived(scores.savedAt ? shortStamp.format(scores.savedAt) : '')
   const problem = $derived(network.online ? "Couldn't refresh the leaderboard." : "You're offline.")
 
   // Highlight only the first entry that matches the player's game.

@@ -7,6 +7,7 @@
   import IconButton from '../components/IconButton.svelte'
   import ScreenBar from '../components/ScreenBar.svelte'
   import SettingsButton from '../components/SettingsButton.svelte'
+  import { fullStamp } from '../lib/time'
   import { api, ApiError, ownImage, sharedImage, type FeedbackView } from '../lib/api'
 
   /**
@@ -70,7 +71,7 @@
     const date = new Date(iso)
     return Number.isNaN(date.getTime())
       ? ''
-      : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+      : fullStamp.format(date)
   }
 
   const details = $derived(

@@ -10,6 +10,7 @@
   import SettingsButton from '../components/SettingsButton.svelte'
   import { MIN_LEADERBOARD_SCORE } from '../lib/game'
   import type { SavedGame } from '../lib/history.svelte'
+  import { shortStamp } from '../lib/time'
 
   interface Props {
     /** A game from History that hasn't ended. */
@@ -28,9 +29,7 @@
   const info = $derived(game.state)
   const found = $derived(Object.values(info.words).flat().filter(([, valid]) => valid).map(([word]) => word))
   const longest = $derived(found.reduce((best, word) => (word.length > best.length ? word : best), ''))
-  const seen = $derived(
-    new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(game.savedAt),
-  )
+  const seen = $derived(shortStamp.format(game.savedAt))
 
   let confirming = $state(false)
   async function end() {
