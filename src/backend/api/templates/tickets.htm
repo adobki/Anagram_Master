@@ -1,45 +1,79 @@
 {% extends '_ticket_base.htm' %}
-{% from '_ticket_macros.htm' import stars, status_chip, category_chip, when %}
+{% from '_ticket_macros.htm' import stars, status_chip, category_chip, when, needs_chip %}
 {% block title %}Tickets{% endblock %}
 {% block css %}
     .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1rem; margin-bottom: 1rem; }
     .head h1 { font-size: 1.6rem; padding-left: .7rem; border-left: 4px solid var(--accent); }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: .6rem; margin-bottom: 1rem; }
+    .tile { display: grid; gap: .1rem; padding: .7rem .9rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: inherit; text-decoration: none; }
+    a.tile:hover { border-color: var(--accent); }
+    .tile b { font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .tile b small { font-size: .9rem; color: var(--amber); margin-left: .1rem; }
+    .tile span { color: var(--muted); font-size: .8rem; }
+    .tile.alert b { color: var(--amber); }
     .tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
     .tabs a { display: inline-flex; gap: .5rem; align-items: center; padding: .4rem .9rem; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); text-decoration: none; font-weight: 600; }
     .tabs a b { font-weight: 600; font-size: .8rem; padding: 0 .45rem; border-radius: 99px; background: var(--surface-2); }
     .tabs a.on { color: #fff; background: var(--accent); border-color: var(--accent); }
     .tabs a.on b { background: rgb(255 255 255 / .22); }
     .tools { display: grid; grid-template-columns: 1fr; gap: .6rem; margin-bottom: 1.25rem; }
-    @media (min-width: 700px) { .tools { grid-template-columns: 2fr 1fr 1fr 1fr auto; align-items: end; } }
+    @media (min-width: 700px) { .tools { grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; align-items: end; } }
     .tools .go { display: flex; gap: .5rem; }
     .list { display: grid; gap: .75rem; }
-    .card { display: grid; gap: .5rem; padding: 1rem 1.1rem; background: linear-gradient(135deg, var(--surface), var(--surface-2)); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: var(--radius); color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+    .card { position: relative; display: grid; gap: .5rem; padding: 1rem 1.1rem; background: linear-gradient(135deg, var(--surface), var(--surface-2)); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: var(--radius); color: inherit; transition: border-color .15s, transform .15s, opacity .25s; }
     .card.s-pending { border-left-color: var(--amber); } .card.s-active { border-left-color: var(--blue); } .card.s-closed { border-left-color: var(--green); }
-    .card:hover { border-color: var(--accent); box-shadow: 0 6px 22px rgb(247 63 82 / .15); transform: translateY(-2px); }
+    .card:hover, .card:focus-within { border-color: var(--accent); box-shadow: 0 6px 22px rgb(247 63 82 / .15); }
+    .card:hover { transform: translateY(-2px); }
+    .card.gone { opacity: 0; transform: scale(.98); }
     .card .row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; }
+    .card .chips { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
     .card .row .when { margin-left: auto; color: var(--muted); font-size: .85rem; }
     .card p { margin: 0; color: #d4d8df; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+    /* The whole card opens the ticket: the link stretches over it, and only the buttons sit above it. */
+    .open { color: inherit; text-decoration: none; }
+    .open::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+    .open:focus-visible { outline: none; }
     .card .who { color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+    .thumbs { display: flex; gap: .4rem; }
+    .thumbs img, .thumbs i { width: 3.5rem; height: 3.5rem; border-radius: 8px; border: 1px solid var(--line); object-fit: cover; background: var(--bg); display: block; }
+    .thumbs i { display: grid; place-items: center; font-style: normal; font-size: .85rem; color: var(--muted); }
+    .quick { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: .4rem; }
+    .mini { min-height: 2rem; padding: 0 .75rem; border-radius: 99px; border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer; transition: color .15s, border-color .15s; }
+    .mini:hover { color: var(--text); border-color: var(--accent); }
+    .mini[disabled] { opacity: .5; cursor: default; }
+    .restored { margin: -.5rem 0 1rem; color: var(--muted); font-size: .85rem; }
     .pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; color: var(--muted); }
     .empty { text-align: center; padding: 3rem 1rem; }
     .empty h2 { font-size: 1.2rem; margin-bottom: .4rem; }
 {% endblock %}
+{% block hint %}<span class="keys"><kbd>/</kbd> search · <kbd>j</kbd> <kbd>k</kbd> move · <kbd>Enter</kbd> open</span>{% endblock %}
 {% block body %}
 <div class="head">
   <h1>Tickets</h1>
   <span class="muted">{{ total }} {{ 'match' if total == 1 else 'matches' }}{% if counts.all != total %} of {{ counts.all }}{% endif %}</span>
 </div>
 
+{% if counts.all %}
+<section class="stats" aria-label="Summary">
+  <a class="tile {{ 'alert' if stats.needs_reply }}" href="{{ link(reply='none', status='') }}"><b data-needs>{{ stats.needs_reply }}</b><span>Need a reply</span></a>
+  <div class="tile"><b>{% if stats.average is not none %}{{ stats.average }}<small>★</small>{% else %}–{% endif %}</b><span>Average rating ({{ stats.rated }})</span></div>
+  <div class="tile"><b>{{ stats.week }}</b><span>This week</span></div>
+  <a class="tile" href="{{ link(category='bug') }}"><b>{{ stats.bug }}</b><span>Bugs</span></a>
+  <a class="tile" href="{{ link(category='idea') }}"><b>{{ stats.idea }}</b><span>Ideas</span></a>
+  <a class="tile" href="{{ link(category='praise') }}"><b>{{ stats.praise }}</b><span>Praise</span></a>
+</section>
+{% endif %}
+
 <nav class="tabs" aria-label="Status">
-  <a href="{{ link(status='') }}" class="{{ 'on' if not args.status }}">All <b>{{ counts.all }}</b></a>
+  <a href="{{ link(status='') }}" class="{{ 'on' if not args.status }}">All <b data-n="all">{{ counts.all }}</b></a>
   {% for s, label in [('pending', 'Pending'), ('active', 'Active'), ('closed', 'Closed')] %}
-  <a href="{{ link(status=s) }}" class="{{ 'on' if args.status == s }}">{{ label }} <b>{{ counts[s] }}</b></a>
+  <a href="{{ link(status=s) }}" class="{{ 'on' if args.status == s }}">{{ label }} <b data-n="{{ s }}">{{ counts[s] }}</b></a>
   {% endfor %}
 </nav>
 
 <form class="tools" method="get" action="/v1/tickets" role="search">
   {% if args.status %}<input type="hidden" name="status" value="{{ args.status }}">{% endif %}
-  <div><label class="lbl" for="q">Search</label><input id="q" type="search" name="q" value="{{ args.q }}" placeholder="Message, name, player, email…" maxlength="100"></div>
+  <div><label class="lbl" for="q">Search</label><input id="q" data-k="search" type="search" name="q" value="{{ args.q }}" placeholder="Message, name, player, email…" maxlength="100"></div>
   <div><label class="lbl" for="category">Category</label>
     <select id="category" name="category">
       <option value="">Any</option>
@@ -50,24 +84,35 @@
       <option value="">Any</option>
       {% for n in [5, 4, 3, 2, 1] %}<option value="{{ n }}" {{ 'selected' if args.rating == n }}>{{ n }} {{ 'star' if n == 1 else 'stars' }}</option>{% endfor %}
     </select></div>
+  <div><label class="lbl" for="reply">Reply</label>
+    <select id="reply" name="reply">
+      <option value="">Any</option>
+      <option value="none" {{ 'selected' if args.reply == 'none' }}>Needs a reply</option>
+      <option value="yes" {{ 'selected' if args.reply == 'yes' }}>Replied</option>
+    </select></div>
   <div><label class="lbl" for="sort">Sort by</label>
     <select id="sort" name="sort">
       {% for v, label in [('new', 'Newest'), ('old', 'Oldest'), ('high', 'Highest rating'), ('low', 'Lowest rating')] %}<option value="{{ v }}" {{ 'selected' if args.sort == v }}>{{ label }}</option>{% endfor %}
     </select></div>
-  <div class="go"><button class="btn primary" type="submit">Apply</button>{% if args.q or args.category or args.rating or args.status or args.sort != 'new' %}<a class="btn" href="/v1/tickets">Reset</a>{% endif %}</div>
+  <div class="go"><button class="btn primary" type="submit">Apply</button>{% if args.q or args.category or args.rating or args.reply or args.status or args.sort != 'new' %}<a class="btn" href="/v1/tickets?reset=1">Reset</a>{% endif %}</div>
 </form>
+<p class="restored" id="restored" hidden>Showing the filters you used last time. <a href="/v1/tickets?reset=1">Clear them</a></p>
 
 {% if tickets %}
-<div class="list">
+<div class="list" id="list">
   {% for t in tickets %}
-  <a class="card s-{{ t.status or 'pending' }}" href="/v1/tickets/{{ t.id }}">
+  {% set st = t.status or 'pending' %}
+  <article class="card s-{{ st }}" data-id="{{ t.id }}" data-status="{{ st }}" data-replied="{{ 1 if t.response else 0 }}">
     <div class="row">
-      {{ status_chip(t.status or 'pending') }}
-      {% if t.category %}{{ category_chip(t.category) }}{% endif %}
+      <span class="chips">
+        {{ status_chip(st) }}
+        {% if t.category %}{{ category_chip(t.category) }}{% endif %}
+        {{ needs_chip(not t.response and st != 'closed') }}
+      </span>
       {% if t.rating %}{{ stars(t.rating) }}{% endif %}
       <span class="when">{{ when(t.created_at) }}</span>
     </div>
-    <p>{{ t.message }}</p>
+    <p><a class="open" href="/v1/tickets/{{ t.id }}{{ '?' ~ here if here }}">{{ t.message }}</a></p>
     <div class="who">
       {% if t.player %}<span>Player: {{ t.player }}</span>{% endif %}
       {% if t.name %}<span>{{ t.name }}</span>{% endif %}
@@ -76,7 +121,14 @@
       {% if t.images %}<span>🖼 {{ t.images|length }}</span>{% endif %}
       {% if t.response %}<span>↩ Replied</span>{% endif %}
     </div>
-  </a>
+    {% if t.images %}
+    <div class="thumbs" aria-hidden="true">
+      {% for image in t.images[:3] %}<img src="/v1/tickets/{{ t.id }}/{{ loop.index0 }}" alt="" loading="lazy" decoding="async">{% endfor %}
+      {% if t.images|length > 3 %}<i>+{{ t.images|length - 3 }}</i>{% endif %}
+    </div>
+    {% endif %}
+    <div class="quick" role="group" aria-label="Change the status"></div>
+  </article>
   {% endfor %}
 </div>
 {% if pages > 1 %}
@@ -92,4 +144,74 @@
   {% else %}<h2>No tickets yet</h2><p class="muted">Feedback sent from the app will show up here.</p>{% endif %}
 </div>
 {% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  // The list comes back as you left it: the last filters are kept on this device, and "reset" clears them.
+  const KEY = 'am-admin-list'
+  try {
+    const url = new URL(location.href)
+    if (url.searchParams.has('reset')) {
+      localStorage.removeItem(KEY)
+      history.replaceState(null, '', url.pathname)
+    } else if (!location.search && localStorage.getItem(KEY)) {
+      sessionStorage.setItem('am-admin-restored', '?' + localStorage.getItem(KEY))
+      location.replace('/v1/tickets?' + localStorage.getItem(KEY))
+      return
+    } else if (location.search) {
+      if (sessionStorage.getItem('am-admin-restored') === location.search) document.getElementById('restored').hidden = false
+      sessionStorage.removeItem('am-admin-restored')
+      localStorage.setItem(KEY, location.search.slice(1))
+    }
+  } catch {}
+
+  // One-click status changes, right on the card.
+  const filter = {{ args.status|tojson }}
+  const LABEL = { pending: 'Pending', active: 'Active', closed: 'Closed' }
+  const VERB = { pending: 'Mark pending', active: 'Mark active', closed: 'Close' }
+  const $ = (s, root = document) => root.querySelector(s)
+  const toast = (text) => { const el = $('#toast'); el.textContent = text; el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 1800) }
+  const bump = (selector, by) => { const el = $(selector); if (el) el.textContent = Math.max(0, Number(el.textContent) + by) }
+  const needs = (card, status) => card.dataset.replied === '0' && status !== 'closed'
+
+  function paint(card) {
+    const status = card.dataset.status
+    card.className = card.className.replace(/\bs-\w+/, 's-' + status)
+    const chip = $('.chip.pending, .chip.active, .chip.closed', card)
+    chip.className = 'chip ' + status
+    chip.textContent = LABEL[status]
+    const flag = $('.chip.needs', card)
+    if (flag) flag.hidden = !needs(card, status)
+    const box = $('.quick', card)
+    box.replaceChildren(...Object.keys(LABEL).filter((s) => s !== status).map((s) => {
+      const b = document.createElement('button')
+      b.type = 'button'; b.className = 'mini'; b.dataset.to = s; b.textContent = VERB[s]
+      return b
+    }))
+  }
+  document.querySelectorAll('.card').forEach(paint)
+
+  document.addEventListener('click', async (event) => {
+    const button = event.target.closest('.mini')
+    if (!button) return
+    const card = button.closest('.card')
+    const from = card.dataset.status, to = button.dataset.to
+    card.querySelectorAll('.mini').forEach((b) => (b.disabled = true))
+    try {
+      const res = await fetch('/v1/tickets/' + card.dataset.id, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: to }) })
+      if (!res.ok) throw new Error()
+      bump('[data-n="' + from + '"]', -1); bump('[data-n="' + to + '"]', 1)
+      bump('[data-needs]', (needs(card, to) ? 1 : 0) - (needs(card, from) ? 1 : 0))
+      card.dataset.status = to
+      paint(card)
+      toast(to === 'closed' ? 'Closed' : 'Marked ' + to)
+      if (filter && filter !== to) { card.classList.add('gone'); setTimeout(() => card.remove(), 260) }
+    } catch {
+      toast("Couldn't change it. Try again.")
+      paint(card)
+    }
+  })
+})()
+</script>
 {% endblock %}

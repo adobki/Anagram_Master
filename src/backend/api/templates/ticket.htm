@@ -1,9 +1,14 @@
 {% extends '_ticket_base.htm' %}
-{% from '_ticket_macros.htm' import stars, status_chip, category_chip, when %}
+{% from '_ticket_macros.htm' import stars, status_chip, category_chip, when, needs_chip %}
 {% set labels = {'message': 'Message', 'rating': 'Rating', 'category': 'Category', 'status': 'Status', 'response': 'Your reply', 'images': 'Screenshots', 'date': 'Date', 'player': 'Player name', 'name': 'Name', 'email': 'Email', 'whatsapp': 'WhatsApp number', 'app': 'App details (version and settings)'} %}
 {% block title %}Ticket{% endblock %}
+{% block hint %}<span class="keys"><kbd>j</kbd> <kbd>k</kbd> next / previous · <kbd>r</kbd> reply · <kbd>u</kbd> list</span>{% endblock %}
 {% block css %}
-    .crumb { display: inline-block; margin-bottom: 1rem; color: var(--muted); text-decoration: none; }
+    .topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; margin-bottom: 1rem; }
+    .pn { display: flex; align-items: center; gap: .5rem; }
+    .pn .btn { min-height: 2.1rem; padding: 0 .8rem; font-size: .9rem; }
+    .pn .off { opacity: .35; cursor: default; }
+    .crumb { display: inline-block; color: var(--muted); text-decoration: none; }
     .crumb:hover { color: var(--text); }
     .meta { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin-bottom: 1.25rem; }
     .meta h1 { font-size: 1.5rem; flex-basis: 100%; }
@@ -33,12 +38,23 @@
     .err { color: #ff8a8a; font-size: .9rem; min-height: 1.3em; margin: .5rem 0 0; }
 {% endblock %}
 {% block body %}
-<a class="crumb" href="/v1/tickets">← All tickets</a>
+{% set q = ('?' ~ here) if here else '' %}
+<div class="topbar">
+  <a class="crumb" data-k="up" href="/v1/tickets?{{ here or 'reset=1' }}">← All tickets</a>
+  {% if near.of > 1 %}
+  <div class="pn" aria-label="Move through the list">
+    {% if near.prev %}<a class="btn" data-k="prev" href="/v1/tickets/{{ near.prev }}{{ q }}">← Previous</a>{% else %}<span class="btn off">← Previous</span>{% endif %}
+    <span class="muted">{{ near.at }} of {{ near.of }}</span>
+    {% if near.next %}<a class="btn" data-k="next" href="/v1/tickets/{{ near.next }}{{ q }}">Next →</a>{% else %}<span class="btn off">Next →</span>{% endif %}
+  </div>
+  {% endif %}
+</div>
 
 <div class="meta">
   <h1>{{ 'Feedback from ' ~ (t.name or t.player) if (t.name or t.player) else 'Feedback' }}</h1>
   {{ status_chip(t.status or 'pending') }}
   {% if t.category %}{{ category_chip(t.category) }}{% endif %}
+  {{ needs_chip(not t.response and (t.status or 'pending') != 'closed') }}
   {% if t.rating %}{{ stars(t.rating) }}{% endif %}
   <span class="muted">{{ when(t.created_at) }}</span>
 </div>
@@ -69,7 +85,7 @@
             {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if (t.status or 'pending') == s }}>{{ s|capitalize }}</option>{% endfor %}
           </select></div>
         <div><label class="lbl" for="response">Reply shown to the sender (and to anyone it is shared with)</label>
-          <textarea id="response" maxlength="2000" placeholder="Thanks! We're looking into this…">{{ t.response or '' }}</textarea></div>
+          <textarea id="response" data-k="reply" maxlength="2000" placeholder="Thanks! We're looking into this…">{{ t.response or '' }}</textarea></div>
       </div>
       <p class="err" id="saveErr" role="alert"></p>
       <div class="actions"><button class="btn primary" id="save" type="button">Save</button>

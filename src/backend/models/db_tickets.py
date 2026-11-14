@@ -108,10 +108,10 @@ class DBTickets:
         raise RuntimeError('Could not create a unique ticket token')
 
     # ── reading ────────────────────────────────────────────────────────────
-    def list(self, q: str = '', status: str = '', category: str = '', rating: int = 0,
-             sort: str = 'new', page: int = 1, per_page: int = PER_PAGE) -> tuple[list[dict], int]:
-        """One page of tickets (without image bytes) and the number that match."""
-        self.isAlive()
+    @staticmethod
+    def _query(q: str = '', status: str = '', category: str = '', rating: int = 0, reply: str = '') -> dict:
+        """The MongoDB filter for the admin list's search and filters.
+        `reply` is 'none' (needs a reply: nothing written yet and not closed) or 'yes' (has a reply)."""
         query: dict = {}
         if status in STATUSES:
             query['status'] = status
@@ -119,9 +119,51 @@ class DBTickets:
             query['category'] = category
         if rating:
             query['rating'] = rating
+        clauses = []
         if q.strip():
             rx = {'$regex': re.escape(q.strip()), '$options': 'i'}
-            query['$or'] = [{k: rx} for k in ('message', 'name', 'player', 'email', 'whatsapp', 'response')]
+            clauses.append({'$or': [{k: rx} for k in ('message', 'name', 'player', 'email', 'whatsapp', 'response')]})
+        if reply == 'none':
+            clauses.append({'response': {'$in': [None, '']}, 'status': {'$ne': 'closed'}})
+        elif reply == 'yes':
+            clauses.append({'response': {'$nin': [None, '']}})
+        if clauses:
+            query['$and'] = clauses
+        return query
+
+    def ids(self, sort: str = 'new', **filters) -> list[str]:
+        """The ids of every ticket that matches, in list order (for Previous and Next)."""
+        self.isAlive()
+        cursor = self.__db.find(self._query(**filters), {'_id': 1}).sort(SORTS.get(sort, SORTS['new']))
+        return [str(doc['_id']) for doc in cursor]
+
+    def stats(self) -> dict:
+        """The numbers for the list's summary: ratings, this week, kinds and tickets needing a reply."""
+        self.isAlive()
+        week_ago = datetime.now(timezone.utc).timestamp() - 7 * 86400
+        out = {'rated': 0, 'rating_sum': 0, 'week': 0, 'needs_reply': 0, 'bug': 0, 'idea': 0, 'praise': 0}
+        fields = {'rating': 1, 'category': 1, 'created_at': 1, 'response': 1, 'status': 1}
+        for doc in self.__db.find({}, fields):
+            if doc.get('rating'):
+                out['rated'] += 1
+                out['rating_sum'] += doc['rating']
+            if doc.get('category') in ('bug', 'idea', 'praise'):
+                out[doc['category']] += 1
+            made = doc.get('created_at')
+            if made is not None:
+                made = made if made.tzinfo else made.replace(tzinfo=timezone.utc)
+                if made.timestamp() >= week_ago:
+                    out['week'] += 1
+            if not doc.get('response') and doc.get('status') != 'closed':
+                out['needs_reply'] += 1
+        out['average'] = round(out['rating_sum'] / out['rated'], 1) if out['rated'] else None
+        return out
+
+    def list(self, q: str = '', status: str = '', category: str = '', rating: int = 0, reply: str = '',
+             sort: str = 'new', page: int = 1, per_page: int = PER_PAGE) -> tuple[list[dict], int]:
+        """One page of tickets (without image bytes) and the number that match."""
+        self.isAlive()
+        query = self._query(q, status, category, rating, reply)
         total = self.__db.count_documents(query)
         cursor = (self.__db.find(query, {'images.data': 0})
                   .sort(SORTS.get(sort, SORTS['new']))
@@ -171,8 +213,8 @@ class DBTickets:
         return images[n]['type'], bytes(images[n]['data'])
 
     # ── admin changes ──────────────────────────────────────────────────────
-    def update(self, ticket_id: str, status: str, response: str) -> bool:
-        """Sets the status and the reply. False when there is no such ticket."""
+    def update(self, ticket_id: str, status: str, response: str | None = None) -> bool:
+        """Sets the status and the reply (None keeps the reply as it is). False when there is no such ticket."""
         self.isAlive()
         try:
             _id = ObjectId(ticket_id)
@@ -181,9 +223,11 @@ class DBTickets:
         current = self.__db.find_one({'_id': _id}, {'response': 1})
         if current is None:
             return False
-        change = {'status': status, 'response': response or None}
-        if (response or None) != current.get('response'):
-            change['responded_at'] = datetime.now(timezone.utc) if response else None
+        change: dict = {'status': status}
+        if response is not None:
+            change['response'] = response or None
+            if (response or None) != current.get('response'):
+                change['responded_at'] = datetime.now(timezone.utc) if response else None
         self.__db.update_one({'_id': _id}, {'$set': change})
         return True
 

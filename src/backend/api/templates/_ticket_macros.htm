@@ -10,6 +10,12 @@
 <span class="chip {{ c }}">{{ {'bug': 'Bug', 'idea': 'Idea', 'praise': 'Praise'}.get(c, c) }}</span>
 {%- endmacro %}
 
+{# The date as text for now (UTC, 12-hour); the page's script swaps it for "2 hours ago (14 Nov 2026, 12:11 AM)"
+   in the viewer's own time zone and locale. #}
 {% macro when(d) -%}
-{% if d %}<time datetime="{{ d.strftime('%Y-%m-%dT%H:%M:%SZ') }}" title="{{ d.strftime('%Y-%m-%d %H:%M') }} UTC">{{ d.strftime('%d %b %Y, %H:%M') }}</time>{% endif %}
+{% if d %}<time datetime="{{ d.strftime('%Y-%m-%dT%H:%M:%SZ') }}">{{ d.strftime('%d %b %Y, %I:%M %p') }} UTC</time>{% endif %}
+{%- endmacro %}
+
+{% macro needs_chip(show) -%}
+<span class="chip needs"{% if not show %} hidden{% endif %}>Needs reply</span>
 {%- endmacro %}

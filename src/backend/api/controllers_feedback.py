@@ -243,24 +243,38 @@ def _int(value, default: int, low: int = 0, high: int = 10**6) -> int:
         return default
 
 
+def _list_args() -> dict:
+    """The list's search, filters and sort from the address (anything unknown is ignored)."""
+    status, category, sort, reply = (request.args.get(k) for k in ('status', 'category', 'sort', 'reply'))
+    return {
+        'q': (request.args.get('q') or '').strip()[:100],
+        'status': status if status in STATUSES else '',
+        'category': category if category in CATEGORIES else '',
+        'rating': _int(request.args.get('rating'), 0, 0, 5),
+        'reply': reply if reply in ('none', 'yes') else '',
+        'sort': sort if sort in ('new', 'old', 'high', 'low') else 'new',
+    }
+
+
+def _list_query(args: dict, page: int = 1) -> str:
+    """The list's address query for these filters ('' when they are all the defaults)."""
+    keep = {k: v for k, v in {**args, 'page': page}.items()
+            if v not in ('', 0, None) and not (k == 'sort' and v == 'new') and not (k == 'page' and v == 1)}
+    return urlencode(keep)
+
+
 def tickets():
     """The tickets: search, filters, sorting and pages (needs the login)."""
     denied = _gate()
     if denied:
         return denied
-    status, category, sort = request.args.get('status'), request.args.get('category'), request.args.get('sort')
-    args = {
-        'q': (request.args.get('q') or '').strip()[:100],
-        'status': status if status in STATUSES else '',
-        'category': category if category in CATEGORIES else '',
-        'rating': _int(request.args.get('rating'), 0, 0, 5),
-        'sort': sort if sort in ('new', 'old', 'high', 'low') else 'new',
-    }
+    args = _list_args()
     page = _int(request.args.get('page'), 1, 1)
     try:
         model = DBTickets()
         items, total = model.list(**args, page=page)
         counts = model.counts()
+        stats = model.stats()
     except Exception:
         return error_handler(500)
     pages = max(1, -(-total // PER_PAGE))
@@ -268,13 +282,12 @@ def tickets():
 
     def link(**changes):
         """This list's address with some filters changed (back to page 1 unless a page is given)."""
-        merged = {**args, 'page': 1, **changes}
-        keep = {k: v for k, v in merged.items()
-                if v not in ('', 0, None) and not (k == 'sort' and v == 'new') and not (k == 'page' and v == 1)}
-        return '/v1/tickets' + ('?' + urlencode(keep) if keep else '')
+        query = _list_query({**args, **{k: v for k, v in changes.items() if k != 'page'}}, changes.get('page', 1))
+        return '/v1/tickets?' + (query or 'reset=1')
 
-    return _page('tickets.htm', tickets=items, total=total, counts=counts, args=args, page=page,
-                 pages=pages, link=link)
+    # Each ticket opens with this list's query, so its page can offer Previous/Next and a way back to the same list.
+    return _page('tickets.htm', tickets=items, total=total, counts=counts, stats=stats, args=args, page=page,
+                 pages=pages, link=link, here=_list_query(args, page))
 
 
 def _contact(ticket: dict, share_url: str | None) -> dict:
@@ -314,10 +327,11 @@ def ticket_detail(ticket_id: str):
                 return _bad('Not allowed', 403)
             body = request.get_json(silent=True) or {}
             status, response = body.get('status'), body.get('response')
-            if status not in STATUSES or not isinstance(response, str):
-                return _bad('A status and a reply (possibly empty) are needed')
-            response = response.replace('\x00', '').strip()
-            if len(response) > MAX_RESPONSE:
+            if status not in STATUSES or not (response is None or isinstance(response, str)):
+                return _bad('A status is needed, and a reply (possibly empty) if one is sent')
+            if response is not None:
+                response = response.replace('\x00', '').strip()
+            if response is not None and len(response) > MAX_RESPONSE:
                 return _bad(f'The reply is too long (up to {MAX_RESPONSE} characters)')
             if not model.update(ticket_id, status, response):
                 return _not_found()
@@ -329,7 +343,19 @@ def ticket_detail(ticket_id: str):
         return _not_found()
     share = ticket.get('share')
     share_url = _shared_link(share['code']) if share else None
-    return _page('ticket.htm', t=ticket, share=share, share_url=share_url, fields=FIELDS,
+    # Where this ticket sits in the list it was opened from (the list's own query comes along in the address).
+    args = _list_args()
+    near = {'prev': None, 'next': None, 'at': 0, 'of': 0}
+    try:
+        order = DBTickets().ids(**args)
+        if ticket['id'] in order:
+            i = order.index(ticket['id'])
+            near = {'prev': order[i - 1] if i else None, 'next': order[i + 1] if i + 1 < len(order) else None,
+                    'at': i + 1, 'of': len(order)}
+    except Exception:
+        pass
+    here = _list_query(args, _int(request.args.get('page'), 1, 1))
+    return _page('ticket.htm', t=ticket, near=near, here=here, share=share, share_url=share_url, fields=FIELDS,
                  statuses=STATUSES, contact=_contact(ticket, share_url),
                  share_base=_shared_link(''), own_url=_own_link(ticket['tid']))
 
